@@ -7,6 +7,22 @@ An Agent-based Simulator for the Specialty Insurance Market
 
 # Overview
 ## Modules
+- Broker
+- Syndicate
+- CatastropheGenerator
+- Event
+- Manager
+- StrategySet
+- Payoff
+- Logger
+- Visualisation
+  
 ## Interfaces
-## Simulation Management
+- BrokerGenerator
+- SyndicateGenerator
+- Event
+- Payoff
+- Visualisation
 
+## Simulation Management
+- EGTA Equlibrium Calculation
