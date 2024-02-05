@@ -1,5 +1,6 @@
 # Simulator-SpecialtyInsurance
 An Agent-based Simulator for the Specialty Insurance Market
+
 Time Line 
 <img width="640" alt="TimeLine" src="https://github.com/teresa-bi/Simulator-SpecialtyInsurance/assets/97514447/b0dd40aa-b7bb-4a21-b4a8-fb733f9c779f">
 
