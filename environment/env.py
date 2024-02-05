@@ -23,7 +23,7 @@ class SpecialtyInsuranceMarketEnv(gym.Env):
     ### Observation Space
     For each insurable risks, the accept or refuse status
     For each claim, the payment status, fullied paid or bankruptcy
-    For each syndicate, the current capital, the risk regions covering, the capital in each risk region, the premium received from brokers, and the premium paid to reinsurance firms
+    For each syndicate, the current capital, the capital in each risk region
 
     ### Rewards
     The accepted line size, the profit, and the bankruptcy
