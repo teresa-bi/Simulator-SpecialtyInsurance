@@ -72,8 +72,13 @@ class Syndicate:
         return (follower, follow_line_size, broker_id, risk_id)
 
     def ask_premium_from_broker(self, ):
+        """
+        Total premium from brokers
+        """
         
         premium = calculate_premium()
+
+        return total_premium
 
     def ask_interests(self, ):
 

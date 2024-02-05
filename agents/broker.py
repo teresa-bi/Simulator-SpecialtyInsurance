@@ -15,6 +15,7 @@ class Broker:
         """
         self.broker_id
         self.broker_lambda_risks
+        timeduration = 12
 
     def pay_premium(self, ):
         """
