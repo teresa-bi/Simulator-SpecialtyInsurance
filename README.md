@@ -1,5 +1,6 @@
 # Simulator-SpecialtyInsurance
 An Agent-based Simulator for the Specialty Insurance Market
+![TimeLine](./Simulator-SpecialtyInsurance/TimeLine.png)
 
 # Quickstart
 ## Prerequisties
