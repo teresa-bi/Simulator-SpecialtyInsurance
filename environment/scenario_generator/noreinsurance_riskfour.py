@@ -15,7 +15,5 @@ class NoReinsurance_RiskFour(NoReinsurance_RiskOne):
         self.reinsurancefirms = []
 
     def generate_scenario(self, sim_args, manager_args, broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args):
-        # Create broker, syndicate, shareholder
-        brokers = []
-        synidates = []
+        
 
