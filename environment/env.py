@@ -10,7 +10,7 @@ from gymnasium.envs.registration import EnvSpec
 from gymnasium.error import DependencyNotInstalled
 
 from environment.scenario_generator import NoReinsurance_RiskOne, Reinsurance_RiskOne, NoReinsurance_RiskFour, Reinsurance_RiskFour
-from environment.risk import CatastropheEvent, AttritionalLossEvent
+from environment.risk import CatastropheEvent, AttritionalLossEvent, AddRiskEvent, AddClaimEvent, RiskModel
 from manager import EventHandler, EnvironmentManager
 
 class SpecialtyInsuranceMarketEnv(gym.Env):

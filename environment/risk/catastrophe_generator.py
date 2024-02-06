@@ -4,7 +4,7 @@ class CatastropheEvent:
     """
     Generate catastrophes
     """
-    def __init__(self, catastrophe_id, catastrophe_riskregions, catastrophe_value):
+    def __init__(self, catastrophe_id, catastrophe_riskregions, catastrophe_value, start_time):
         self.catastrophe_id = catastrophe_id
         self.catastrophe_riskregions = catastrophe_riskregions
         self.catastrophe_value = catastrophe_value
@@ -24,6 +24,7 @@ class CatastropheEvent:
         self.var_em_safety_factor = risk_args['var_em_safety_factor']
         self.risk_factor_lower_bound = risk_args['risk_factor_lower_bound']
         self.risk_factor_upper_bound = risk_args['risk_factor_upper_bound']
+        self.start_time = start_time
         
     def run(self, scenario):
         """

@@ -81,6 +81,10 @@ class Syndicate:
         """
         self.syndicate_id
 
+    def update_status(self, ):
+        self.update_capital
+        self.update_underwrite_risk_regions
+
     def calculate_premium(self, ):
         """
         Calculate the premium based on the past experience and industry statistics
