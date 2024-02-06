@@ -43,10 +43,10 @@ class AddClaimEvent:
         """
 
         scenario.broker_bring_claim[self.risk_id] = {"risk_id": self.risk_id,
-                                                    "broker_id": self.broker_id,
-                                                    "risk_regions": self.risk_regions,
-                                                    "risk_value": self.risk_value
-                                                    }
+                                                "broker_id": self.broker_id,
+                                                "risk_regions": self.risk_regions,
+                                                "risk_value": self.risk_value
+                                                }
         return scenario
 
     def data(self):
@@ -66,6 +66,18 @@ class AddClaimEvent:
                 "risk_value": self.risk_value
             }
         }
+
+    def to_json(self):
+        """
+        Serialise the instance to JSON.
+
+        Returns
+        ----------
+        str
+        """
+
+        return json.dumps(self.data(), indent=4)
+
 
     def save(self, filename):
         """

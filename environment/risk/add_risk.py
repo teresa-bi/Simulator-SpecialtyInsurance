@@ -78,6 +78,17 @@ class AddRiskEvent:
             }
         }
 
+    def to_json(self):
+        """
+        Serialise the instance to JSON.
+
+        Returns
+        ----------
+        str
+        """
+
+        return json.dumps(self.data(), indent=4)
+
     def save(self, filename):
         """
         Write the instance to a log file.
