@@ -39,9 +39,7 @@ def get_arguments():
         "exit_time_limit": 24, # Time limit for insurance firm exit
         "sensitivity_premium": 1.29e-9, # Syndicate premium sensitivity parameter
         "initial_acceptance_threshold": 0.5,
-        "acceptance_threshold_friction": 0.9,
-        "upper_price_limit": 1.2,
-        "lower_price_limit": 0.85
+        "acceptance_threshold_friction": 0.9
         }
 
     reinsurancefirm_args = {"num_reinsurancefirms": 4, # Number of reinsurance firms in simulation
