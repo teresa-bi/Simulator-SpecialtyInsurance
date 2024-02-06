@@ -8,14 +8,26 @@ class Broker:
     def __init__(self, broker_id, broker_args):
         self.broker_id = broker_id
         self.broker_lambda_risks = broker_args['lambda_risks_daily']
+        self.bring_risk = {}
+        self.contract = {}
+        self.bring_claim = {}
 
-    def bring_risk(self, ):
+    def data(self):
         """
-        Bring insurable risks to the market
+        Create a dictionary with key/value pairs representing the Broker data.
+
+        Returns
+        ----------
+        dict
         """
-        self.broker_id
-        self.broker_lambda_risks
-        timeduration = 12
+
+        return {
+            "broker_id": self.broker_id,
+            "broker_lambda_risks": self.broker_lambda_risks,
+            "bring_risk": self.bring_risk,
+            "contract": self.contract,
+            "bring_claim": self.bring_claim
+        }
 
     def pay_premium(self, ):
         """

@@ -13,6 +13,27 @@ class ReinsuranceFirm:
         self.exit_capital_threshold = reinsurancefirm_args['exit_capital_threshold']
         self.exit_time_limit = reinsurancefirm_args['exit_time_limit']
         self.sensitivity_premium = reinsurancefirm_args['sensitivity_premium']
+        self.reinsurance_list = {}  # Include syndicate_id, risk_region, risk_value
+
+    def data(self):
+        """
+        Create a dictionary with key/value pairs representing the ReinsuranceFirms data.
+
+        Returns
+        ----------
+        dict
+        """
+
+        return {
+            "reinsurancefirm_id": self.reinsurancefirm_id,
+            "initial_capital": self.initial_capital,
+            "deductible": self.deductible,
+            "market_entry_probability": self.market_entry_probability,
+            "exit_capital_threshold": self.exit_capital_threshold,
+            "exit_time_limit": self.exit_time_limit,
+            "sensitivity_premium": self.sensitivity_premium,
+            "reinsurance_list": self.reinsurance_list
+        }
 
 
     def update_capital(self, ):
