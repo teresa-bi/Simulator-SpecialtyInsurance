@@ -68,6 +68,11 @@ class SpecialtyInsuranceMarketEnv(gym.Env):
         self.maxstep = maxstep
         self.em = None
         self.reinsurance = reinsurance
+        self.brokers = {}
+        self.syndicates = {}
+        self.reinsurancefirms = {}
+        self.shareholders = {}
+        self.risks = {}
         self.syndicate_active = {}
         self.broker_risk_event = {}
         self.broker_claim_event = {}
@@ -78,18 +83,19 @@ class SpecialtyInsuranceMarketEnv(gym.Env):
     def reset(self):
         
         # Reset the environment to an initial state
-        if self.reinsurance:
-            brokers, syndicates, reinsurancefirms, shareholders, risks = Reinsurance_RiskOne.generate_scenario(broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args)
-        else: 
-            brokers, syndicates, shareholders, risks = NoReinsurance_RiskOne.generate_scenario(broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args)
-        self.brokers = brokers
-        self.syndicates = syndicates
-        if self.reinsurance:
-            self.reinsurancefirms = reinsurancefirms
-        else:
-            self.reinsurancefirms = None
-        self.shareholders = shareholders
-        self.risks = risks
+        for i in range(broker_args["num_brokers"]):
+            self.brokers[str(i)] = Broker(i,broker_args)
+        for i in range(syndicate_args["num_syndicates"])]:
+            self.syndicates[str(i)] = Syndicate(i,syndicate_args)
+        for i in range(shareholder_args["num_shareholders"]):
+            self.shareholders[str(i)] = Shareholder(i,shareholder_args)
+        for i in range(risk_args["num_risks"]):
+            if self.one_risk:
+                self.risks[str(i)] = RiskModel.one_risk_model(risk_args) 
+            elif self.four_risk:
+                self.risks[str(i)] = RiskModel.four_risk_model(risk_args)
+            else:
+                self.risks[str(i)] = RiskModel.other_risk_model(risk_args)
 
         # Initiate event handler
         catastrophe_events = CatastropheEvent(risks=self.risks).generate_risk_events()
@@ -97,7 +103,7 @@ class SpecialtyInsuranceMarketEnv(gym.Env):
         event_handler = EventHandler(self.brokers, catastrophe_events, attritional_loss_events)
 
         # Initiate environment manager
-        self.em = EnvironmentManager(self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.risks, event_handler)
+        self.em = EnvironmentManager(self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.risks, broker_risk_event, broker_claim_event, event_handler)
         self.em.evolve(self.dt)
         
         # Set per syndicate active status and build status list
