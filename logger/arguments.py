@@ -56,11 +56,12 @@ def get_arguments():
 
     risk_args = {"num_riskmodels": 4, # Number of risk models in simulation
         "num_risks": 20000, # Number of risks
-        "num_riskregions": 10, # Number of peril regions for the catastrophe
+        "num_categories": 10, # Number of peril regions for the catastrophe
         "risk_limit": 10000000, # The maximum value of the risk
         "inaccuracy_riskmodels": 2,
         "riskmodel_margin_of_safety": 2,
         "value_at_risk_tail_probability": 0.005,
+        "norm_profit_markup": 0.15,
         "catastrophe_time_mean_separation": 100/3.,
         "lambda_attritional_loss": 0.1, # Lambda value for the Poisson distribution for the number of attritional claims generated per year
         "cov_attritional_loss": 1, # Coefficient of variation for the gamma distribution which generates the severity of attritional claim event
@@ -71,7 +72,11 @@ def get_arguments():
         "var_em_exceedance_probability": 0.05, # The tail probability  used in the VaR calculations
         "var_em_safety_factor": 1, # Scaling safety factor applied to the VaR value, larger values employ more conservative exposure management
         "risk_factor_lower_bound": 0.4,
-        "risk_factor_upper_bound": 0.6
+        "risk_factor_upper_bound": 0.6,
+        "expire_immediately": False,
+        "mean_contract_runtime": 12,
+        "money_supply": 2000000000
+
         }
 
     return sim_args, manager_args, broker_args, syndicate_args, reinsurance_args,  shareholder_args, risk_args

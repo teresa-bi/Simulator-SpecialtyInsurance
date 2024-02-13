@@ -8,21 +8,90 @@ class RiskModel:
     The risk model adopted by syndicates to cope with catastrophe
     The cash in each category, acceptable risk, profits, cash left, value_at_risk, if the risk can be accepted
     """
-    def __init__(self, risk_id, risk_args, damage_distribution, expire_immediately, cat_separation_distribution, norm_premium, category_number, init_average_exposure, init_average_risk_factor, init_profit_estimate, margin_of_safety, var_tail_prob, inaccuracy):
+    def __init__(self, risk_id, risk_args):
+        """
+        Unpack parameters and set remaining parameters
+        """
         self.num_riskmodels = risk_args["num_riskmodels"]
-        self.cat_separation_distribution = cat_separation_distribution
-        self.norm_premium = norm_premium
+
+        non_truncated = scipy.stats.pareto(b=2, loc=0, scale=0.25)
+        self.damage_distribution = TruncatedDistWrapper(lower_bound=0.25, upper_bound=1., dist=non_truncated)
+
+        self.margin_of_safety = risk_args["riskmodel_margin_of_safety"]
+        self.risk_factor_lower_bound = risk_args["risk_factor_lower_bound"]
+        self.risk_factor_spread = risk_args["risk_factor_upper_bound"] - risk_args["risk_factor_lower_bound"]
+        self.risk_factor_distribution = scipy.stats.uniform(loc=self.risk_factor_lower_bound, scale=self.risk_factor_spread)
+        self.risk_value_distribution = scipy.stats.uniform(loc=1000, scale=0)
+
+        risk_factor_mean = self.risk_factor_distribution.mean()
+        if np.isnan(risk_factor_mean):
+            risk_factor_mean = self.risk_factor_distribution.rvs()
+
+        self.expire_immediately = risk_args["expire_immediately"]
+        self.catastrophe_separation_distribution = scipy.stats.expon(0, risk_args["catastrophe_time_mean_separation"])
+        if self.expire_immediately:
+            assert self.catastrophe_separation_distribution.dist.name == 'expon'
+            expected_damage_frequency = 1 - scipy.stats.poisson(1 /risk_args["catastrophe_time_mean_separation"] * risk_args["mean_contract_runtime"]).pmf(0)
+        else:
+            expected_damage_frequency = risk_args["mean_contract_runtime"] / self.catastrophe_separation_distribution.mean()
+
+        self.norm_premium = expected_damage_frequency * self.damage_distribution.mean() * risk_factor_mean * (1 + risk_args["norm_profit_markup"])
+        self.market_premium = self.norm_premium
+        self.reinsurance_market_premium = self.market_premium
+        self.total_no_risks = risk_args["num_risks"]
+
+        # Set up monetary system can be set in broker
+        self.money_supply = risk_args["money_supply"]
+        self.obligations = []
+
+        # Set up risk categories
+        self.riskcategories = list(range(risk_args["num_categories"]))
+        self.rc_event_schedule = []
+        self.rc_event_damage = []
+        self.rc_event_schedule_initial = []
+        self.rc_event_damage_initial = []
+        if rc_event_schedule is not None and rc_event_damage is not None:
+            self.rc_event_schedule = copy.copy(rc_event_schedule)
+            self.rc_event_schedule_initial = copy.copy(rc_event_schedule)
+            self.rc_event_damage = copy.copy(rc_event_damage)
+            self.rc_event_damage_initial = copy.copy(rc_event_damage)
+        else:
+            self.setup_risk_categories_caller()
+
+        # Set up risks
+
+            
+
         self.var_tail_prob = 0.02
-        self.expire_immediately = expire_immediately
+        
         self.category_number = category_number
         self.init_average_exposure = init_average_exposure
         self.init_average_risk_factor = init_average_risk_factor
         self.init_profit_estimate = init_profit_estimate
-        self.margin_of_safety = margin_of_safety
+        
         self.damage_distribution = [damage_distribution for _ in range(self.category_number)]
         self.damage_distribution_stack = [[] for _ in range(self.category_number)]
         self.reinsurance_contract_stack = [[] for _ in range(self.category_number)]
         self.inaccuracy = inaccuracy
+
+        "num_riskmodels": 4, # Number of risk models in simulation
+        "num_risks": 20000, # Number of risks
+        "num_riskregions": 10, # Number of peril regions for the catastrophe
+        "risk_limit": 10000000, # The maximum value of the risk
+        "inaccuracy_riskmodels": 2,
+        "riskmodel_margin_of_safety": 2,
+        "value_at_risk_tail_probability": 0.005,
+        "catastrophe_time_mean_separation": 100/3.,
+        "lambda_attritional_loss": 0.1, # Lambda value for the Poisson distribution for the number of attritional claims generated per year
+        "cov_attritional_loss": 1, # Coefficient of variation for the gamma distribution which generates the severity of attritional claim event
+        "mu_attritional_loss": 3000000, # Mean of the gamma distribution which generates the severity of attritional claim events
+        "lambda_catastrophe": 0.05, # Lambda value for the Poisson distribution for the number of catastrophe claims generated per year
+        "pareto_shape": 5, # Shape parameter of the Pareto distribution which generates the severity of catastrophe claim events
+        "minimum_catastrophe_damage": 0.25, # Minimum value for an event to be considered a catastrophe, fraction of the risk limit
+        "var_em_exceedance_probability": 0.05, # The tail probability  used in the VaR calculations
+        "var_em_safety_factor": 1, # Scaling safety factor applied to the VaR value, larger values employ more conservative exposure management
+        "risk_factor_lower_bound": 0.4,
+        "risk_factor_upper_bound": 0.6
 
     def getPPF(self, categ_id, tailSize):
         """
