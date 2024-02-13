@@ -2,7 +2,7 @@ from __future__ import annotations
 import json
 from environment.scenario_generator import NoReinsurance_RiskOne
 
-class AddRiskEvent:
+class AddRiskEvent(Event):
     """
     Add risk event brought by the broker to the market
     """

@@ -2,7 +2,7 @@ from __future__ import annotations
 import json
 from environment.scenario_generator import NoReinsurance_RiskOne
 
-class AddClaimEvent:
+class AddClaimEvent(Event):
     """
     Add claim event caused by catastrophe event
     """

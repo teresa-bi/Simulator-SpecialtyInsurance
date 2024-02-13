@@ -1,10 +1,14 @@
-import json        
+from __future__ import annotations
+import warnings
 
-class CatastropheEvent:
+from environment.risk import Event
+from environment.env import SpecialtyInsuranceMarketEnv
+
+class CatastropheEvent(Event):
     """
     Generate catastrophes
     """
-    def __init__(self, catastrophe_id, catastrophe_riskregions, catastrophe_value, start_time):
+    def __init__(self, risk_models, start_time):
         self.catastrophe_id = catastrophe_id
         self.catastrophe_riskregions = catastrophe_riskregions
         self.catastrophe_value = catastrophe_value
@@ -25,15 +29,18 @@ class CatastropheEvent:
         self.risk_factor_lower_bound = risk_args['risk_factor_lower_bound']
         self.risk_factor_upper_bound = risk_args['risk_factor_upper_bound']
         self.start_time = start_time
-        
-    def run(self, scenario):
-        """
-        Add catastrophe to the base scenario NoReinsurance_RiskOne
 
+        Event.__init__(self, start_time=start_time)
+
+        
+    def run(self, environment):
+        """
+        Add catastrophe to the environment 
         Parameters
         ----------
-        scenario: NoReinsurance_RiskOne
-            The scenario to accept catastrophe event
+        environment: SpecialtyInsuranceMarketEnv
+
+            The  to accept catastrophe event
 
         Returns
         -------

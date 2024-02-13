@@ -1,6 +1,6 @@
 import
 
-class AttritionalLossEvent:
+class AttritionalLossEvent(Event):
     """
     Generate daily attritional loss
     """
