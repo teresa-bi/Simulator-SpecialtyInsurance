@@ -17,7 +17,6 @@ class AIRunner:
         self.reinsurancefirms = reinsurancefirms
         self.shareholders = shareholders
         self.risk_models = risk_models
-        self.env = None
         self.scenario = scenario
         self.model = model
 

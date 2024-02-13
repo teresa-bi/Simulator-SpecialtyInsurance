@@ -9,7 +9,6 @@ from gymnasium.envs.classic_control import utils
 from gymnasium.envs.registration import EnvSpec
 from gymnasium.error import DependencyNotInstalled
 
-from environment.scenario_generator import NoReinsurance_RiskOne, Reinsurance_RiskOne, NoReinsurance_RiskFour, Reinsurance_RiskFour
 from environment.risk import CatastropheEvent, AttritionalLossEvent, AddRiskEvent, AddClaimEvent, RiskModel
 from manager import EventHandler, EnvironmentManager
 
@@ -46,11 +45,11 @@ class SpecialtyInsuranceMarketEnv(gym.Env):
     def __init__(self,
                  sim_args,
                  manager_args,
-                 broker_args,
-                 syndicate_args,
-                 reinsurancefirm_args,
-                 shareholder_args,
-                 risk_args,
+                 brokers,
+                 syndicates,
+                 reinsurancefirms,
+                 shareholders,
+                 risk_models,
                  dt = 1,
                  maxstep = 30000,
                  reinsurance = False
@@ -59,23 +58,25 @@ class SpecialtyInsuranceMarketEnv(gym.Env):
 
         self.sim_args = sim_args
         self.manager_args = manager_args
-        self.broker_args = broker_args
-        self.syndicate_args = syndicate_args
-        self.reinsurancefirm_args = reinsurancefirm_args
-        self.shareholder_args = shareholder_args
-        self.risk_args = risk_args
+        self.brokers = brokers
+        self.initial_brokers = brokers
+        self.syndicates = syndicates
+        self.initial_syndicates = syndicates
+        self.reinsurancefirms = reinsurancefirms
+        self.initial_reinsurancefirms = reinsurancefirms
+        self.shareholders = shareholders
+        self.initial_shareholders = shareholders
+        self.risk_models = risk_models
+        self.initial_risk_models = risk_models
         self.dt = dt
         self.maxstep = maxstep
         self.em = None
         self.reinsurance = reinsurance
-        self.brokers = {}
-        self.syndicates = {}
-        self.reinsurancefirms = {}
-        self.shareholders = {}
-        self.risks = {}
+        self.catastrophe_events = {}
+        self.attritional_loss_events = {}
+        self.broker_risk_events = {}
+        self.broker_claim_events = {}
         self.syndicate_active = {}
-        self.broker_risk_event = {}
-        self.broker_claim_event = {}
 
         # Reset the environmnet
         self.reset()
@@ -83,27 +84,21 @@ class SpecialtyInsuranceMarketEnv(gym.Env):
     def reset(self):
         
         # Reset the environment to an initial state
-        for i in range(broker_args["num_brokers"]):
-            self.brokers[str(i)] = Broker(i,broker_args)
-        for i in range(syndicate_args["num_syndicates"])]:
-            self.syndicates[str(i)] = Syndicate(i,syndicate_args)
-        for i in range(shareholder_args["num_shareholders"]):
-            self.shareholders[str(i)] = Shareholder(i,shareholder_args)
-        for i in range(risk_args["num_risks"]):
-            if self.one_risk:
-                self.risks[str(i)] = RiskModel.one_risk_model(risk_args) 
-            elif self.four_risk:
-                self.risks[str(i)] = RiskModel.four_risk_model(risk_args)
-            else:
-                self.risks[str(i)] = RiskModel.other_risk_model(risk_args)
+        self.brokers = self.initial_brokers
+        self.syndicates = self.initial_syndicates
+        self.reinsurancefirms = self.initial_reinsurancefirms
+        self.shareholders = self.initial_shareholders
+        self.risk_models = self.initial_risk_models
 
         # Initiate event handler
-        catastrophe_events = CatastropheEvent(risks=self.risks).generate_risk_events()
-        attritional_loss_events = AttritionalLossEvent(risks=self.risks).generate_risk_events()
-        event_handler = EventHandler(self.brokers, catastrophe_events, attritional_loss_events)
+        catastrophe_events = CatastropheEvent(risk_models=self.risk_models).generate_risk_events()
+        attritional_loss_events = AttritionalLossEvent(risk_models=self.risk_models).generate_risk_events()
+        broker_risk_events = AddRiskEvent(risk_models=self.risk_models).generate_risk_events()
+        broker_claim_events = AddClaimEvent(risk_models=self.risk_models).generate_risk_events()
+        event_handler = EventHandler(catastrophe_events, attritional_loss_events, broker_risk_events, broker_claim_events, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.risk_models)
 
         # Initiate environment manager
-        self.em = EnvironmentManager(self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.risks, broker_risk_event, broker_claim_event, event_handler)
+        self.em = EnvironmentManager(self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.risks, catastrophe_events, attritional_loss_events, broker_risk_events, broker_claim_events, event_handler)
         self.em.evolve(self.dt)
         
         # Set per syndicate active status and build status list

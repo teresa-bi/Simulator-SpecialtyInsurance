@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 import json
 import time
 import numpy as np
@@ -12,32 +11,51 @@ class NoReinsurance_RiskOne:
     """
     Scenario with broker, syndicate, shareholder in the market, and all the syndicates use one risk modle
     """
-    def __init__(self, time, brokers, syndicates, reinsurancefirms, shareholders, risk_models):
-
-        if time < 0.0:
-            raise ValueError("Time must be non-negative.")
+    def __init__(self):
 
         # With or without reinsurance firms in the scenario
         self.reinsurance = False
-        # Use one risk models
+        # Use one risk model
         self.one_risk = True
         # Use four risk models
         self.four_risk = False
-        # List of brokers
-        self.brokers = brokers
-        # List of syndicates
-        self.syndicates = syndicates
-        # List of shareholders
-        self.shareholders = shareholders
-        # List of risk models used by synidacates
-        self.risk_models = risk_models
-        # Time Step
-        self.time = time
-        # Add event to the scenario
-        self.active_syndicate = {}
-        self.broker_bring_risk = {}
-        self.broker_bring_claim = {}
-        self.catastrophe_event= {}
+        # List of agents
+        self.brokers = {}
+        self.syndicates = {}
+        self.reinsurancefirms = {}
+        self.shareholders = {}
+        self.risk_models = {}
+
+    def create(self, broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args):
+        """
+        Create agents including brokers, syndicates, reinsurancefirms, shareholders, risk_models.
+
+        Parameters
+        ----------
+        broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args
+
+        Returns
+        ----------
+        dict
+        """
+        for i in range(broker_args["num_brokers"]):
+            self.brokers[str(i)] = Broker(i,broker_args)
+        for i in range(syndicate_args["num_syndicates"])]:
+            self.syndicates[str(i)] = Syndicate(i,syndicate_args)
+        if self.reinsurance == True:
+            for i in range(reinsurancefirm_args["num_reinsurancefirms"])]:
+                self.reinsurancefirms[str(i)] = ReinsuranceFirm(i,reinsurancefirm_args)
+        for i in range(shareholder_args["num_shareholders"]):
+            self.shareholders[str(i)] = Shareholder(i,shareholder_args)
+        for i in range(risk_args["num_risks"]):
+            if self.one_risk:
+                self.risk_models[str(i)] = RiskModel.one_risk_model(risk_args) 
+            elif self.four_risk:
+                self.risk_models[str(i)] = RiskModel.four_risk_model(risk_args)
+            else:
+                self.risk_models[str(i)] = RiskModel.other_risk_model(risk_args)
+
+        return self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.risk_models
 
     def data(self):
         """
@@ -86,25 +104,5 @@ class NoReinsurance_RiskOne:
 
         with open(filename, "w") as file:
             file.write(self.to_json())
-
-    def is_active(self)
-        """
-        Determine which Syndicates are active (i.e., are not bankrupt).
-
-        Returns
-        ----------
-        dict[str, bool]
-            {Syndicate_id: whether Syndicate is active}
-        """
-
-        active = {}
-
-        for syndicate in self.sydicates.items():
-            if syndicate.current_capital >= 0:
-                active[syndicate] = True
-            else:
-                active[syndicate] = False
-
-        return active
 
     

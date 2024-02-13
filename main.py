@@ -15,6 +15,7 @@ if __name__ == '__main__':
     models = {"0": AIRunner,
               "1": GameRunner
               }
+
     # Choose the scenario, 0 means noreinsurance_riskone, 1 means reinsurance_riskone, 2 means noreinsurance_riskfour, 3 means reinsurance_riskfour
     scenario = 0
     scenarios = {"0": NoReinsurance_RiskOne,
