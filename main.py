@@ -29,13 +29,13 @@ if __name__ == '__main__':
 
     # Create scenario
     if str(scenario) == scenarios["0"]:
-        brokers, syndicates, reinsurancefirms, shareholders, risk_models = NoReinsurance_RiskOne(broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args)
+        brokers, syndicates, reinsurancefirms, shareholders, risk_models = NoReinsurance_RiskOne.create(broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args)
     elif str(scenario) == scenarios["1"]:
-        brokers, syndicates, reinsurancefirms, shareholders, risk_models = Reinsurance_RiskOne(broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args)
+        brokers, syndicates, reinsurancefirms, shareholders, risk_models = Reinsurance_RiskOne.create(broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args)
     elif str(scenario) == scenarios["2"]:
-        brokers, syndicates, reinsurancefirms, shareholders, risk_models = NoReinsurance_RiskFour(broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args)
+        brokers, syndicates, reinsurancefirms, shareholders, risk_models = NoReinsurance_RiskFour.create(broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args)
     else:
-        brokers, syndicates, reinsurancefirms, shareholders, risk_models = Reinsurance_RiskFour(broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args)
+        brokers, syndicates, reinsurancefirms, shareholders, risk_models = Reinsurance_RiskFour.create(broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args)
 
     # Run the simulation
     if str(model) == models["0"]: 

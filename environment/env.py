@@ -91,10 +91,10 @@ class SpecialtyInsuranceMarketEnv(gym.Env):
         self.risk_models = self.initial_risk_models
 
         # Initiate event handler
-        catastrophe_events = CatastropheEvent(risk_models=self.risk_models).generate_risk_events()
-        attritional_loss_events = AttritionalLossEvent(risk_models=self.risk_models).generate_risk_events()
-        broker_risk_events = AddRiskEvent(risk_models=self.risk_models).generate_risk_events()
-        broker_claim_events = AddClaimEvent(risk_models=self.risk_models).generate_risk_events()
+        catastrophe_events = CatastropheEvent(risk_models=self.risk_models).generate_events()
+        attritional_loss_events = AttritionalLossEvent(risk_models=self.risk_models).generate_events()
+        broker_risk_events = AddRiskEvent(risk_models=self.risk_models).generate_events()
+        broker_claim_events = AddClaimEvent(risk_models=self.risk_models).generate_events()
         event_handler = EventHandler(catastrophe_events, attritional_loss_events, broker_risk_events, broker_claim_events, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.risk_models)
 
         # Initiate environment manager
@@ -232,7 +232,7 @@ class SpecialtyInsuranceMarketEnv(gym.Env):
         # Insurable risks: the accept or refuse status
         for risk_id in range(self.risk_args["num_risks"]):
             risk = environment.broker_risk_event[risk_id]
-            obv.append(risk[1])  # risk[id, status], status is 0 pr 1
+            obv.append(risk[1])  # risk[id, status], status is 0 or 1
 
         # Claims: the payment status, fullied paid or bankruptcy
         for claim_id in range(self.risk_args["num_risks"]):
