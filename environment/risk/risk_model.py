@@ -5,176 +5,21 @@ import scipy.stats
 
 class RiskModel:
     """
-    The risk model adopted by syndicates to cope with catastrophe
-    The cash in each category, acceptable risk, profits, cash left, value_at_risk, if the risk can be accepted
+    The risk model adopted by syndicates or reinsurance firms to cope with catestrophes
     """
-    def __init__(self, risk_id, risk_args):
-        """
-        Unpack parameters and set remaining parameters
-        """
-        self.num_riskmodels = risk_args["num_riskmodels"]
-
-        non_truncated = scipy.stats.pareto(b=2, loc=0, scale=0.25)
-        self.damage_distribution = TruncatedDistWrapper(lower_bound=0.25, upper_bound=1., dist=non_truncated)
-
-        self.margin_of_safety = risk_args["riskmodel_margin_of_safety"]
-        self.risk_factor_lower_bound = risk_args["risk_factor_lower_bound"]
-        self.risk_factor_spread = risk_args["risk_factor_upper_bound"] - risk_args["risk_factor_lower_bound"]
-        self.risk_factor_distribution = scipy.stats.uniform(loc=self.risk_factor_lower_bound, scale=self.risk_factor_spread)
-        self.risk_value_distribution = scipy.stats.uniform(loc=1000, scale=0)
-
-        risk_factor_mean = self.risk_factor_distribution.mean()
-        if np.isnan(risk_factor_mean):
-            risk_factor_mean = self.risk_factor_distribution.rvs()
-
-        self.expire_immediately = risk_args["expire_immediately"]
-        self.catastrophe_separation_distribution = scipy.stats.expon(0, risk_args["catastrophe_time_mean_separation"])
-        if self.expire_immediately:
-            assert self.catastrophe_separation_distribution.dist.name == 'expon'
-            expected_damage_frequency = 1 - scipy.stats.poisson(1 /risk_args["catastrophe_time_mean_separation"] * risk_args["mean_contract_runtime"]).pmf(0)
-        else:
-            expected_damage_frequency = risk_args["mean_contract_runtime"] / self.catastrophe_separation_distribution.mean()
-
-        self.norm_premium = expected_damage_frequency * self.damage_distribution.mean() * risk_factor_mean * (1 + risk_args["norm_profit_markup"])
-        self.market_premium = self.norm_premium
-        self.reinsurance_market_premium = self.market_premium
-        self.total_no_risks = risk_args["num_risks"]
-
-        # Set up monetary system can be set in broker
-        self.money_supply = risk_args["money_supply"]
-        self.obligations = []
-
-        # Set up risk categories
-        self.riskcategories = list(range(risk_args["num_categories"]))
-        self.rc_event_schedule = []
-        self.rc_event_damage = []
-        self.rc_event_schedule_initial = []
-        self.rc_event_damage_initial = []
-        if rc_event_schedule is not None and rc_event_damage is not None:
-            self.rc_event_schedule = copy.copy(rc_event_schedule)
-            self.rc_event_schedule_initial = copy.copy(rc_event_schedule)
-            self.rc_event_damage = copy.copy(rc_event_damage)
-            self.rc_event_damage_initial = copy.copy(rc_event_damage)
-        else:
-            self.setup_risk_categories_caller()
-
-        # Set up risks
-        risk_value_mean = self.risk_value_distribution.mean()
-        if np.isnan(risk_value_mean):
-            risk_value_mean = self.risk_value_distribution.rvs()
-        rrisk_factors = self.risk_factor_distribution.rvs(size=risk_args["num_risks"])
-        rvalues = self.risk_value_distribution.rvs(size=risk_args["num_risks"])
-        rcategories = np.random.randint(0,risk_args["num_categories"],size=risk_args["num_risks"])
-        self.risks = [{"risk_factor":rrisk_factors[i], "value":rvalues[i], "category":rcategories[i], "owner":self} for i in range(risk_args["num_risks"])]
-
-        self.risks_counter = [0,0,0,0]
-
-        for item in self.risks:
-            self.risks_counter[item["category"]] = self.risks_counter[item["category"]] + 1
-
-        # Set up risk models
-        self.inaccuracy = self.get_all_riskmodel_combinations(risk_args["num_categories"], risk_args["inaccuracy_riskmodels"])
-        self.inaccuracy = random.sample(self.inaccuracy, risk_args["num_riskmodels"])
-
-        risk_model_configurations = [{"damage_distribution": self.damage_distribution,
-                                    "expire_immediately": risk_args["expire_immediately"],
-                                    "catastrophe_separation_distribution": self.catastrophe_separation_distribution,
-                                    "norm_premium": self.norm_premium,
-                                    "num_categories": risk_args["num_categories"],
-                                    "risk_value_mean": risk_value_mean,
-                                    "risk_factor_mean": risk_factor_mean,
-                                    "norm_profit_markup": risk_args["norm_profit_markup"],
-                                    "margin_of_safety": risk_args["riskmodel_margin_of_safety"],
-                                    "var_tail_prob": risk_args["value_at_risk_tail_probability"],
-                                    "inaccuracy_by_categ": self.inaccuracy[i]
-                                    } for i in range(risk_args["num_riskmodels"])]
-
-        self.syndicate_id_counter = 0
-        for i in range(risk_args["num_syndicates"]):
-            insurance_reinsurance_level = syndicate_args["default_non_proportional_reinsurance_deductible"]
-            riskmodel_config = risk_model_configurations[i % len(risk_model_configurations)]
-            syndicates[i].append({"id": str(i),
-                                "initial_cash": syndicate_args["initial_capital"],
-                                "riskmodel_config": riskmodel_config,
-                                "norm_premium": self.norm_premium,
-                                "profit_target": risk_args["norm_profit_markup"],
-                                "initial_acceptance_threshold": syndicate_args["initial_acceptance_threshold"],
-                                "acceptance_threshold_friction": syndicate_args["acceptance_threshold_friction"],
-                                "reinsurance_limit": syndicate_args["reinsurance_limit"],
-                                "non_proportional_reinsurance_level": insurance_reinsurance_level,
-                                "capacity_target_decrement_threshold": syndicate_args["capacity_target_decrement_threshold"],
-                                "capacity_target_increment_threshold": syndicate_args["capacity_target_increment_threshold"],
-                                "capacity_target_decrement_factor": syndicate_args["capacity_target_decrement_factor"],
-                                "capacity_target_increment_factor": syndicate_args["capacity_target_increment_factor"],
-                                "interest_rate": syndicate_args["interest_rate"]})
-
-        self.reinsurer_id_counter = 0
-        for i in range(reinsurancefirm_args["num_reinsurancefirms"]):
-            reinsurance_reinsurance_level = syndicate_args["default_non_proportional_reinsurance_deductible"]
-            riskmodel_config = risk_model_configurations[i % len(risk_model_configurations)]
-            reinsurancefirms[i].append({"id": str(i),
-                                        "initial_cash":  reinsurancefirm_args["initial_capital"],
-                                        "riskmodel_config": riskmodel_config,
-                                        "norm_premium": self.norm_premium,
-                                        "profit_target": risk_args["norm_profit_markup"],
-                                        "initial_acceptance_threshold": reinsurancefirm_args["initial_acceptance_threshold"],
-                                        "acceptance_threshold_friction": reinsurancefirm_args["acceptance_threshold_friction"],
-                                        "reinsurance_limit": reinsurancefirm_args["reinsurance_limit"],
-                                        "non_proportional_reinsurance_level": reinsurance_reinsurance_level,
-                                        "capacity_target_decrement_threshold": reinsurancefirm_args["capacity_target_decrement_threshold"],
-                                "capacity_target_increment_threshold": reinsurancefirm_args["capacity_target_increment_threshold"],
-                                "capacity_target_decrement_factor": reinsurancefirm_args["capacity_target_decrement_factor"],
-                                "capacity_target_increment_factor": reinsurancefirm_args["capacity_target_increment_factor"],
-                                "interest_rate": reinsurancefirm_args["interest_rate"]})
-        # Set up remaining list variables
-        # Agent lists
-        self.reinsurancefirms = []
-        self.syndicates = []
-        # Lists of agent weights
-        self.syndicates_weights = {}
-        self.reinsurancefirms_weights = {}
-        # Cumulative variables for history and logging
-        self.cumulative_bankruptcies = 0
-        self.culumative_market_exits = 0
-        self.cumulative_unrecovered_claims = 0.0
-        self.cumulative_claims = 0.0
-        # Lists for logging history
-        self.logger = logger.logger(num_riskmodels = risk_args["num_riskmodels"],
-                                    rc_event_schedule_initial = self.rc_event_schedule_initial,
-                                    rc_event_damage_initial = self.rc_event_damage_initial)
-        self.syndicate_models_counter = np.zeros(risk_args["num_categories"])
-        self.reinsurancefirms_models_counter = np.zeros(risk_args["num_categories"])
-
-        self.var_tail_prob = 0.02
-        
+    def __init__(self, damage_distribution, expire_immediately, catastrophe_separation_distribution, norm_premium, category_number, init_average_exposure, init_average_risk_factor, init_profit_estimate, margin_of_safety, var_tail_prob, inaccuracy):
+        self.damage_distribution = damage_distribution
+        self.expire_immediately = expire_immediately
+        self.catastrophe_separation_distribution = catastrophe_separation_distribution
+        self.norm_premium = norm_premium
         self.category_number = category_number
         self.init_average_exposure = init_average_exposure
         self.init_average_risk_factor = init_average_risk_factor
         self.init_profit_estimate = init_profit_estimate
-        
-        self.damage_distribution = [damage_distribution for _ in range(self.category_number)]
-        self.damage_distribution_stack = [[] for _ in range(self.category_number)]
-        self.reinsurance_contract_stack = [[] for _ in range(self.category_number)]
+        self.margin_of_safety = margin_of_safety
+        self.var_tail_prob = var_tail_prob
+        self.damage_distribution_stack = [[] for _ in range(self.category_number)] 
         self.inaccuracy = inaccuracy
-
-        "num_riskmodels": 4, # Number of risk models in simulation
-        "num_risks": 20000, # Number of risks
-        "num_riskregions": 10, # Number of peril regions for the catastrophe
-        "risk_limit": 10000000, # The maximum value of the risk
-        "inaccuracy_riskmodels": 2,
-        "riskmodel_margin_of_safety": 2,
-        "value_at_risk_tail_probability": 0.005,
-        "catastrophe_time_mean_separation": 100/3.,
-        "lambda_attritional_loss": 0.1, # Lambda value for the Poisson distribution for the number of attritional claims generated per year
-        "cov_attritional_loss": 1, # Coefficient of variation for the gamma distribution which generates the severity of attritional claim event
-        "mu_attritional_loss": 3000000, # Mean of the gamma distribution which generates the severity of attritional claim events
-        "lambda_catastrophe": 0.05, # Lambda value for the Poisson distribution for the number of catastrophe claims generated per year
-        "pareto_shape": 5, # Shape parameter of the Pareto distribution which generates the severity of catastrophe claim events
-        "minimum_catastrophe_damage": 0.25, # Minimum value for an event to be considered a catastrophe, fraction of the risk limit
-        "var_em_exceedance_probability": 0.05, # The tail probability  used in the VaR calculations
-        "var_em_safety_factor": 1, # Scaling safety factor applied to the VaR value, larger values employ more conservative exposure management
-        "risk_factor_lower_bound": 0.4,
-        "risk_factor_upper_bound": 0.6
 
     def getPPF(self, categ_id, tailSize):
         """
@@ -373,10 +218,3 @@ class RiskModel:
         self.reinsurance_contract_stack[categ_id].pop()
         self.damage_distribution[categ_id] = self.damage_distribution_stack[categ_id].pop()
 
-    def one_risk_model(self, ):
-
-        return
-
-    def four_risk_model(self, ):
-
-        return
