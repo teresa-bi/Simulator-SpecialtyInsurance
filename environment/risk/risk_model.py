@@ -59,8 +59,91 @@ class RiskModel:
             self.setup_risk_categories_caller()
 
         # Set up risks
+        risk_value_mean = self.risk_value_distribution.mean()
+        if np.isnan(risk_value_mean):
+            risk_value_mean = self.risk_value_distribution.rvs()
+        rrisk_factors = self.risk_factor_distribution.rvs(size=risk_args["num_risks"])
+        rvalues = self.risk_value_distribution.rvs(size=risk_args["num_risks"])
+        rcategories = np.random.randint(0,risk_args["num_categories"],size=risk_args["num_risks"])
+        self.risks = [{"risk_factor":rrisk_factors[i], "value":rvalues[i], "category":rcategories[i], "owner":self} for i in range(risk_args["num_risks"])]
 
-            
+        self.risks_counter = [0,0,0,0]
+
+        for item in self.risks:
+            self.risks_counter[item["category"]] = self.risks_counter[item["category"]] + 1
+
+        # Set up risk models
+        self.inaccuracy = self.get_all_riskmodel_combinations(risk_args["num_categories"], risk_args["inaccuracy_riskmodels"])
+        self.inaccuracy = random.sample(self.inaccuracy, risk_args["num_riskmodels"])
+
+        risk_model_configurations = [{"damage_distribution": self.damage_distribution,
+                                    "expire_immediately": risk_args["expire_immediately"],
+                                    "catastrophe_separation_distribution": self.catastrophe_separation_distribution,
+                                    "norm_premium": self.norm_premium,
+                                    "num_categories": risk_args["num_categories"],
+                                    "risk_value_mean": risk_value_mean,
+                                    "risk_factor_mean": risk_factor_mean,
+                                    "norm_profit_markup": risk_args["norm_profit_markup"],
+                                    "margin_of_safety": risk_args["riskmodel_margin_of_safety"],
+                                    "var_tail_prob": risk_args["value_at_risk_tail_probability"],
+                                    "inaccuracy_by_categ": self.inaccuracy[i]
+                                    } for i in range(risk_args["num_riskmodels"])]
+
+        self.syndicate_id_counter = 0
+        for i in range(risk_args["num_syndicates"]):
+            insurance_reinsurance_level = syndicate_args["default_non_proportional_reinsurance_deductible"]
+            riskmodel_config = risk_model_configurations[i % len(risk_model_configurations)]
+            syndicates[i].append({"id": str(i),
+                                "initial_cash": syndicate_args["initial_capital"],
+                                "riskmodel_config": riskmodel_config,
+                                "norm_premium": self.norm_premium,
+                                "profit_target": risk_args["norm_profit_markup"],
+                                "initial_acceptance_threshold": syndicate_args["initial_acceptance_threshold"],
+                                "acceptance_threshold_friction": syndicate_args["acceptance_threshold_friction"],
+                                "reinsurance_limit": syndicate_args["reinsurance_limit"],
+                                "non_proportional_reinsurance_level": insurance_reinsurance_level,
+                                "capacity_target_decrement_threshold": syndicate_args["capacity_target_decrement_threshold"],
+                                "capacity_target_increment_threshold": syndicate_args["capacity_target_increment_threshold"],
+                                "capacity_target_decrement_factor": syndicate_args["capacity_target_decrement_factor"],
+                                "capacity_target_increment_factor": syndicate_args["capacity_target_increment_factor"],
+                                "interest_rate": syndicate_args["interest_rate"]})
+
+        self.reinsurer_id_counter = 0
+        for i in range(reinsurancefirm_args["num_reinsurancefirms"]):
+            reinsurance_reinsurance_level = syndicate_args["default_non_proportional_reinsurance_deductible"]
+            riskmodel_config = risk_model_configurations[i % len(risk_model_configurations)]
+            reinsurancefirms[i].append({"id": str(i),
+                                        "initial_cash":  reinsurancefirm_args["initial_capital"],
+                                        "riskmodel_config": riskmodel_config,
+                                        "norm_premium": self.norm_premium,
+                                        "profit_target": risk_args["norm_profit_markup"],
+                                        "initial_acceptance_threshold": reinsurancefirm_args["initial_acceptance_threshold"],
+                                        "acceptance_threshold_friction": reinsurancefirm_args["acceptance_threshold_friction"],
+                                        "reinsurance_limit": reinsurancefirm_args["reinsurance_limit"],
+                                        "non_proportional_reinsurance_level": reinsurance_reinsurance_level,
+                                        "capacity_target_decrement_threshold": reinsurancefirm_args["capacity_target_decrement_threshold"],
+                                "capacity_target_increment_threshold": reinsurancefirm_args["capacity_target_increment_threshold"],
+                                "capacity_target_decrement_factor": reinsurancefirm_args["capacity_target_decrement_factor"],
+                                "capacity_target_increment_factor": reinsurancefirm_args["capacity_target_increment_factor"],
+                                "interest_rate": reinsurancefirm_args["interest_rate"]})
+        # Set up remaining list variables
+        # Agent lists
+        self.reinsurancefirms = []
+        self.syndicates = []
+        # Lists of agent weights
+        self.syndicates_weights = {}
+        self.reinsurancefirms_weights = {}
+        # Cumulative variables for history and logging
+        self.cumulative_bankruptcies = 0
+        self.culumative_market_exits = 0
+        self.cumulative_unrecovered_claims = 0.0
+        self.cumulative_claims = 0.0
+        # Lists for logging history
+        self.logger = logger.logger(num_riskmodels = risk_args["num_riskmodels"],
+                                    rc_event_schedule_initial = self.rc_event_schedule_initial,
+                                    rc_event_damage_initial = self.rc_event_damage_initial)
+        self.syndicate_models_counter = np.zeros(risk_args["num_categories"])
+        self.reinsurancefirms_models_counter = np.zeros(risk_args["num_categories"])
 
         self.var_tail_prob = 0.02
         

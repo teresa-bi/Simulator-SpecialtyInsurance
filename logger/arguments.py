@@ -33,13 +33,19 @@ def get_arguments():
         "minimum_capital_reserve_ratio": 1, # Reserved capital to working capital ratio
         "maximum_scaling_factor": 1, # Minimum scaling factor applied to premium
         "market_entry_probability": 0.3, # Default probability of entering the market
-        "interest_rate_monthly": 0.001, # Interest rate for the capital monthly
+        "interest_rate": 0.001, # Interest rate for the capital monthly
         "dividends_of_profit": 0.4, # Dividends share of profit
         "exit_capital_threshold": 0.6, # Capital employment threshold for insurance firm exit
         "exit_time_limit": 24, # Time limit for insurance firm exit
-        "sensitivity_premium": 1.29e-9, # Syndicate premium sensitivity parameter
+        "premium_sensitivity": 5, # Syndicate premium sensitivity parameter 1.29e-9?
         "initial_acceptance_threshold": 0.5,
-        "acceptance_threshold_friction": 0.9
+        "acceptance_threshold_friction": 0.9,
+        "reinsurance_limit": 0.1,
+        "default_non_proportional_reinsurance_deductible": 0.3,
+        "capacity_target_decrement_threshold": 1.8,
+        "capacity_target_increment_threshold": 1.2,
+        "capacity_target_decrement_factor": 24/25.,
+        "capacity_target_increment_factor": 25/24.
         }
 
     reinsurancefirm_args = {"num_reinsurancefirms": 4, # Number of reinsurance firms in simulation
@@ -48,7 +54,16 @@ def get_arguments():
         "market_entry_probability": 0.05, # Default probability of entering the market
         "exit_capital_threshold": 0.4, # Capital employment threshold for reinsurance firm exit
         "exit_time_limit": 48, # Time limit for reinsurance firm exit
-        "sensitivity_premium": 1.55e-9 # Reinsurance firms premium sensitivity parameter
+        "sensitivity_premium": 1.55e-9, # Reinsurance firms premium sensitivity parameter
+        "initial_acceptance_threshold": 0.5,
+        "acceptance_threshold_friction": 0.9,
+        "reinsurance_limit": 0.1,
+        "default_non_proportional_reinsurance_deductible": 0.3,
+        "capacity_target_decrement_threshold": 1.8,
+        "capacity_target_increment_threshold": 1.2,
+        "capacity_target_decrement_factor": 24/25.,
+        "capacity_target_increment_factor": 25/24.,
+        "interest_rate": 0.001 # Interest rate for the capital monthly
         }
 
     shareholder_args = {"num_shareholders": 1 # Number of shareholders in simulation
@@ -75,7 +90,9 @@ def get_arguments():
         "risk_factor_upper_bound": 0.6,
         "expire_immediately": False,
         "mean_contract_runtime": 12,
-        "money_supply": 2000000000
+        "money_supply": 2000000000,
+        "value_at_risk_tail_probability": 0.005,
+        "simulation_reinsurance_type": 'non-proportional',
 
         }
 
