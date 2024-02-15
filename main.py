@@ -18,14 +18,14 @@ if __name__ == '__main__':
     with_reinsurance = Flase
     num_risk_models = 1
     risks, risk_model_configs = RiskGenerator(num_risk_models, sim_args, risk_args).generate_risks()
-    brokers, syndicates, reinsurancefirms, shareholders, risk_models = ScenarioGenerator(with_reinsurance, num_risk_models, broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_model_configs).generate_agents()
+    brokers, syndicates, reinsurancefirms, shareholders = ScenarioGenerator(with_reinsurance, num_risk_models, sim_args, broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_model_configs).generate_agents()
     
 
     # Run the simulation
     model = 0
     if model == 0: 
-        runner = AIRunner(sim_args, manager_args, brokers, syndicates, reinsurancefirms, shareholders, risks, with_reinsurance, num_risk_models)
+        runner = AIRunner(sim_args, manager_args, brokers, syndicates, reinsurancefirms, shareholders, risks, risk_models, with_reinsurance, num_risk_models)
     elif model == 1:
-        runner = GameRunner(sim_args, manager_args, brokers, syndicates, reinsurancefirms, shareholders, risks, with_reinsurance, num_risk_models)
+        runner = GameRunner(sim_args, manager_args, brokers, syndicates, reinsurancefirms, shareholders, risks, risk_models, with_reinsurance, num_risk_models)
     runner.run()
 

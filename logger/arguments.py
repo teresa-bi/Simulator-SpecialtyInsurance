@@ -14,7 +14,8 @@ def get_arguments():
         }
 
     broker_args = {"num_brokers": 100, # Number of brokers in simulation
-        "lambda_risks_daily": 0.06  # Lambda value for the Poisson distribution used by the broker process to generate new risks 
+        "lambda_risks_daily": 0.06  # Lambda value for the Poisson distribution used by the broker process to generate new risks
+        "decuctible": 0.2 # Percentage of risk value 
         }
 
     syndicate_args = {"num_syndicates": 20, # Number of syndicates in simulation
@@ -69,8 +70,7 @@ def get_arguments():
     shareholder_args = {"num_shareholders": 1 # Number of shareholders in simulation
         }
 
-    risk_args = {"num_riskmodels": 4, # Number of risk models in simulation
-        "num_risks": 20000, # Number of risks
+    risk_args = {"num_risks": 20000, # Number of risks
         "num_categories": 10, # Number of peril regions for the catastrophe
         "risk_limit": 10000000, # The maximum value of the risk
         "inaccuracy_riskmodels": 2,
