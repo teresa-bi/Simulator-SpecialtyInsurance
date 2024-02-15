@@ -4,43 +4,27 @@ Simulation main function
 
 import os
 import logger.arguments import get_args
+from environment.scenario_generator import ScenarioGenerator
+from environment.risk_generator import RiskGenerator
 from manager.ai_model.runner import AIRunner
 from manager.game_model.runner import GameRunner
-from environment.scenario_generator import NoReinsurance_RiskOne, Reinsurance_RiskOne, NoReinsurance_RiskFour, Reinsurance_RiskFour
 
 if __name__ == '__main__':
-
-    # Choose the model, 0 means ai model, 1 means game model
-    model = 0
-    models = {"0": AIRunner,
-              "1": GameRunner
-              }
-
-    # Choose the scenario, 0 means noreinsurance_riskone, 1 means reinsurance_riskone, 2 means noreinsurance_riskfour, 3 means reinsurance_riskfour
-    scenario = 0
-    scenarios = {"0": NoReinsurance_RiskOne,
-                 "1": Reinsurance_RiskOne,
-                 "2": NoReinsurance_RiskFour,
-                 "3": Reinsurance_RiskFour
-                }
 
     # Get the simulation parameters
     sim_args, manager_args, broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args = get_args()
 
     # Create scenario
-    if str(scenario) == scenarios["0"]:
-        brokers, syndicates, reinsurancefirms, shareholders, risk_models = NoReinsurance_RiskOne.create(broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args)
-    elif str(scenario) == scenarios["1"]:
-        brokers, syndicates, reinsurancefirms, shareholders, risk_models = Reinsurance_RiskOne.create(broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args)
-    elif str(scenario) == scenarios["2"]:
-        brokers, syndicates, reinsurancefirms, shareholders, risk_models = NoReinsurance_RiskFour.create(broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args)
-    else:
-        brokers, syndicates, reinsurancefirms, shareholders, risk_models = Reinsurance_RiskFour.create(broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args)
+    with_reinsurance = Flase
+    num_risk_models = 1
+    brokers, syndicates, reinsurancefirms, shareholders = ScenarioGenerator(with_reinsurance, num_risk_models, broker_args, syndicate_args, reinsurancefirm_args, shareholder_args).generate_agents()
+    risks = RiskGenerator(risk_args).generate_risks()
 
     # Run the simulation
-    if str(model) == models["0"]: 
-        runner = AIRunner(sim_args, manager_args, brokers, syndicates, reinsurancefirms, shareholders, risk_models, str(scenario), str(model))
-    elif str(model) == models["1"]:
-        runner = GameRunner(sim_args, manager_args, brokers, syndicates, reinsurancefirms, shareholders, risk_models, , str(scenario), str(model))
+    model = 0
+    if model == 0: 
+        runner = AIRunner(sim_args, manager_args, brokers, syndicates, reinsurancefirms, shareholders, risks, with_reinsurance, num_risk_models)
+    elif model == 1:
+        runner = GameRunner(sim_args, manager_args, brokers, syndicates, reinsurancefirms, shareholders, risks, with_reinsurance, num_risk_models)
     runner.run()
 
