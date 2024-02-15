@@ -10,6 +10,7 @@ class Broker:
         self.broker_id = broker_id
         self.broker_lambda_risks = broker_args["lambda_risks_daily"]
         self.deductible = broker_args["decuctible"]
+        self.num_risk_models = num_risk_models
         self.sim_time_span = sim_args["max_time"]
         self.risk_model_configs = risk_model_configs
         # Risks brought by broker
@@ -24,7 +25,7 @@ class Broker:
         if time > self.sim_time_span:
             Exception("Sorry, simulation stopped")
         random.seed(time + 123)
-        model_id = random.randint(0,len(self.risk_model_configs)-1)
+        model_id = random.randint(0,self.num_risk_models-1)
         self.risks = []
         ######TODO: need to be fixed, how to generate poission distribution risks
         num_risks_daily = self.broker_lambda_risks
