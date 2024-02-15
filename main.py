@@ -17,8 +17,9 @@ if __name__ == '__main__':
     # Create scenario
     with_reinsurance = Flase
     num_risk_models = 1
-    brokers, syndicates, reinsurancefirms, shareholders = ScenarioGenerator(with_reinsurance, num_risk_models, broker_args, syndicate_args, reinsurancefirm_args, shareholder_args).generate_agents()
-    risks = RiskGenerator(risk_args).generate_risks()
+    risks, risk_model_configs = RiskGenerator(num_risk_models, sim_args, risk_args).generate_risks()
+    brokers, syndicates, reinsurancefirms, shareholders, risk_models = ScenarioGenerator(with_reinsurance, num_risk_models, broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_model_configs).generate_agents()
+    
 
     # Run the simulation
     model = 0
