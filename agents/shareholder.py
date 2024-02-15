@@ -5,7 +5,7 @@ Contains all the capabilities of Shareholder
 import numpy as np
 
 class Shareholder:
-    def __init__(self, shareholder_id):
+    def __init__(self, shareholder_id, shareholder_args, num_risk_models, risk_model_configs):
         self.shareholder_id = shareholder_id
 
     def data(self):

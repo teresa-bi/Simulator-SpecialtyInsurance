@@ -124,8 +124,7 @@ class Broker:
         return {
             "broker_id": self.broker_id,
             "broker_risk": self.risks,
-            "broker_quote": self.underwritten_contracts,
-            "broker_claim": self.claims
+            "broker_quote": self.underwritten_contracts
         }
 
     def to_json(self):
