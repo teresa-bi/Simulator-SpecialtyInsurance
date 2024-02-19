@@ -5,12 +5,17 @@ Contains all the simulation parameters
 def get_arguments():
 
     sim_args = {"max_time": 30000, # Simualtion time step daily
-        "num_run_per_setting": 400 # Number of replication runs per simulation settings
+        "num_run_per_setting": 400, # Number of replication runs per simulation settings
+        "mean_contract_runtime": 12,
+        "contract_runtime_halfspread": 2,
+        "default_contract_payment_period": 3,
+        "simulation_reinsurance_type": 'non-proportional',
+        "margin_increase": 0
         }
 
     manager_args = {"lead_top_k": 2, # The number of lead syndicates a broker reaches out to
         "follow_top_k": 5, # The number of follow syndicates a broker reaches out to
-        "topology_broker_syndicate": 10 # Consider how to set the network topology
+        "topology_broker_syndicate": 10 #####TODO Consider how to set the network topology
         }
 
     broker_args = {"num_brokers": 100, # Number of brokers in simulation
@@ -20,9 +25,7 @@ def get_arguments():
 
     syndicate_args = {"num_syndicates": 20, # Number of syndicates in simulation
         "initial_capital": 10000000, # Initial capital of each syndicate
-        "leader": False, # Default boolean value
         "lead_line_size": 0.5, # Default lead quote line size
-        "follower": False, # Default boolean value
         "follow_line_size": 0.1, # Default follow quote line size
         "actuarial_pricing_internal_weight": 0.5,  # Whether acturial pricing based on syndicate history or industry histor
         "loss_experiency_weight": 0.2, # Whether actuarial pricing weighs the past losses more than recent losses 
@@ -35,18 +38,21 @@ def get_arguments():
         "maximum_scaling_factor": 1, # Minimum scaling factor applied to premium
         "market_entry_probability": 0.3, # Default probability of entering the market
         "interest_rate": 0.001, # Interest rate for the capital monthly
-        "dividends_of_profit": 0.4, # Dividends share of profit
         "exit_capital_threshold": 0.6, # Capital employment threshold for insurance firm exit
         "exit_time_limit": 24, # Time limit for insurance firm exit
         "premium_sensitivity": 5, # Syndicate premium sensitivity parameter 1.29e-9?
         "initial_acceptance_threshold": 0.5,
-        "acceptance_threshold_friction": 0.9,
+        "initial_acceptance_threshold_friction": 0.9,
         "reinsurance_limit": 0.1,
-        "default_non_proportional_reinsurance_deductible": 0.3,
         "capacity_target_decrement_threshold": 1.8,
         "capacity_target_increment_threshold": 1.2,
         "capacity_target_decrement_factor": 24/25.,
-        "capacity_target_increment_factor": 25/24.
+        "capacity_target_increment_factor": 25/24.,
+        "dividend_share_of_profits": 0.4,
+        "default_non_proportional_reinsurance_deductible": 0.3,
+        "default_non-proportional_reinsurance_excess": 1.0,
+        "default_non-proportional_reinsurance_premium_share": 0.3,
+
         }
 
     reinsurancefirm_args = {"num_reinsurancefirms": 4, # Number of reinsurance firms in simulation
@@ -89,10 +95,8 @@ def get_arguments():
         "risk_factor_lower_bound": 0.4,
         "risk_factor_upper_bound": 0.6,
         "expire_immediately": False,
-        "mean_contract_runtime": 12,
         "money_supply": 2000000000,
-        "value_at_risk_tail_probability": 0.005,
-        "simulation_reinsurance_type": 'non-proportional',
+        "value_at_risk_tail_probability": 0.005
 
         }
 

@@ -53,7 +53,7 @@ class ScenarioGenerator:
 
         # Generate syndicates
         for i in range(syndicate_args["num_syndicates"])]:
-            self.syndicates[str(i)] = Syndicate(i, syndicate_args, num_risk_models, risk_model_configs)
+            self.syndicates[str(i)] = Syndicate(i, syndicate_args, num_risk_models, sim_args, risk_model_configs)
 
         # Generate reinsurancefirms
         if self.with_reinsurance:

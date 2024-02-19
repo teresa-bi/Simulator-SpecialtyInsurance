@@ -30,7 +30,7 @@ class RiskGenerator:
         self.risk_factor_upper_bound = risk_args["risk_factor_upper_bound"]
         self.expire_immediately = risk_args["expire_immediately"]
         self.catastrophe_time_mean_separation = risk_args["catastrophe_time_mean_separation"]
-        self.mean_contract_runtime = risk_args["mean_contract_runtime"]
+        self.mean_contract_runtime = sim_args["mean_contract_runtime"]
         self.norm_profit_markup = risk_args["norm_profit_markup"]
         self.money_supply = risk_args["money_supply"]
         self.inaccuracy_riskmodels = risk_args["inaccuracy_riskmodels"]

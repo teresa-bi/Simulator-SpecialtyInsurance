@@ -9,7 +9,7 @@ from gymnasium.envs.classic_control import utils
 from gymnasium.envs.registration import EnvSpec
 from gymnasium.error import DependencyNotInstalled
 
-from environment.risk import CatastropheEvent, AttritionalLossEvent, AddRiskEvent, AddClaimEvent, RiskModel
+from environment.risk import CatastropheEvent, AttritionalLossEvent, AddRiskEvent, AddPremiumEvent, AddClaimEvent, RiskModel
 from manager import EventHandler, EnvironmentManager
 
 class SpecialtyInsuranceMarketEnv(gym.Env):
@@ -20,15 +20,17 @@ class SpecialtyInsuranceMarketEnv(gym.Env):
     For each syndiacte, the offering line size for each contract
 
     ### Observation Space
-    For each insurable risks, the accept or refuse status
-    For each claim, the payment status, fullied paid or bankruptcy
-    For each syndicate, the current capital, the capital in each risk region
+    For each syndicate, the active or exit status, the remaining capital amount in each risk category
+    For each catastrophe, the risk category and the risk value
 
     ### Rewards
-    The accepted line size, the profit, and the bankruptcy
+    For each insurable risk being accepted or refused
+    For each claim being paied or refused bacaused of bankruptcy
+    For each syndicate, the profit +int or loss -int,
+    For each syndicate, bankruptcy
 
     ### Starting State
-    All the activated agents holding their default settings
+    All the activated agents holding their default settings, and all the risks 
 
     ### Episode End
     The episode ends if any one of the following occurs:
@@ -37,26 +39,11 @@ class SpecialtyInsuranceMarketEnv(gym.Env):
 
     """
 
-    metadata = {
-        "render_modes": ["human", "rgb_array"],
-        "render_fps": 50,
-    }
+    def __init__(self, sim_args, manager_args, brokers, syndicates, reinsurancefirms, shareholders, risks, risk_model_configs, with_reinsurance, num_risk_models, dt = 1):
 
-    def __init__(self,
-                 sim_args,
-                 manager_args,
-                 brokers,
-                 syndicates,
-                 reinsurancefirms,
-                 shareholders,
-                 risk_models,
-                 dt = 1,
-                 maxstep = 30000,
-                 reinsurance = False
-                ):
         super(SpecialtyInsuranceMarketEnv, self).__init__()
 
-        self.sim_args = sim_args
+        self.maxstep = self.sim_args["max_time"]
         self.manager_args = manager_args
         self.brokers = brokers
         self.initial_brokers = brokers
@@ -66,17 +53,19 @@ class SpecialtyInsuranceMarketEnv(gym.Env):
         self.initial_reinsurancefirms = reinsurancefirms
         self.shareholders = shareholders
         self.initial_shareholders = shareholders
-        self.risk_models = risk_models
-        self.initial_risk_models = risk_models
+        self.risks = risks
+        self.initial_risks = risks
+        self.risk_model_configs = risk_model_configs
+        self.with_reinsurance = with_reinsurance
+        self.num_risk_models = num_risk_models
         self.dt = dt
-        self.maxstep = maxstep
         self.em = None
-        self.reinsurance = reinsurance
-        self.catastrophe_events = {}
-        self.attritional_loss_events = {}
-        self.broker_risk_events = {}
-        self.broker_claim_events = {}
-        self.syndicate_active = {}
+        # Active syndicate list
+        self.syndicate_active_list = []
+        # Action list
+        self.action_list = []
+        # Catastrophe event at time t, including risk category and risk value
+        self.catastrophe = []
 
         # Reset the environmnet
         self.reset()
@@ -88,37 +77,33 @@ class SpecialtyInsuranceMarketEnv(gym.Env):
         self.syndicates = self.initial_syndicates
         self.reinsurancefirms = self.initial_reinsurancefirms
         self.shareholders = self.initial_shareholders
-        self.risk_models = self.initial_risk_models
+        self.risks = self.initial_risks
 
-        # Initiate event handler
-        catastrophe_events = CatastropheEvent(risk_models=self.risk_models).generate_events()
-        attritional_loss_events = AttritionalLossEvent(risk_models=self.risk_models).generate_events()
-        broker_risk_events = AddRiskEvent(risk_models=self.risk_models).generate_events()
-        broker_claim_events = AddClaimEvent(risk_models=self.risk_models).generate_events()
-        event_handler = EventHandler(catastrophe_events, attritional_loss_events, broker_risk_events, broker_claim_events, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.risk_models)
+        # Initiate event handler, self.risks include all the catastrophes, TODO: attritional_loss_events need to be generated daily, broker_risk_events need to be generated poisson, broker_claim_events related to all the underwriten contract affected by catastrophes  
+        catastrophe_event = CatastropheEvent(self.risks, self.risk_model_configs).generate_events()
+        attritional_loss_event = AttritionalLossEvent(self.risks, self.risk_model_configs).generate_events()
+        broker_risk_event = AddRiskEvent(self.brokers, self.risk_model_configs).generate_events()
+        broker_premium_event = AddPremiumEvent(self.brokers, self.risk_model_configs).generate_events()
+        broker_claim_event = AddClaimEvent(self.brokers, self.risk_model_configs).generate_events()
+        event_handler = EventHandler(self.maxstep, catastrophe_events, attritional_loss_events, broker_risk_events, broker_premium_event, broker_claim_events, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.risks, self.risk_model_configs)
 
         # Initiate environment manager
-        self.em = EnvironmentManager(self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.risks, catastrophe_events, attritional_loss_events, broker_risk_events, broker_claim_events, event_handler)
+        self.em = EnvironmentManager(self.maxstep, self.manager_args, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.risks, self.risk_model_configs, self.with_reinsurance, self.num_risk_models, catastrophe_events, attritional_loss_events, broker_risk_events, broker_claim_events, event_handler)
         self.em.evolve(self.dt)
         
         # Set per syndicate active status and build status list
-        self.syndicate_list = []
-        for sy in self.em.environment.syndicate:
-            self.syndicate_active[sy] = True
-            self.syndicate_list.append(sy)
-
-        # Set per insurable risks
-        for risk_id in range(self.risk_args["num_risks"]):
-            self.broker_risk_event[risk_id] = None
-
-        # Set per claim events
-        for claim_id in range(self.risk_args["num_risks"]):
-            self.broker_claim_event[claim_id] = None
+        self.syndicate_active_list = []   # Store syndicates currently in the market
+        for sy in self.em.environment.syndicates:
+            if self.em.environment.syndicates[sy].status == True:
+                self.syndicate_active_list.append(sy)
         
-        # Initiate action list for syndicates, no synidactes joined the market in the beginning
+        # Initiate action list for syndicates, no syndicate joined the market at the begining, but set action for all the syndicates becuase RL require the same size action size, for exit syndicate and for no action, the actions are 0
         self.action_list = []
-        for syndicate in self.em.environment.syndicate:
-            self.action_list.append(0)
+        # Cannot know the number of risks brought by brokers each day, so set a max number and the action size is fixed
+        max_number_risks_per_day = 100
+        for sy in self.syndicate_active_list:
+            for r in max_number_risks_per_day:
+                self.action_list.append(0)
 
         # Initiate time step
         self.timestep = -1
@@ -155,21 +140,23 @@ class SpecialtyInsuranceMarketEnv(gym.Env):
     def draw2file(self, environment):
 
         # For visualisation  
-        # Show syndaites catastrophe region (one dot represents £1000000), syndicates capital (£1000000 represents 1%) and time step
+        # Show syndaites catastrophe category (one dot represents £1000000), syndicates capital (£1000000 represents 1%) and time step
 
         self.step_track += 1
 
     def check_termination(self):
 
-        # Update per syndicate status, True-Not bankrupt, False-Bankrupt
-        for syndicate in self.em.environment.syndicate:
-            if syndicate.update_capital() < 0:
-                self.syndicate_active[syndicate] = False
+        # Update per syndicate status, True-active in market, False-exit market becuase of no contract or bankruptcy
+        env = self.em.environment
+        for sy in env.syndicates:
+            if env.syndicates[sy].status == False:
+                self.syndicate_active[sy] = False
+                del self.syndicate_active_list[sy]
 
-        # The simulation is done when all syndicates bankrupt or reach the maximum time step
+        # The simulation is done when all syndicates exit or bankrupt or reach the maximum time step
         run_complete = True
-        for syndicate in self.em.environment.syndicate:
-            if self.syndicate_active[syndicate] == True:
+        for sy in env.syndicates:
+            if self.syndicate_active[sy] == True:
                 run_complete = False
                 break
         if run_complete or (self.timestep >= self.maxstep):
@@ -181,37 +168,37 @@ class SpecialtyInsuranceMarketEnv(gym.Env):
 
     def compute_reward(self, action):
 
-        environment = self.em.environment
+        env = self.em.environment
         # calculate reward function
-        r = [0.0] * 3
+        r = [0.0] * 4
 
-        # Offering line size is accepted
+        # For each insurable risk being accepted +1 or refused -1
         if(self.timestep <= self.maxstep):
-            for sy in environment.syndicate:
-                if self.syndicate_active[sy]:
-                    syndicate = environment.syndicate[sy]
-                    if syndicate.leader:
-                        r[0] += syndicate.lead_line_size *
-                    elif sydicate.follower:
-                        r[0] += syndicate.follow_line_size *
+            for risk in range(len(env.brokers.risks)):
+                for contract in range(len(env.brokers.underwritten_contracts)):
+                    if env.brokers.risks[risk]["risk_id"] == env.brokers.underwritten_contracts[contract]["risk_id"]:
+                        r[0] += 1
                     else:
-                        r[0] -= 100
+                        r[0] -= 1
 
-        # Profit        
+        # For each claim being paied +1 or refused -1
         if(self.timestep <= self.maxstep):
-            for sy in environment.syndicate:
+            for contract in range(len(env.brokers.underwritten_contracts)):
+                if env.brokers.underwritten_contracts[contract]["claim"] == True:
+                    r[1] += 1
+                else:
+                    r[1] -= 1
+
+        # Profit and Bankruptcy       
+        if(self.timestep <= self.maxstep):
+            for sy in env.syndicates:
                 if self.syndicate_status[sy]:
-                    syndicate = environment.syndicate[sy]
+                    syndicate = env.syndicates[sy]
                     initial_capital = syndicate.initial_capital
                     current_capital = syndicate.update_capital()
-                    r[1] += current_capital - initial_capital
-        
-        # Bankrupt
-        if(self.timestep >= self.maxstep):
-            for sy in environment.syndicate:
-                if not self.syndicate_active[sy]:
-                    r[2] -= 100000
-        
+                    r[2] += current_capital - initial_capital
+                    if (current_capital - initial_capital) < 0:
+                        r[3] -= 10000
 
         # Sum reward
         reward = 0.0
@@ -226,27 +213,23 @@ class SpecialtyInsuranceMarketEnv(gym.Env):
         self.em.receive_actions(actions=action)        
     
     def state_encoder(self):
-                        
+
+        ### Observation Space: TODO: size is not fixed, may need language model for the coding               
         obv = []
-        environment = self.em.environment
-        # Insurable risks: the accept or refuse status
-        for risk_id in range(self.risk_args["num_risks"]):
-            risk = environment.broker_risk_event[risk_id]
-            obv.append(risk[1])  # risk[id, status], status is 0 or 1
+        env = self.em.environment
+        for risk in range(len(env.risks)):
+            if env.risks[risk]["risk_start_time"] == self.timestep:
+                self.catastrophe.append(env.risks[risk])
+        # Catastrophe risk category and risk value
+        for i in range(len(self.catastrophe)):
+            obv.append(self.catastrophe[i]["risk_category"])
+            obv.append(self.catastrophe[i]["risk_value"])
 
-        # Claims: the payment status, fullied paid or bankruptcy
-        for claim_id in range(self.risk_args["num_risks"]):
-            claim = environment.broker_claim_event[claim_id]
-            obv.append(claim[1])  # claim[id, status], status is 0 or 1
-
-        for sy in self.syndicate_list:
-            syndicate = environment.syndicate[sy]
-            # Syndicates: the current capital, the capital in each risk region
-            current_capital = syndicate.update_capital()
-            obv.append(current_capital)
-            regions = syndicate.update_underwrite_risk_regions()
-            for r in range(len(regions))
-                obv.append(regions[r])
+        # Syndicates status current capital in 
+        for i in range(len(self.syndicate_active_list)):
+            obv.append(self.syndicate_active_list[i]["current_capital"])
+            for num in range(len(self.syndicate_active_list[i]["current_capital_category"])):
+                obv.append(self.syndicate_active_list[i]["current_capital_category"][num])
             
         return np.array(obv, dtype = np.float32)
    

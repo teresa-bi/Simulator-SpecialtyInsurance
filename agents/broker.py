@@ -13,7 +13,7 @@ class Broker:
         self.num_risk_models = num_risk_models
         self.sim_time_span = sim_args["max_time"]
         self.risk_model_configs = risk_model_configs
-        # Risks brought by broker
+        # Risks brought by broker for the whole time span
         self.risks = []
         # Risks be covered, underwritten
         self.underwritten_contracts = []
@@ -31,6 +31,7 @@ class Broker:
         num_risks_daily = self.broker_lambda_risks
         for index in range(num_risks_daily):
             self.risks.append({"risk_id": index,
+                               "time": time,
                                "broker_id": self.broker_id,
                                "risk_start_time": time,
                                "risk_factor": self.risk_model_configs[model_id].get("risk_factor"),
@@ -50,7 +51,8 @@ class Broker:
                                     "risk_value": risks.get("risk_value"),
                                     "syndicated_id": syndicated_id,
                                     "premium": premium,
-                                    "risk_end_time": risks.get("risk_start_time")+365})
+                                    "risk_end_time": risks.get("risk_start_time")+365,
+                                    "claim": Flase})
 
     def delete_contract(self, risks, syndicated_id):
         """
@@ -93,7 +95,7 @@ class Broker:
         
         return total_premium
 
-    def ask_claim(self, syndicate_id):
+    def ask_claim(self, syndicate_id, category_id):
         """
         Ask payment from syndicate for covered risks
 
@@ -105,12 +107,27 @@ class Broker:
         matched_contracts = []
         claim_value = 0
         for i in range(len(self.underwritten_contracts)):
-            if self.underwritten_contracts[i].get("syndicated_id") == syndicated_id:
+            if (self.underwritten_contracts[i].get("syndicated_id") == syndicated_id) and (self.underwritten_contracts[i].get("risk_category") == category_id):
                 matched_contracts.append(self.underwritten_contracts[i])
         for i in range(len(matched_contracts)):
             claim_value += matched_contracts.get("risk_value") * ( 1 - self.deductible)
 
         return claim_value
+
+    def receive_claim(self, syndicate_id, category_id, receive_claim_value):
+        """
+        Receive payment from syndicate for covered risks
+
+        Return
+        ------
+        claim_value: int
+            All the money should be paied by the specific syndicate
+        """
+        ask_claim_value = self.ask_claim(syndicate_id, category_id)
+        if ask_claim_value == receive_claim_value:
+            for contract in self.underwritten_contracts:
+                if (self.underwritten_contracts[contract].get("syndicated_id") == syndicated_id) and (self.underwritten_contracts[contract].get("risk_category") == category_id):
+                    self.underwritten_contracts[contract]["claim"] = True
 
     def data(self):
         """
