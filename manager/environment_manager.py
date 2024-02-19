@@ -5,7 +5,7 @@ from collections import defaultdict
 
 import numpy as np
 from agents import Broker, Syndicate, Shareholder, ReinsuranceFirm
-from environment.scenario_generator import NoReinsurance_RiskOne, NoReinsurance_RiskFour, Reinsurance_RiskOne, Reinsurance_RiskFour
+from environment.market import NoReinsurance_RiskOne, NoReinsurance_RiskFour, Reinsurance_RiskOne, Reinsurance_RiskFour
 from environment.risk import RiskEvent, CatastropheEvent, AttritionalLossEvent, AddRiskEvent, AddClaimEvent, RiskModel
 from manager.event_handler import EventHandler
 
@@ -15,37 +15,47 @@ class EnvironmentManager:
     Manage and evolve the Environment.
     """
 
-    def __init__(
-        self,
-        brokers,
-        syndicates,
-        reinsurancefirms,
-        shareholders,
-        risk_models,
-        event_handler,
-        logger,
-        time = 0,
-    ):
+    def __init__(self, maxstep, manager_args, brokers, syndicates, reinsurancefirms, shareholders, risks, risk_model_configs, with_reinsurance, num_risk_models, catastrophe_events, attritional_loss_events, broker_risk_events, broker_claim_events, event_handler, logger, time = 0):
         """
         Construct a new instance.
 
         Parameters
         ----------
+        maxstep: int
+            Simulation time span.
         event_handler: EventHandler
             The EventHandler applies events to the internal Environment of the EM.
         logger: Logger
-            An optional Starling Logger.
-        time: float
+            An optional Logger.
+        time: int
             Environment start time.
         """
-
+        self.maxstep = maxstep
+        self.manager_args = manager_args
         self.brokers = brokers
         self.syndicates = syndicates
         self.reinsurancefirms = reinsurancefirms
         self.shareholders = shareholders
-        self.risk_models = risk_models
+        self.risks = risks
+        self.risk_model_configs = risk_model_configs
+        self.with_reinsurance = with_reinsurance
+        self.num_risk_models = num_risk_models
+        self.catastrophe_events = catastrophe_events
+        self.attritional_loss_events = attritional_loss_events
+        self.broker_risk_events = broker_risk_events
+        self.broker_claim_events = broker_claim_events
+        self.event_handler = event_handler
 
-        self.environment = NoReinsurance_RiskOne(time, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.risk_models)
+        if self.with_reinsurance == False:
+            if self.num_risk_models == 1:
+                self.environment = NoReinsurance_RiskOne(time, self.maxstep, self.manager_args, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.risks, self.risk_model_configs)
+            else:
+                self.environment = NoReinsurance_RiskFour(time, self.maxstep, self.manager_args, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.risks, self.risk_model_configs)
+        else:
+            if self.num_risk_models == 1:
+                self.environment = Reinsurance_RiskOne(time, self.maxstep, self.manager_args, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.risks, self.risk_model_configs)
+            else:
+                self.environment = Reinsurance_RiskFour(time, self.maxstep, self.manager_args, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.risks, self.risk_model_configs)
 
         self.min_step_time = 1  # Day Event
 
@@ -61,6 +71,37 @@ class EnvironmentManager:
             self.logger._store_metadata(
                 self.environment.time, self.environment.brokers, self.environment.syndicates, self.environment.reinsurancefirms, self.environment.shareholders, self.event_handler
             )
+
+        # Set up remaining list variables
+        # Agent lists
+        self.reinsurancefirms = []
+        self.syndicates = []
+        # Lists of agent weights
+        self.syndicates_weights = {}
+        self.reinsurancefirms_weights = {}
+        # Cumulative variables for history and logging
+        self.cumulative_bankruptcies = 0
+        self.culumative_market_exits = 0
+        self.cumulative_unrecovered_claims = 0.0
+        self.cumulative_claims = 0.0
+        # Lists for logging history
+        self.logger = logger.logger(num_riskmodels = risk_args["num_riskmodels"],
+                                    rc_event_schedule_initial = self.rc_event_schedule_initial,
+                                    rc_event_damage_initial = self.rc_event_damage_initial)
+        self.syndicate_models_counter = np.zeros(risk_args["num_categories"])
+        self.reinsurancefirms_models_counter = np.zeros(risk_args["num_categories"])
+
+        self.var_tail_prob = 0.02
+        
+        self.category_number = category_number
+        self.init_average_exposure = init_average_exposure
+        self.init_average_risk_factor = init_average_risk_factor
+        self.init_profit_estimate = init_profit_estimate
+        
+        self.damage_distribution = [damage_distribution for _ in range(self.category_number)]
+        self.damage_distribution_stack = [[] for _ in range(self.category_number)]
+        self.reinsurance_contract_stack = [[] for _ in range(self.category_number)]
+        self.inaccuracy = inaccuracy
 
     def observe(self):
         """
@@ -405,6 +446,28 @@ class EnvironmentManager:
         """
         Can be merged with evolve function
         """
+        # Set up risk categories
+        self.riskcategories = list(range(risk_args["num_categories"]))
+        self.rc_event_schedule = []
+        self.rc_event_damage = []
+        self.rc_event_schedule_initial = []
+        self.rc_event_damage_initial = []
+        if rc_event_schedule is not None and rc_event_damage is not None:
+            self.rc_event_schedule = copy.copy(rc_event_schedule)
+            self.rc_event_schedule_initial = copy.copy(rc_event_schedule)
+            self.rc_event_damage = copy.copy(rc_event_damage)
+            self.rc_event_damage_initial = copy.copy(rc_event_damage)
+        else:
+            self.setup_risk_categories_caller()
+
+        # Set up monetary system can be set in broker
+        self.obligations = []
+
+        self.risks_counter = [0,0,0,0]
+
+        for item in self.risks:
+            self.risks_counter[item["category"]] = self.risks_counter[item["category"]] + 1
+
         # Adjust market premiums
         sum_capital = sum([agent.get_cash() for agent in self.syndicates])
         self.adjust_market_premium(capital=sum_capital)

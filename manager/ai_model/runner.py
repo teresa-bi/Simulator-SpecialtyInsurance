@@ -10,16 +10,17 @@ class AIRunner:
     """
     AI model training and testing steps
     """
-    def __init__(self, sim_args, manager_args, brokers, syndicates, reinsurancefirms, shareholders, risk_models, scenario, model):
+    def __init__(self, sim_args, manager_args, brokers, syndicates, reinsurancefirms, shareholders, risks, risk_model_configs, with_reinsurance, num_risk_models):
         self.sim_args = sim_args
         self.manager_args = manager_args
         self.brokers = brokers
         self.syndicates = syndicates
         self.reinsurancefirms = reinsurancefirms
         self.shareholders = shareholders
-        self.risk_models = risk_models
-        self.scenario = scenario
-        self.model = model
+        self.risks = risks
+        self.risk_model_configs = risk_model_configs
+        self.with_reinsurance = with_reinsurance
+        self.num_risk_models = num_risk_models
         self.trainer = None
 
     def env_creator(self, env_config):
@@ -141,7 +142,10 @@ class AIRunner:
                 "syndicates": self.syndicates,
                 "reinsurancefirms": self.reinsurancefirms,
                 "shareholders": self.shareholders,
-                "risk_models": self.risk_models}
+                "risks": self.risks,
+                "risk_model_configs": self.risk_model_configs,
+                "with_reinsurance": self.with_reinsurance,
+                "num_risk_models": self.num_risk_models}
 
         validation_episodes = 1
         env = SpecialtyInsuranceMarket(**insurance_args)
@@ -200,12 +204,15 @@ class AIRunner:
             if is_initial:
                 # Initial arguments to define Specialty Insurance Market scenario 
                 insurance_args = {"simulation_args": self.sim_args,
-                        "manager_args": self.manager_args,
-                        "brokers": self.brokers,
-                        "syndicates": self.syndicates,
-                        "reinsurancefirms": self.reinsurancefirms,
-                        "shareholders": self.shareholders,
-                        "risk_models": self.risk_models}
+                                "manager_args": self.manager_args,
+                                "brokers": self.brokers,
+                                "syndicates": self.syndicates,
+                                "reinsurancefirms": self.reinsurancefirms,
+                                "shareholders": self.shareholders,
+                                "risks": self.risks,
+                                "risk_model_configs": self.risk_model_configs,
+                                "with_reinsurance": self.with_reinsurance,
+                                "num_risk_models": self.num_risk_models}
                 self.ppo_trainer_creator(insurance_args)
         
                 # Return the trained trainer

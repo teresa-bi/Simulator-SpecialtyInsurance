@@ -7,7 +7,7 @@ class AddRiskEvent(Event):
     Add risk event brought by the broker to the market
     """
 
-    def __init__(self, risk_id, broker_id, risk_regions, risk_value, start_time, end_time):
+    def __init__(self, risk_id, broker_id, risk_categories, risk_value, start_time, end_time):
         """
         Construct a new insurable risk instance brought by the broker to the market
 
@@ -17,7 +17,7 @@ class AddRiskEvent(Event):
             The risk identifier
         broker_id: int
             The broker who bring this risk to the market
-        risk_regions: int
+        risk_categories: int
             The risk region the event belongs to (from 0 to 9)
         risk_value: int
             The risk amount (<= risk_limit 10000000)
@@ -29,7 +29,7 @@ class AddRiskEvent(Event):
 
         self.risk_id = risk_id
         self.broker_id = broker_id
-        self.risk_regions = risk_regions
+        self.risk_categories = risk_categories
         self.risk_value = risk_value
         self.start_time = start_time
         self.end_time = end_time
@@ -51,7 +51,7 @@ class AddRiskEvent(Event):
 
         scenario.broker_bring_risk[self.risk_id] = {"risk_id": self.risk_id,
                                                     "broker_id": self.broker_id,
-                                                    "risk_regions": self.risk_regions,
+                                                    "risk_categories": self.risk_categories,
                                                     "risk_value": self.risk_value,
                                                     "start_time": self.start_time,
                                                     "end_time": self.end_time

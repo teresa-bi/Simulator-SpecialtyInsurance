@@ -1,12 +1,12 @@
 from __future__ import annotations
 import json
-from environment.scenario_generator import NoReinsurance_RiskOne
+from environment.market import NoReinsurance_RiskOne, NoReinsurance_RiskFour, Reinsurance_RiskOne, Reinsurance_RiskFour
 
 class AddClaimEvent(Event):
     """
     Add claim event caused by catastrophe event
     """
-    def __init__(self, risk_id, broker_id, risk_regions, risk_value):
+    def __init__(self, risk_id, broker_id, risk_categories, risk_value):
         """
         Construct a new claim instance
 
@@ -16,7 +16,7 @@ class AddClaimEvent(Event):
             The risk identifier
         broker_id: int
             The broker who bring this claim to the market
-        risk_regions: int
+        risk_categories: int
             The risk region the event belongs to (from 0 to 9)
         risk_value: int
             The risk amount (<= risk_limit 10000000)
@@ -24,7 +24,7 @@ class AddClaimEvent(Event):
 
         self.risk_id = risk_id
         self.broker_id = broker_id
-        self.risk_regions = risk_regions
+        self.risk_categories = risk_categories
         self.risk_value = risk_value
 
     def run(self, scenario):
@@ -44,7 +44,7 @@ class AddClaimEvent(Event):
 
         scenario.broker_bring_claim[self.risk_id] = {"risk_id": self.risk_id,
                                                 "broker_id": self.broker_id,
-                                                "risk_regions": self.risk_regions,
+                                                "risk_categories": self.risk_categories,
                                                 "risk_value": self.risk_value
                                                 }
         return scenario
@@ -62,7 +62,7 @@ class AddClaimEvent(Event):
             self.__class__.__name__: {
                 "risk_id": self.risk_id,
                 "broker_id": self.broker_id,
-                "risk_regions": self.risk_regions,
+                "risk_categories": self.risk_categories,
                 "risk_value": self.risk_value
             }
         }
