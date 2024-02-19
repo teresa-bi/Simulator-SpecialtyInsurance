@@ -4,9 +4,9 @@ import warnings
 from collections import defaultdict
 
 import numpy as np
-from agents import Broker, Syndicate, Shareholder, ReinsuranceFirm
+from agents import Broker, Syndicate, Shareholder, ReinsuranceFirm, RiskModel
 from environment.market import NoReinsurance_RiskOne, NoReinsurance_RiskFour, Reinsurance_RiskOne, Reinsurance_RiskFour
-from environment.risk import RiskEvent, CatastropheEvent, AttritionalLossEvent, AddRiskEvent, AddClaimEvent, RiskModel
+from environment.event import CatastropheEvent, AttritionalLossEvent, AddRiskEvent, AddPremiumEvent, AddClaimEvent
 from manager.event_handler import EventHandler
 
 

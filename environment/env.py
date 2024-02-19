@@ -8,8 +8,8 @@ from gymnasium import logger, spaces
 from gymnasium.envs.classic_control import utils
 from gymnasium.envs.registration import EnvSpec
 from gymnasium.error import DependencyNotInstalled
-
-from environment.risk import CatastropheEvent, AttritionalLossEvent, AddRiskEvent, AddPremiumEvent, AddClaimEvent, RiskModel
+from agents import Broker, Syndicate, Shareholder, ReinsuranceFirm, RiskModel
+from environment.event import CatastropheEvent, AttritionalLossEvent, AddRiskEvent, AddPremiumEvent, AddClaimEvent
 from manager import EventHandler, EnvironmentManager
 
 class SpecialtyInsuranceMarketEnv(gym.Env):
@@ -79,12 +79,17 @@ class SpecialtyInsuranceMarketEnv(gym.Env):
         self.shareholders = self.initial_shareholders
         self.risks = self.initial_risks
 
-        # Initiate event handler, self.risks include all the catastrophes, TODO: attritional_loss_events need to be generated daily, broker_risk_events need to be generated poisson, broker_claim_events related to all the underwriten contract affected by catastrophes  
+        # Catastrophe event 
         catastrophe_event = CatastropheEvent(self.risks, self.risk_model_configs).generate_events()
+        # Attritioal loss event daily
         attritional_loss_event = AttritionalLossEvent(self.risks, self.risk_model_configs).generate_events()
+        # Broker risk event daily: broker generate risk according to poisson distribution
         broker_risk_event = AddRiskEvent(self.brokers, self.risk_model_configs).generate_events()
+        # Broker premium event monthly: broker pay premium to the syndicate 
         broker_premium_event = AddPremiumEvent(self.brokers, self.risk_model_configs).generate_events()
+        # Broker claim event: when catastrophe happens, croker brings corresponding claim to syndicate 
         broker_claim_event = AddClaimEvent(self.brokers, self.risk_model_configs).generate_events()
+        # Initiate event handler
         event_handler = EventHandler(self.maxstep, catastrophe_events, attritional_loss_events, broker_risk_events, broker_premium_event, broker_claim_events, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.risks, self.risk_model_configs)
 
         # Initiate environment manager

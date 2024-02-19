@@ -5,8 +5,8 @@ Contains all the capabilities of Syndicates
 import numpy as np
 import scipy.stats
 import copy
+import RiskModel
 from manager import InsuranceContract, ReinsuranceContract
-from environment.risk import RiskModel
 import sys, pdb
 import uuid
 

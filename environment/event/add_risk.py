@@ -1,6 +1,6 @@
 from __future__ import annotations
 import json
-from environment.scenario_generator import NoReinsurance_RiskOne
+from environment.env import SpecialtyInsuranceMarketEnv
 
 class AddRiskEvent(Event):
     """
