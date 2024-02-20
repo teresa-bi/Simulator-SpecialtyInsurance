@@ -8,8 +8,8 @@ from gymnasium import logger, spaces
 from gymnasium.envs.classic_control import utils
 from gymnasium.envs.registration import EnvSpec
 from gymnasium.error import DependencyNotInstalled
-from agents import Broker, Syndicate, Shareholder, ReinsuranceFirm, RiskModel
-from environment.event import CatastropheEvent, AttritionalLossEvent, AddRiskEvent, AddPremiumEvent, AddClaimEvent
+from agents import Broker, Syndicate, Shareholder, ReinsuranceFirm
+from environment.event import EventGenerator, CatastropheEvent, AttritionalLossEvent, AddRiskEvent, AddPremiumEvent, AddClaimEvent, RiskModel
 from manager import EventHandler, EnvironmentManager
 
 class SpecialtyInsuranceMarketEnv(gym.Env):
@@ -80,15 +80,15 @@ class SpecialtyInsuranceMarketEnv(gym.Env):
         self.risks = self.initial_risks
 
         # Catastrophe event 
-        catastrophe_event = CatastropheEvent(self.risks, self.risk_model_configs).generate_events()
+        catastrophe_event = EventGenerator(self.risk_model_configs).generate_catastrophe_events(self.risks)
         # Attritioal loss event daily
-        attritional_loss_event = AttritionalLossEvent(self.risks, self.risk_model_configs).generate_events()
+        attritional_loss_event = EventGenerator(self.risk_model_configs).generate_attritional_loss_events(sim_args)
         # Broker risk event daily: broker generate risk according to poisson distribution
-        broker_risk_event = AddRiskEvent(self.brokers, self.risk_model_configs).generate_events()
+        broker_risk_event = EventGenerator(self.risk_model_configs).generate_risk_events(self.brokers)
         # Broker premium event monthly: broker pay premium to the syndicate 
-        broker_premium_event = AddPremiumEvent(self.brokers, self.risk_model_configs).generate_events()
+        broker_premium_event = EventGenerator(self.risk_model_configs).generate_premium_events(self.brokers)
         # Broker claim event: when catastrophe happens, croker brings corresponding claim to syndicate 
-        broker_claim_event = AddClaimEvent(self.brokers, self.risk_model_configs).generate_events()
+        broker_claim_event = EventGenerator(self.risk_model_configs).generate_claim_events(elf.risks, self.brokers)
         # Initiate event handler
         event_handler = EventHandler(self.maxstep, catastrophe_events, attritional_loss_events, broker_risk_events, broker_premium_event, broker_claim_events, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.risks, self.risk_model_configs)
 
