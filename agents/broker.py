@@ -31,9 +31,9 @@ class Broker:
         num_risks_daily = self.broker_lambda_risks
         for index in range(num_risks_daily):
             self.risks.append({"risk_id": index,
-                               "time": time,
                                "broker_id": self.broker_id,
                                "risk_start_time": time,
+                               "risk_end_time": time+12*30,
                                "risk_factor": self.risk_model_configs[model_id].get("risk_factor"),
                                "risk_category": self.risk_model_configs[model_id].get("risk_category"),
                                "risk_value": self.risk_model_configs[model_id].get("risk_value")})
@@ -45,11 +45,12 @@ class Broker:
         Add new contract to the current underwritten_contracts list
         """
         self.underwritten_contracts.append({"risk_id": risks.get("risk_id"),
+                                    "broker_id": self.broker_id,
                                     "risk_start_time": risks.get("risk_start_time"),
                                     "risk_factor": risks.get("risk_factor"),
                                     "risk_category": risks.get("risk_category"),
                                     "risk_value": risks.get("risk_value"),
-                                    "syndicated_id": syndicated_id,
+                                    "syndicate_id": syndicated_id,
                                     "premium": premium,
                                     "risk_end_time": risks.get("risk_start_time")+365,
                                     "claim": Flase})
