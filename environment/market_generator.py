@@ -6,13 +6,13 @@ import numpy as np
 from .agents import Broker, Syndicate, ReinsuranceFirm, Shareholder
 
 
-class ScenarioGenerator:
+class MarketGenerator:
     """
-    Scenario with broker, syndicate, reinsurance firms, and shareholder in the market
+    Market with broker, syndicate, reinsurance firms, and shareholder in the market
     """
     def __init__(self, with_reinsurance, num_risk_models, sim_args, broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_model_configs):
         """
-        Instance of a scenario
+        Instance of an insurance market
 
         Parameters
         ----------
@@ -28,7 +28,7 @@ class ScenarioGenerator:
         risk_model_configs: list of dict
             risk model configurations to be passed to RiskModel instance
         """
-        # With or without reinsurance firms in the scenario
+        # With or without reinsurance firms in the market
         self.with_reinsurance = with_reinsurance
         # Get inputs
         self.sim_args = sim_args

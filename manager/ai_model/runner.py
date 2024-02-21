@@ -4,7 +4,7 @@ from ray.tune.registry import register_env
 from ray import tune
 from ray.rllib.agents.ppo import PPOTrainer
 from ipywidgets import IntProgress
-from environment.env import SpecialtyInsuranceMarketEnv
+from environment.environment import SpecialtyInsuranceMarketEnv
 
 class AIRunner:
     """

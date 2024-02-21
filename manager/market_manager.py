@@ -4,18 +4,18 @@ import warnings
 from collections import defaultdict
 
 import numpy as np
-from agents import Broker, Syndicate, Shareholder, ReinsuranceFirm, RiskModel
+from agents import Broker, Syndicate, Shareholder, ReinsuranceFirm
 from environment.market import NoReinsurance_RiskOne, NoReinsurance_RiskFour, Reinsurance_RiskOne, Reinsurance_RiskFour
 from environment.event import CatastropheEvent, AttritionalLossEvent, AddRiskEvent, AddPremiumEvent, AddClaimEvent
 from manager.event_handler import EventHandler
 
 
-class EnvironmentManager:
+class MarketManager:
     """
-    Manage and evolve the Environment.
+    Manage and evolve the market.
     """
 
-    def __init__(self, maxstep, manager_args, brokers, syndicates, reinsurancefirms, shareholders, risks, risk_model_configs, with_reinsurance, num_risk_models, catastrophe_events, attritional_loss_events, broker_risk_events, broker_claim_events, event_handler, logger, time = 0):
+    def __init__(self, maxstep, manager_args, brokers, syndicates, reinsurancefirms, shareholders, risks, risk_model_configs, with_reinsurance, num_risk_models, catastrophe_events, attritional_loss_events, broker_risk_events, broker_premium_events, broker_claim_events, event_handler, logger, time = 0):
         """
         Construct a new instance.
 
@@ -24,11 +24,11 @@ class EnvironmentManager:
         maxstep: int
             Simulation time span.
         event_handler: EventHandler
-            The EventHandler applies events to the internal Environment of the EM.
+            The EventHandler applies events to the internal Market of the EM.
         logger: Logger
             An optional Logger.
         time: int
-            Environment start time.
+            Market start time.
         """
         self.maxstep = maxstep
         self.manager_args = manager_args
@@ -43,33 +43,33 @@ class EnvironmentManager:
         self.catastrophe_events = catastrophe_events
         self.attritional_loss_events = attritional_loss_events
         self.broker_risk_events = broker_risk_events
+        self.broker_premium_events = broker_premium_events
         self.broker_claim_events = broker_claim_events
         self.event_handler = event_handler
 
         if self.with_reinsurance == False:
             if self.num_risk_models == 1:
-                self.environment = NoReinsurance_RiskOne(time, self.maxstep, self.manager_args, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.risks, self.risk_model_configs)
+                self.market = NoReinsurance_RiskOne(time, self.maxstep, self.manager_args, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.risks, self.risk_model_configs)
             else:
-                self.environment = NoReinsurance_RiskFour(time, self.maxstep, self.manager_args, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.risks, self.risk_model_configs)
+                self.market = NoReinsurance_RiskFour(time, self.maxstep, self.manager_args, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.risks, self.risk_model_configs)
         else:
             if self.num_risk_models == 1:
-                self.environment = Reinsurance_RiskOne(time, self.maxstep, self.manager_args, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.risks, self.risk_model_configs)
+                self.market = Reinsurance_RiskOne(time, self.maxstep, self.manager_args, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.risks, self.risk_model_configs)
             else:
-                self.environment = Reinsurance_RiskFour(time, self.maxstep, self.manager_args, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.risks, self.risk_model_configs)
+                self.market = Reinsurance_RiskFour(time, self.maxstep, self.manager_args, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.risks, self.risk_model_configs)
 
         self.min_step_time = 1  # Day Event
 
         self.actions_to_apply = []
-        # for logging keep track of all Actions ever received
-        # and whether they were accepted or refused by the manager
+        # For logging keep track of all Actions ever received and whether they were accepted or refused by the manager
         self.actions_accepted = {}
         self.actions_refused = {}
 
-        # logging
+        # Logging
         self.logger = logger
         if self.logger is not None:
             self.logger._store_metadata(
-                self.environment.time, self.environment.brokers, self.environment.syndicates, self.environment.reinsurancefirms, self.environment.shareholders, self.event_handler
+                self.market.time, self.market.brokers, self.market.syndicates, self.market.reinsurancefirms, self.market.shareholders, self.event_handler
             )
 
         # Set up remaining list variables
@@ -105,14 +105,14 @@ class EnvironmentManager:
 
     def observe(self):
         """
-        Get the current state of the Environment.
+        Get the current state of the Market.
 
         Returns
         ----------
-        Environment
+        Market
         """
 
-        return self.environment
+        return self.market
 
     def get_time_to_next_event(self, event_type):
         """
@@ -143,7 +143,7 @@ class EnvironmentManager:
 
         # Get time to next event
         next_event = upcoming_events[0]
-        time_to_next_event = next_event.start_time - self.environment.time
+        time_to_next_event = next_event.start_time - self.market.time
 
         return time_to_next_event
 
@@ -171,14 +171,14 @@ class EnvironmentManager:
 
     def evolve_action_syndicate(self, syndicates, step_time):
         """
-        Evolve the specified Syndicate in the Environment for step_time [day].
+        Evolve the specified Syndicate in the Market for step_time [day].
 
         Parameters
         ----------
         syndicates: List[str]
             A list of Syndicate identifiers to evolve in time.
         step_time: float
-            Amount of time in days to evolve the Environment for.
+            Amount of time in days to evolve the Market for.
 
         Returns
         ----------
@@ -190,33 +190,33 @@ class EnvironmentManager:
 
         for syndicate in syndicates:
 
-            syndicates_status = self.syndicates[syndicate].update_status(syndicate, self.environment, step_time, self.actions_to_apply)
+            syndicates_status = self.syndicates[syndicate].update_status(syndicate, self.market, step_time, self.actions_to_apply)
 
         return syndicates_status
 
     def evolve(self, step_time):
         """
-        Evolve the Environment: apply Events and update all agents status, including attritional loss event
+        Evolve the Market: apply Events and update all agents status, including attritional loss event
 
         Parameters
         ----------
         step_time: float
-            Amount of time [day] to evolve the Environment for.
+            Amount of time [day] to evolve the Market for.
 
         Returns
         ----------
-        The updated Environment.
+        The updated Market.
         """
 
         # Storage for all the syndicates' status
         syndicates_status = {}
 
-        # The time the environment will have after being evolved
-        env_start_time = self.environment.time
-        env_end_time = self.environment.time + step_time
+        # The time the market will have after being evolved
+        market_start_time = self.market.time
+        market_end_time = self.market.time + step_time
 
         # Enact the events
-        self.environment = self.event_handler.forward(self.environment, step_time)
+        self.market = self.event_handler.forward(self.market, step_time)
 
         # Track any newly-added broker_bring_risk events
         upcoming_broker_bring_risk = [
@@ -270,7 +270,7 @@ class EnvironmentManager:
 
         events_start_times = np.array(
             [
-                self.environment.time
+                self.market.time
                 if risk_id not in newly_added_risk_events
                 else newly_added_risk_events[risk_id]
                 for risk_id in self.brokers.bring_risk()
@@ -279,19 +279,19 @@ class EnvironmentManager:
 
         for claim_id in self.brokers.bring_claim():
             if claim_id not in newly_added_claim_events:
-                events_start_times.append(self.environment.time)
+                events_start_times.append(self.market.time)
             else:
                 events_start_times.(newly_added_claim_events[claim_id])
 
         for catastrophe_id in self.catastrophe():
             if catastrophe_id not in newly_added_catastrophe_events:
-                events_start_times.append(self.environment.time)
+                events_start_times.append(self.market.time)
             else:
                 events_start_times.(newly_added_catastrophe_events[catastrophe_id])
 
         for attritionalloss_id in self.attritionalloss():
             if attritionalloss_id not in newly_added_attritionalloss_events:
-                events_start_times.append(self.environment.time)
+                events_start_times.append(self.market.time)
             else:
                 events_start_times.(newly_added_attritionalloss_events[attritionalloss_id])
 
@@ -300,8 +300,8 @@ class EnvironmentManager:
 
         # Update all the agents, run the event at the same start time
         for start_time in sorted_unique_start_times:
-            # Move along the environment's time
-            self.environment.time = start_time
+            # Move along the market's time
+            self.market.time = start_time
 
             # Find all the events starting at this time
 
@@ -315,16 +315,16 @@ class EnvironmentManager:
 
             # Events like interest receive and dividend payment
 
-        # Finally, save issued Actions and move the environment time to the end time
+        # Finally, save issued Actions and move the market time to the end time
         if len(self.actions_to_apply) > 0:
-            self.actions_issued[env_start_time] = self.actions_to_apply
+            self.actions_issued[market_start_time] = self.actions_to_apply
 
             # Empty all the actions to apply to syndicates
             self.actions_to_apply = []
 
-        self.environment.time += 1
+        self.market.time += 1
 
-        return self.environment
+        return self.market
 
 
     def syndicate_exit(self):
@@ -337,7 +337,7 @@ class EnvironmentManager:
         Determine whether the scenario is finished.
         Finished here means
         - there are no upcoming events
-        - there aren't any Syndicates left in the Environment
+        - there aren't any Syndicates left in the Market
 
         Returns
         ----------
@@ -347,7 +347,7 @@ class EnvironmentManager:
         # If there are any upcoming events or any syndicates active in the market,
         # then we aren't finished.
         any_events_left = len(self.event_handler.upcoming) > 0
-        any_syndicate_left = len(self.environment.syndicate) > 0
+        any_syndicate_left = len(self.market.syndicate) > 0
 
         return not (any_events_left or any_syndicate_left)
 
@@ -362,10 +362,10 @@ class EnvironmentManager:
         """
 
         all_syndicates = [action.syndicate for action in actions]
-        exit_syndicates = [syndicate for syndicate in all_syndicates if syndicate not in self.environment.syndicate]
+        exit_syndicates = [syndicate for syndicate in all_syndicates if syndicate not in self.market.syndicate]
         active_syndicates = [syndicate for syndicate in all_syndicates if syndicate not in exit_syndicates]
         uncontrollable_syndicates = [
-            syndicate for syndicate in active_syndicates if not self.environment.syndicates[syndicate].controllable
+            syndicate for syndicate in active_syndicates if not self.market.syndicates[syndicate].controllable
         ]
 
         # save Actions that cannot be issued and warn
@@ -386,13 +386,13 @@ class EnvironmentManager:
 
         # store the not allowed actions if there are any
         if len(refused_actions) > 0:
-            self.actions_not_issued[self.environment.time] = refused_actions
+            self.actions_not_issued[self.market.time] = refused_actions
 
         # save Actions to issue
         accept_actions = [action for action in actions if action not in refused_actions]
         self.actions_to_apply = accept_actions
 
-    def log_data(self, file_prefix, environment, issued_actions, not_issued_actions
+    def log_data(self, file_prefix, market, issued_actions, not_issued_actions
     ):
         """
         Save log of specified data to a file in json format.
@@ -401,8 +401,8 @@ class EnvironmentManager:
         ----------
         file_prefix: str
             Prefix to include in the log file name
-        environment: bool
-            Include observation of the current environment
+        market: bool
+            Include observation of the current market
         issued_actions: bool
             Include all Actions requested by the manager and issued to Syndicate
         not_issued_actions: bool
@@ -413,14 +413,14 @@ class EnvironmentManager:
             warnings.warn("Logger has not been instantiated...", UserWarning)
         else:
 
-            env = self.environment if environment else None
+            market = self.market if market else None
             iss_act = self.actions_issued if issued_actions else None
             not_iss_act = self.actions_not_issued if not_issued_actions else None
 
             self.logger.log_to_json(
-                self.environment.time,
+                self.market.time,
                 file_prefix=file_prefix,
-                environment=env,
+                market=market,
                 issued_actions=iss_act,
                 not_issued_actions=not_iss_act,
             )
@@ -437,7 +437,7 @@ class EnvironmentManager:
 
         self.log_data(
             file_prefix,
-            environment=True,
+            market=True,
             issued_actions=True,
             not_issued_actions=True,
         )
