@@ -1,14 +1,11 @@
 from __future__ import annotations
-import typing
 import warnings
-from collections import defaultdict
 
 import numpy as np
 from agents import Broker, Syndicate, Shareholder, ReinsuranceFirm
 from environment.market import NoReinsurance_RiskOne, NoReinsurance_RiskFour, Reinsurance_RiskOne, Reinsurance_RiskFour
 from environment.event import CatastropheEvent, AttritionalLossEvent, AddRiskEvent, AddPremiumEvent, AddClaimEvent
 from manager.event_handler import EventHandler
-
 
 class MarketManager:
     """
