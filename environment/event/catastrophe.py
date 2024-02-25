@@ -1,7 +1,7 @@
 from __future__ import annotations
 import warnings
-import Event
-from environment.env import SpecialtyInsuranceMarketEnv
+from environment.event import Event
+from environment.environment import SpecialtyInsuranceMarketEnv
 
 class CatastropheEvent(Event):
     """

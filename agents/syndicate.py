@@ -5,7 +5,7 @@ Contains all the capabilities of Syndicates
 import numpy as np
 import scipy.stats
 import copy
-import RiskModel
+from environment.event import RiskModel
 from manager import InsuranceContract, ReinsuranceContract
 import sys, pdb
 import uuid
@@ -371,7 +371,7 @@ class Syndicate:
         amount = obligation["amount"]
         recipient = obligation["recipient"]
         purpose = obligation["purpose"]
-        if self.get_operational() and recipient.get_operational()
+        if self.get_operational() and recipient.get_operational():
             self.current_capital -= amount
             if purpose is not "dividend":
                 self.profits_losses -= amount
@@ -491,7 +491,7 @@ class Syndicate:
 
             total_capital_reserved_by_categ_post = sum(capital_reserved_by_categ_store)
 
-            if (std_post * total_capital_reserved_by_categ_post/self.current_capital) <= (self.balance_ratio * mean) or std_post < std_pre
+            if (std_post * total_capital_reserved_by_categ_post/self.current_capital) <= (self.balance_ratio * mean) or std_post < std_pre:
                 # The new risk is accepted if the standard deviation is reduced or the capital reserved by category is very well balanced
                 for i in range(len(capital_left_by_categ)):
                     capital_left_by_categ[i] = self.current_capital - capital_reserved_by_categ_store[i]
@@ -629,8 +629,7 @@ class Syndicate:
                     reinrisk = reincontract.property_holder.create_reinrisk(time, reincontract.category)
                     if np.random.uniform(0,1,1) < self.simulation_parameters["reinsurance_retention"]:
                         if reinrisk is not None:
-                            self.reinrisks_kept.append(reinrisk
-
+                            self.reinrisks_kept.append(reinrisk)
 
     def update_capital(self, ):
         """

@@ -3,7 +3,8 @@ Simulation main function
 """
 
 import os
-import logger.arguments import get_args
+from logger.arguments import get_arguments
+
 from environment.market_generator import MarketGenerator
 from environment.risk_generator import RiskGenerator
 from manager.ai_model.runner import AIRunner

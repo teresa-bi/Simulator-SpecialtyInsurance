@@ -1,4 +1,4 @@
-import
+from environment.event import Event
 
 class AttritionalLossEvent(Event):
     """

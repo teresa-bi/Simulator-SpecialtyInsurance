@@ -12,7 +12,8 @@ class MarketManager:
     Manage and evolve the market.
     """
 
-    def __init__(self, maxstep, manager_args, brokers, syndicates, reinsurancefirms, shareholders, risks, risk_model_configs, with_reinsurance, num_risk_models, catastrophe_events, attritional_loss_events, broker_risk_events, broker_premium_events, broker_claim_events, event_handler, logger, time = 0):
+    def __init__(self, maxstep, manager_args, brokers, syndicates, reinsurancefirms, shareholders, risks, risk_model_configs, with_reinsurance, num_risk_models, 
+                catastrophe_events, attritional_loss_events, broker_risk_events, broker_premium_events, broker_claim_events, event_handler, logger, time = 0):
         """
         Construct a new instance.
 
@@ -20,6 +21,20 @@ class MarketManager:
         ----------
         maxstep: int
             Simulation time span.
+        manager_args
+        brokers: list of Broker
+        syndicates: list of Syndicate
+        reinsurancefirms: list of Reinsurance Firms
+        shareholders: list of sharholders
+        risks: list of catastrophe
+        risk_model_configs
+        with_reinsurance: bool, True, involves reinsurance in the market, False, not involves reinsurance in the market
+        num_risk_models: risk model arguments
+        catastrophe_events: list of CatastropheEvent
+        attritional_loss_events: list of AttritionalLossEvent
+        broker_risk_events: list of AddRiskEvent
+        broker_premium_events: list of AddPremiumEvent
+        broker_claim_events: list of AddClaimEvent
         event_handler: EventHandler
             The EventHandler applies events to the internal Market of the EM.
         logger: Logger
@@ -46,9 +61,9 @@ class MarketManager:
 
         if self.with_reinsurance == False:
             if self.num_risk_models == 1:
-                self.market = NoReinsurance_RiskOne(time, self.maxstep, self.manager_args, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.risks, self.risk_model_configs)
+                self.market = NoReinsurance_RiskOne(time, self.maxstep, self.manager_args, self.brokers, self.syndicates, self.shareholders, self.risks, self.risk_model_configs)
             else:
-                self.market = NoReinsurance_RiskFour(time, self.maxstep, self.manager_args, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.risks, self.risk_model_configs)
+                self.market = NoReinsurance_RiskFour(time, self.maxstep, self.manager_args, self.brokers, self.syndicates, self.shareholders, self.risks, self.risk_model_configs)
         else:
             if self.num_risk_models == 1:
                 self.market = Reinsurance_RiskOne(time, self.maxstep, self.manager_args, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.risks, self.risk_model_configs)
@@ -68,37 +83,6 @@ class MarketManager:
             self.logger._store_metadata(
                 self.market.time, self.market.brokers, self.market.syndicates, self.market.reinsurancefirms, self.market.shareholders, self.event_handler
             )
-
-        # Set up remaining list variables
-        # Agent lists
-        self.reinsurancefirms = []
-        self.syndicates = []
-        # Lists of agent weights
-        self.syndicates_weights = {}
-        self.reinsurancefirms_weights = {}
-        # Cumulative variables for history and logging
-        self.cumulative_bankruptcies = 0
-        self.culumative_market_exits = 0
-        self.cumulative_unrecovered_claims = 0.0
-        self.cumulative_claims = 0.0
-        # Lists for logging history
-        self.logger = logger.logger(num_riskmodels = risk_args["num_riskmodels"],
-                                    rc_event_schedule_initial = self.rc_event_schedule_initial,
-                                    rc_event_damage_initial = self.rc_event_damage_initial)
-        self.syndicate_models_counter = np.zeros(risk_args["num_categories"])
-        self.reinsurancefirms_models_counter = np.zeros(risk_args["num_categories"])
-
-        self.var_tail_prob = 0.02
-        
-        self.category_number = category_number
-        self.init_average_exposure = init_average_exposure
-        self.init_average_risk_factor = init_average_risk_factor
-        self.init_profit_estimate = init_profit_estimate
-        
-        self.damage_distribution = [damage_distribution for _ in range(self.category_number)]
-        self.damage_distribution_stack = [[] for _ in range(self.category_number)]
-        self.reinsurance_contract_stack = [[] for _ in range(self.category_number)]
-        self.inaccuracy = inaccuracy
 
     def observe(self):
         """
@@ -127,24 +111,58 @@ class MarketManager:
         """
 
         # Sort upcoming events by start_time
-        upcoming_events = list(self.event_handler.upcoming.values()) + list(self.event_handler.ongoing.values())
-        upcoming_events.sort()
-
-        # Filter for correct type of events if required
-        if len(event_type) != 0:
-            upcoming_events = [e for e in upcoming_events if isinstance(e, tuple(event_type))]
+        upcoming_catastrophe_events = list(self.event_handler.upcoming_catastrophe.values()) + list(self.event_handler.ongoing_catastrophe.values())
+        upcoming_catastrophe_events.sort()
+        upcoming_attritional_loss_events = list(self.event_handler.upcoming_attritional_loss.values()) + list(self.event_handler.ongoing_attritional_loss.values())
+        upcoming_attritional_loss_events.sort()
+        upcoming_broker_risk_events = list(self.event_handler.upcoming_broker_risk.values()) + list(self.event_handler.ongoing_broker_risk.values())
+        upcoming_broker_risk_events.sort()
+        upcoming_broker_premium_events = list(self.event_handler.upcoming_broker_premium.values()) + list(self.event_handler.ongoing_broker_premium.values())
+        upcoming_broker_premium_events.sort()
+        upcoming_broker_claim_events = list(self.event_handler.upcoming_broker_claim.values()) + list(self.event_handler.ongoing_broker_claim.values())
+        upcoming_broker_claim_events.sort()
 
         # Check if there are any upcoming events left
-        if len(upcoming_events) == 0:
+        if ((len(upcoming_catastrophe_events) == 0) and (len(upcoming_attritional_loss_events) == 0) and (len(upcoming_broker_risk_events) == 0)
+            and (len(upcoming_broker_premium_events) == 0) and (len(upcoming_broker_claim_events) == 0)):
             return None
 
         # Get time to next event
-        next_event = upcoming_events[0]
-        time_to_next_event = next_event.start_time - self.market.time
+        next_catastrophe_event = upcoming_catastrophe_events[0]
+        time_to_next_catastrophe_event = next_catastrophe_event.start_time - self.market.time
+        next_attritional_loss_event = upcoming_attritional_loss_events[0]
+        time_to_next_attritional_loss_event = next_attritional_loss_event.start_time - self.market.time
+        next_broker_risk_event = upcoming_broker_risk_events[0]
+        time_to_next_broker_risk_event = next_broker_risk_event.start_time - self.market.time
+        next_broker_premium_event = upcoming_broker_premium_events[0]
+        time_to_next_broker_premium_event = next_broker_premium_event.start_time - self.market.time
+        next_broker_claim_event = upcoming_broker_claim_events[0]
+        time_to_next_broker_claim_event = next_broker_claim_event.start_time - self.market.time
 
-        return time_to_next_event
+        return time_to_next_catastrophe_event, time_to_next_attritional_loss_event, time_to_next_broker_risk_event, time_to_next_broker_premium_event, time_to_next_broker_claim_event
 
-    def _get_replay_status(self):
+    def _get_broker_replay_status(self):
+        """
+        Extract status in last evolve() for Broker replayed from data.
+
+        Returns
+        ----------
+        Dict[str, Broker]
+            The status of all brokers. Dictionary keys are Broker identifier.
+        """
+
+        brokers_status = {}
+        
+        for event in self.event_handler.ongoing.values():
+            if isinstance(event, AAddRiskEvent) or isinstance(event, AddClaimEvent) or isinstance(event, AddPremiumEvent):
+                # Update risk list and underwritten_contract list
+                brokers_status = event.get_broker_status()
+                if brokers_status is not None:
+                    broker_status[event.id] = brokers_status
+
+        return brokers_status
+    
+    def _get_syndicate_replay_status(self):
         """
         Extract status in last evolve() for Syndicates replayed from data.
 
@@ -157,12 +175,12 @@ class MarketManager:
         syndicates_status = {}
 
         for event in self.event_handler.ongoing.values():
-            if isinstance(event, UpdateSyndicateEvent):
+            if isinstance(event, AAddRiskEvent) or isinstance(event, AddClaimEvent) or isinstance(event, AddPremiumEvent) 
+            or isinstance(event, CatastropheEvent) or isinstance(event, AttritionalLossEvent):
+                # Update capital list
                 syndicates_status = event.get_synidate_status()
-
                 if syndicates_status is not None:
                     syndicates_status[event.id] = syndicates_status
-                    self.control_points[event.id].append(syndicates_status)
 
         return syndicates_status
 
@@ -215,54 +233,54 @@ class MarketManager:
         # Enact the events
         self.market = self.event_handler.forward(self.market, step_time)
 
-        # Track any newly-added broker_bring_risk events
-        upcoming_broker_bring_risk = [
-            e.broker_id for e in self.event_handler.upcoming.values() if isinstance(e, AddRiskEvent)
-        ]
-        newly_added_risk_events = {
-            e.syndicate: e.start_time
-            for e in self.event_handler.completed.values()
-            if isinstance(e, AddRiskEvent) and (e.syndicate in upcoming_broker_bring_risk)
-        }
-
-        # Track any newly-added broker_bring_risk events
-        upcoming_broker_bring_risk = [
-            e.id for e in self.event_handler.upcoming.risk_values() if isinstance(e, AddRiskEvent)
-        ]
-        newly_added_risk_events = {
-            e.id: e.start_time
-            for e in self.event_handler.completed.risk_values()
-            if isinstance(e, AddRiskEvent) and (e.id in upcoming_broker_bring_risk)
-        }
-
-        # Track any newly-added broker_bring_claim events
-        upcoming_broker_bring_claim = [
-            e.id for e in self.event_handler.upcoming.claim_values() if isinstance(e, AddClaimEvent)
-        ]
-        newly_added_claim_events = {
-            e.id: e.start_time
-            for e in self.event_handler.completed.claim_values()
-            if isinstance(e, AddClaimEvent) and (e.id in upcoming_broker_bring_claim)
-        }
-
         # Track any newly-added catastrophe events
         upcoming_catastrophe = [
-            e.id for e in self.event_handler.upcoming.catastrophe_values() if isinstance(e, CatastropheEvent)
+            e.id for e in self.event_handler.upcoming_catastrophe.values() if isinstance(e, CatastropheEvent)
         ]
         newly_added_catastrophe_events = {
             e.id: e.start_time
-            for e in self.event_handler.completed.catastrophe_values()
+            for e in self.event_handler.completed_catastrophe.values()
             if isinstance(e, CatastropheEvent) and (e.id in upcoming_catastrophe)
         }
 
         # Track any newly-added attritional loss events
         upcoming_attritionalloss = [
-            e.id for e in self.event_handler.upcoming.attritionalloss_values() if isinstance(e, AttritionalLossEvent)
+            e.id for e in self.event_handler.upcoming_attritionalloss.values() if isinstance(e, AttritionalLossEvent)
         ]
         newly_added_attritionalloss_events = {
             e.id: e.start_time
-            for e in self.event_handler.completed.attritionalloss_values()
+            for e in self.event_handler.completed_attritionalloss.values()
             if isinstance(e, AttritionalLossEvent) and (e.id in upcoming_attritionalloss)
+        }
+
+        # Track any newly-added broker_bring_risk events
+        upcoming_broker_bring_risk = [
+            e.broker_id for e in self.event_handler.upcoming_broker_risk.values() if isinstance(e, AddRiskEvent)
+        ]
+        newly_added_risk_events = {
+            e.syndicate: e.start_time
+            for e in self.event_handler.completed_broker_risk.values()
+            if isinstance(e, AddRiskEvent) and (e.syndicate in upcoming_broker_risk)
+        }
+
+        # Track any newly-added broker_pay_premium events
+        upcoming_broker_pay_premium = [
+            e.id for e in self.event_handler.upcoming_broker_premium.values() if isinstance(e, AddPremiumEvent)
+        ]
+        newly_added_premium_events = {
+            e.id: e.start_time
+            for e in self.event_handler.completed_broker_premium.values()
+            if isinstance(e, AddPremiumEvent) and (e.id in upcoming_broker_premium)
+        }
+
+        # Track any newly-added broker_bring_claim events
+        upcoming_broker_bring_claim = [
+            e.id for e in self.event_handler.upcoming_broker_claim.values() if isinstance(e, AddClaimEvent)
+        ]
+        newly_added_claim_events = {
+            e.id: e.start_time
+            for e in self.event_handler.completed_broker_claim.values()
+            if isinstance(e, AddClaimEvent) and (e.id in upcoming_broker_claim)
         }
 
         events_start_times = np.array(

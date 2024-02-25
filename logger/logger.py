@@ -69,5 +69,95 @@ class Logger():
 
     def record_data(self, data_dict):
         """
-        
+        Record data for one period
+
+        Parameters
+        ----------
+        data_dict: dict
+            Data with the same keys as used in self.history_log()
         """
+        for key in data_dict.keys():
+            if key != "individual_contracts":
+                self.history_logs[key].append(data_dict[key])
+            else:
+                for i in range(len(data_dict["individual_contracts"])):
+                    self.history_logs["individual_contracts"][i].append(data_dict["individual_contracts"][i])
+
+    def obtian_log(self, requested_logs=LOG_DEFAULT):
+        """
+        Transfer the log in the cloud
+        """
+        self.history_logs["number_riskmodels"] = self.number_riskmodels
+        self.history_logs["rc_event_damage_initial"] = self.rc_event_damage_initial
+        self.history_logs["rc_event_schedule_initial"] = self.rc_event_schedule_initial
+
+        if requested_logs == None:
+            requested_logs = LOG_DEFAULT
+
+        log = {name: self.history_logs[name] for name in requested_logs}
+
+        # Convert to list and return
+        return listify.listify(log)
+
+    def restore_logger_object(self, log):
+        """
+        A log can be restored later, it can be restored on a different machine. This is useful in the case of ensemble runs to move the log to the master node from the computation nodes
+        """
+
+        # Restore dict
+        log = listify.delistify(log)
+
+        # Extract environment variables
+        self.rc_event_schedule_initial = log["rc_event_schedule_initial"]
+        self.rc_event_damage_initial = log["rc_event_damage_initial"]
+        self.number_riskmodels = log["number_risks"]
+        del log["rc_event_schedule_initial"], log["rc_event_damage_initial"], log["number_riskmodels"]
+
+        # Restore history log
+        self.history_logs = log
+
+    def save_log(self, background_run):
+        """
+        Save log to disk of local machine
+
+        Parameter
+        ---------
+        background_run: bool
+            An ensemble run (True) or not (False)
+        """
+        if background_run:
+            to_log = self.replication_log_prepare()
+        else:
+            to_log = self.single_log_prepare()
+
+        for filename, data, operation_character in to_log:
+            with open(filename, operation_character) as wfile:
+                wfile.write(str(data) + "\n")
+
+    def replication_log_prepare(self):
+        """
+        Prepare writing taks for ensemble run saving
+        """
+        filename_prefix = {1:"one", 2:"two", 3:"three", 4:"four"}
+        fpf = filename_prefix[self.number_riskmodels]
+        to_log = []
+        to_log.append(("data/" + fpf + "_history_logs.dat", self.history_logs, "a"))
+        return to_log
+
+    def single_log_prepare(self):
+        """
+        Prepare writing tasks for single run saving
+        """
+        to_log = []
+        to_log.append(("data/history_logs.dat", self.history_logs, "w"))
+        return to_log
+
+    def add_insurance_agent(self):
+        """
+        Add an additional insurer agent to the history log
+        """
+        if len(self.history_logs['individual_contracts']) > 0:
+            zeros_to_append = list(np.zeros(len(self.history_logs["inidividual_contracts"][0]), dtype=int))
+        else:
+            zeros_to_append = []
+        self.history_logs["individual_contracts"].append(zeros_to_append)

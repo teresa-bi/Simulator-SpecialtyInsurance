@@ -3,7 +3,7 @@ import json
 import time
 import numpy as np
 
-from .agents import Broker, Syndicate, ReinsuranceFirm, Shareholder
+from agents import Broker, Syndicate, ReinsuranceFirm, Shareholder
 
 
 class MarketGenerator:
@@ -52,12 +52,12 @@ class MarketGenerator:
             self.brokers[str(i)] = Broker(i, broker_args, num_risk_models, sim_args, risk_model_configs)
 
         # Generate syndicates
-        for i in range(syndicate_args["num_syndicates"])]:
+        for i in range(syndicate_args["num_syndicates"]):
             self.syndicates[str(i)] = Syndicate(i, syndicate_args, num_risk_models, sim_args, risk_model_configs)
 
         # Generate reinsurancefirms
         if self.with_reinsurance:
-            for i in range(reinsurancefirm_args["num_reinsurancefirms"])]:
+            for i in range(reinsurancefirm_args["num_reinsurancefirms"]):
                 self.reinsurancefirms[str(i)] = ReinsuranceFirm(i, reinsurancefirm_args, num_risk_models, risk_model_configs)
 
         # Generate shareholders

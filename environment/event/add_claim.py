@@ -109,3 +109,5 @@ class AddClaimEvent(Event):
 
         with open(filename, "w") as file:
             file.write(self.to_json())
+
+    def get_broker_status():

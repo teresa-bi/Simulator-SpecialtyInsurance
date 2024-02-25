@@ -60,7 +60,7 @@ class Broker:
         Delete contract underwritten by bankrupt syndicates
         """
         index = 0
-        while index < len(self.underwritten_contracts)):
+        while index < len(self.underwritten_contracts):
             if self.underwritten_contracts[i].get("syndicated_id") == syndicated_id:
                 del self.underwritten_contracts[i]
                 index -= 1
