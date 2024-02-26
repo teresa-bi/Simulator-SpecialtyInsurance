@@ -1,5 +1,5 @@
 from __future__ import annotations
-import CatastropheEvent, AttritionalLossEvent, AddRiskEvent, AddPremiumEvent, AddClaimEvent
+from environment.event import *
 from environment.market import NoReinsurance_RiskOne
 
 class EventGenerator():

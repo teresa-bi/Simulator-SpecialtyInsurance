@@ -3,7 +3,7 @@ Contains all the capabilities of Brokers
 """
 
 import json
-import math
+import random
 
 class Broker:
     def __init__(self, broker_id, broker_args, num_risk_models, sim_args, risk_model_configs):
@@ -18,7 +18,7 @@ class Broker:
         # Risks be covered, underwritten
         self.underwritten_contracts = []
 
-    def generate_risks(self, time):
+    def generate_risks(self, time, num_risk):
         """
         Return risks brought by broker daily, according to poission distribution
         """
@@ -28,7 +28,8 @@ class Broker:
         model_id = random.randint(0,self.num_risk_models-1)
         self.risks = []
         ######TODO: need to be fixed, how to generate poission distribution risks
-        num_risks_daily = self.broker_lambda_risks
+        #num_risks_daily = self.broker_lambda_risks
+        num_risks_daily = num_risk
         for index in range(num_risks_daily):
             self.risks.append({"risk_id": index,
                                "broker_id": self.broker_id,
@@ -37,6 +38,7 @@ class Broker:
                                "risk_factor": self.risk_model_configs[model_id].get("risk_factor"),
                                "risk_category": self.risk_model_configs[model_id].get("risk_category"),
                                "risk_value": self.risk_model_configs[model_id].get("risk_value")})
+        print
 
         return self.risks
 

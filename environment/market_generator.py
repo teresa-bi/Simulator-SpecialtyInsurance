@@ -30,6 +30,7 @@ class MarketGenerator:
         """
         # With or without reinsurance firms in the market
         self.with_reinsurance = with_reinsurance
+        self.num_risk_models = num_risk_models
         # Get inputs
         self.sim_args = sim_args
         self.broker_args = broker_args
@@ -48,21 +49,21 @@ class MarketGenerator:
         Generate brokers, syndicates, reinsurancefimrs, shareholders, risk_models
         """
         # Generate brokers
-        for i in range(broker_args["num_brokers"]):
-            self.brokers[str(i)] = Broker(i, broker_args, num_risk_models, sim_args, risk_model_configs)
+        for i in range(self.broker_args["num_brokers"]):
+            self.brokers[str(i)] = Broker(i, self.broker_args, self.num_risk_models, self.sim_args, self.risk_model_configs)
 
         # Generate syndicates
-        for i in range(syndicate_args["num_syndicates"]):
-            self.syndicates[str(i)] = Syndicate(i, syndicate_args, num_risk_models, sim_args, risk_model_configs)
+        for i in range(self.syndicate_args["num_syndicates"]):
+            self.syndicates[str(i)] = Syndicate(i, self.syndicate_args, self.num_risk_models, self.sim_args, self.risk_model_configs)
 
         # Generate reinsurancefirms
         if self.with_reinsurance:
-            for i in range(reinsurancefirm_args["num_reinsurancefirms"]):
-                self.reinsurancefirms[str(i)] = ReinsuranceFirm(i, reinsurancefirm_args, num_risk_models, risk_model_configs)
+            for i in range(self.reinsurancefirm_args["num_reinsurancefirms"]):
+                self.reinsurancefirms[str(i)] = ReinsuranceFirm(i, self.reinsurancefirm_args, self.num_risk_models, self.risk_model_configs)
 
         # Generate shareholders
-        for i in range(shareholder_args["num_shareholders"]):
-            self.shareholders[str(i)] = Shareholder(i, shareholder_args, num_risk_models, risk_model_configs)
+        for i in range(self.shareholder_args["num_shareholders"]):
+            self.shareholders[str(i)] = Shareholder(i, self.shareholder_args, self.num_risk_models, self.risk_model_configs)
 
         return self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders
 

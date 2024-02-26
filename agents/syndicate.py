@@ -5,8 +5,8 @@ Contains all the capabilities of Syndicates
 import numpy as np
 import scipy.stats
 import copy
-from environment.event import RiskModel
-from manager import InsuranceContract, ReinsuranceContract
+from environment.event.risk_model import RiskModel
+from manager.insurance_contract import InsuranceContract
 import sys, pdb
 import uuid
 
@@ -35,9 +35,9 @@ class Syndicate:
         self.capacity_target_decrement_factor = syndicate_args["capacity_target_decrement_factor"]
         self.capacity_target_increment_factor = syndicate_args["capacity_target_increment_factor"]
         self.interest_rate = syndicate_args['interest_rate']
-        self.dividend_share_of_profits = syndicate.args["dividend_share_of_profits"]
+        self.dividend_share_of_profits = syndicate_args["dividend_share_of_profits"]
 
-        self.contract_runtime_dist = scipy.stats.randin(sim_args["mean_contract_runtime"] - sim_args["contract_runtime_halfspread"], sim_args["mean_contract_runtime"] + sim_args["contract_runtime_halfspread"]+1)
+        self.contract_runtime_dist = scipy.stats.randint(sim_args["mean_contract_runtime"] - sim_args["contract_runtime_halfspread"], sim_args["mean_contract_runtime"] + sim_args["contract_runtime_halfspread"]+1)
         self.default_contract_payment_period = sim_args["default_contract_payment_period"]
         self.simulation_reinsurance_type = sim_args["simulation_reinsurance_type"]
         self.capacity_target = self.current_capital * 0.9
@@ -50,7 +50,7 @@ class Syndicate:
         self.premium = self.riskmodel_config["norm_premium"]
         self.profit_target = self.riskmodel_config["norm_profit_markup"]
         self.excess_capital = self.current_capital
-        self.simulation_no_risk_categories = self.riskmodel_config["num_categories"]
+        self.num_risk_categories = self.riskmodel_config["num_categories"]
         
         self.per_period_dividend = 0
         self.capital_last_periods = list(np.zeros(4,dtype=int)*self.current_capital)
@@ -71,7 +71,7 @@ class Syndicate:
         self.market_entry_probability = syndicate_args['market_entry_probability']
         self.exit_capital_threshold = syndicate_args['exit_capital_threshold']
         self.exit_time_limit = syndicate_args['exit_time_limit']
-        self.sensitivity_premium = syndicate_args['sensitivity_premium']
+        self.premium_sensitivity = syndicate_args['premium_sensitivity']
 
         self.status = False   # status True means active, status False means exit (no contract or bankruptcy, at the begining the status is 0 because no syndicate joining the market
 
@@ -79,7 +79,7 @@ class Syndicate:
 
         self.riskmodel = RiskModel(damage_distribution = self.riskmodel_config["damage_distribution"],
                                 expire_immediately = self.riskmodel_config["expire_immediately"],
-                                cat_separation_distribtion = self.riskmodel_config["catastrophe_separation_distribtion"],
+                                catastrophe_separation_distribution = self.riskmodel_config["catastrophe_separation_distribution"],
                                 norm_premium = self.riskmodel_config["norm_premium"],
                                 category_number = self.riskmodel_config["num_categories"],
                                 init_average_exposure = self.riskmodel_config["risk_value_mean"],
@@ -89,11 +89,11 @@ class Syndicate:
                                 var_tail_prob = self.riskmodel_config["var_tail_prob"],
                                 inaccuracy = self.riskmodel_config["inaccuracy_by_categ"])
 
-        self.category_reinsurance = [None for i in range(self.simulation_no_risk_categories)]
+        self.category_reinsurance = [None for i in range(self.num_risk_categories)]
 
         if self.simulation_reinsurance_type == 'non-proportional':
-            if self.non-proportional_reinsurance_level is not None:
-                self.np_reinsurance_deductible_fraction = self.non-proportional_reinsurance_level
+            if self.non_proportional_reinsurance_level is not None:
+                self.np_reinsurance_deductible_fraction = self.non_proportional_reinsurance_level
             else:
                 self.np_reinsurance_deductible_fraction = syndicate_args["default_non-proportional_reinsurance_deductible"]
                 self.np_reinsurance_excess_fraction = syndicate_args["default_non-proportional_reinsurance_excess"]
@@ -107,14 +107,14 @@ class Syndicate:
         self.var_counter = 0           # Sum over risk model inaccuracies for all contracts
         self.var_counter_per_risk = 0    # Average risk model inaccuracy across contracts
         self.var_sum = 0           # Sum over initial vaR for all contracts
-        self.counter_category = np.zeros(self.simulation_no_risk_categories)     # var_counter disaggregated by category
-        self.var_category = np.zeros(self.simulation_no_risk_categories)
+        self.counter_category = np.zeros(self.num_risk_categories)     # var_counter disaggregated by category
+        self.var_category = np.zeros(self.num_risk_categories)
         self.naccep = []
         self.risk_kept = []
         self.reinrisks_kept = []
-        self.balance_ratio = simulation_parameters['insurers_balance_ratio']
-        self.recursion_limit = simulation_parameters["insurers_recursion_limit"]
-        self.capital_left_by_categ = [self.current_capital for i in range(self.simulation_parameters["no_categories"])]
+        self.balance_ratio = syndicate_args['insurers_balance_ratio']
+        self.recursion_limit = syndicate_args["insurers_recursion_limit"]
+        self.capital_left_by_categ = [self.current_capital for i in range(self.num_risk_categories)]
         self.market_permanency_counter = 0
 
     def data(self):
@@ -146,7 +146,7 @@ class Syndicate:
             "market_entry_probability": self.market_entry_probability,
             "exit_capital_threshold": self.exit_capital_threshold,
             "exit_time_limit": self.exit_time_limit,
-            "sensitivity_premium": self.sensitivity_premium,
+            "premium_sensitivity": self.premium_sensitivity,
             "initial_acceptance_threshold": self.initial_acceptance_threshold,
             "acceptance_threshold_friction": self.acceptance_threshold_friction
         }
@@ -373,7 +373,7 @@ class Syndicate:
         purpose = obligation["purpose"]
         if self.get_operational() and recipient.get_operational():
             self.current_capital -= amount
-            if purpose is not "dividend":
+            if purpose != "dividend":
                 self.profits_losses -= amount
             recipient.receive(amount)
 
@@ -422,8 +422,8 @@ class Syndicate:
         return self
 
     def estimated_var(self):
-        self.counter_category = np.zeros(self.simulation_no_risk_categories)
-        self.var_category = np.zeros(self.simulation_no_risk_categories)
+        self.counter_category = np.zeros(self.num_risk_categories)
+        self.var_category = np.zeros(self.num_risk_categories)
 
         self.var_counter = 0
         self.var_counter_per_risk = 0

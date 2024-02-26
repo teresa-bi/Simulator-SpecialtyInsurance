@@ -52,7 +52,8 @@ def get_arguments():
         "default_non_proportional_reinsurance_deductible": 0.3,
         "default_non-proportional_reinsurance_excess": 1.0,
         "default_non-proportional_reinsurance_premium_share": 0.3,
-
+        "insurers_balance_ratio": 0.1, # This ratio represents how low we want to keep the standard deviation of the cash reserved below the mean for insurers. Lower means more balanced
+        "insurers_recursion_limit": 50, # Intensity of the recursion algorithm to balance the portfolio of risks for insurers
         }
 
     reinsurancefirm_args = {"num_reinsurancefirms": 4, # Number of reinsurance firms in simulation
@@ -100,7 +101,7 @@ def get_arguments():
 
         }
 
-    return sim_args, manager_args, broker_args, syndicate_args, reinsurance_args,  shareholder_args, risk_args
+    return sim_args, manager_args, broker_args, syndicate_args, reinsurancefirm_args,  shareholder_args, risk_args
 
 
 

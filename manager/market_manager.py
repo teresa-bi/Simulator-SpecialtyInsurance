@@ -2,9 +2,9 @@ from __future__ import annotations
 import warnings
 
 import numpy as np
-from agents import Broker, Syndicate, Shareholder, ReinsuranceFirm
+from agents import *
 from environment.market import NoReinsurance_RiskOne, NoReinsurance_RiskFour, Reinsurance_RiskOne, Reinsurance_RiskFour
-from environment.event import CatastropheEvent, AttritionalLossEvent, AddRiskEvent, AddPremiumEvent, AddClaimEvent
+from environment.event import *
 from manager.event_handler import EventHandler
 
 class MarketManager:
@@ -140,27 +140,6 @@ class MarketManager:
         time_to_next_broker_claim_event = next_broker_claim_event.start_time - self.market.time
 
         return time_to_next_catastrophe_event, time_to_next_attritional_loss_event, time_to_next_broker_risk_event, time_to_next_broker_premium_event, time_to_next_broker_claim_event
-
-    def _get_broker_replay_status(self):
-        """
-        Extract status in last evolve() for Broker replayed from data.
-
-        Returns
-        ----------
-        Dict[str, Broker]
-            The status of all brokers. Dictionary keys are Broker identifier.
-        """
-
-        brokers_status = {}
-        
-        for event in self.event_handler.ongoing.values():
-            if isinstance(event, AAddRiskEvent) or isinstance(event, AddClaimEvent) or isinstance(event, AddPremiumEvent):
-                # Update risk list and underwritten_contract list
-                brokers_status = event.get_broker_status()
-                if brokers_status is not None:
-                    broker_status[event.id] = brokers_status
-
-        return brokers_status
     
     def _get_syndicate_replay_status(self):
         """
@@ -175,10 +154,9 @@ class MarketManager:
         syndicates_status = {}
 
         for event in self.event_handler.ongoing.values():
-            if isinstance(event, AAddRiskEvent) or isinstance(event, AddClaimEvent) or isinstance(event, AddPremiumEvent) 
-            or isinstance(event, CatastropheEvent) or isinstance(event, AttritionalLossEvent):
+            if isinstance(event, AddClaimEvent) or isinstance(event, AddPremiumEvent) or isinstance(event, AttritionalLossEvent):
                 # Update capital list
-                syndicates_status = event.get_synidate_status()
+                syndicates_status = event.get_synidate_status(self.syndicates)
                 if syndicates_status is not None:
                     syndicates_status[event.id] = syndicates_status
 
@@ -296,19 +274,19 @@ class MarketManager:
             if claim_id not in newly_added_claim_events:
                 events_start_times.append(self.market.time)
             else:
-                events_start_times.(newly_added_claim_events[claim_id])
+                events_start_times.append(newly_added_claim_events[claim_id])
 
         for catastrophe_id in self.catastrophe():
             if catastrophe_id not in newly_added_catastrophe_events:
                 events_start_times.append(self.market.time)
             else:
-                events_start_times.(newly_added_catastrophe_events[catastrophe_id])
+                events_start_times.append(newly_added_catastrophe_events[catastrophe_id])
 
         for attritionalloss_id in self.attritionalloss():
             if attritionalloss_id not in newly_added_attritionalloss_events:
                 events_start_times.append(self.market.time)
             else:
-                events_start_times.(newly_added_attritionalloss_events[attritionalloss_id])
+                events_start_times.append(newly_added_attritionalloss_events[attritionalloss_id])
 
         # Get the unique start times and sort
         sorted_unique_start_times = np.sort(np.unique(events_start_times))

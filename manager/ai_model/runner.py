@@ -2,7 +2,7 @@ import os
 import ray
 from ray.tune.registry import register_env
 from ray import tune
-from ray.rllib.agents.ppo import PPOTrainer
+from ray.rllib.algorithms.ppo import PPO
 from ipywidgets import IntProgress
 from environment.environment import SpecialtyInsuranceMarketEnv
 
@@ -43,7 +43,7 @@ class AIRunner:
             "evaluation_duration": 20,
             "num_gpus": 0,
             "env_config": insurance_args}
-        self.trainer = PPOTrainer(config=config)
+        self.trainer = PPO(config=config)
 
     def initial_training(self, top_dir, n):
         """

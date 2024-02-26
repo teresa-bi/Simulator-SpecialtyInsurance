@@ -1,5 +1,6 @@
 from __future__ import annotations
 import json
+from environment.event import Event
 from environment.market import NoReinsurance_RiskOne, NoReinsurance_RiskFour, Reinsurance_RiskOne, Reinsurance_RiskFour
 
 class AddPremiumEvent(Event):
@@ -115,4 +116,14 @@ class AddPremiumEvent(Event):
         with open(filename, "w") as file:
             file.write(self.to_json())
 
-    def get_broker_status():
+    def get_syndicate_status(self, syndicates):
+        """
+        Update the syndicate status after the add premium event
+
+        Return
+        -------
+        All Syndicate status, TODO: include current capital, current capital in risk category
+        """
+        for sy_id in range(len(syndicates)):
+            syndicates[sy_id].receive(self.premium)
+

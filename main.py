@@ -13,10 +13,10 @@ from manager.game_model.runner import GameRunner
 if __name__ == '__main__':
 
     # Get the simulation parameters
-    sim_args, manager_args, broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args = get_args()
+    sim_args, manager_args, broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args = get_arguments()
 
     # Create scenario
-    with_reinsurance = Flase
+    with_reinsurance = False
     num_risk_models = 1
     risks, risk_model_configs = RiskGenerator(num_risk_models, sim_args, risk_args).generate_risks()
     brokers, syndicates, reinsurancefirms, shareholders = MarketGenerator(with_reinsurance, num_risk_models, sim_args, broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_model_configs).generate_agents()

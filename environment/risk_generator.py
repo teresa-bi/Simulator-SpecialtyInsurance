@@ -2,6 +2,8 @@ from __future__ import annotations
 import json
 import scipy
 import numpy as np
+import random
+from environment.event import TruncatedDistWrapper
 
 
 class RiskGenerator:
@@ -49,6 +51,14 @@ class RiskGenerator:
         self.risk_factor_upper_bound = risk_args["risk_factor_upper_bound"]
         # Init list of risks
         self.risks = {}
+
+    def get_all_riskmodel_combinations(self, n, rm_factor):
+        riskmodels = []
+        for i in range(self.num_categories):
+            riskmodel_combination = rm_factor * np.ones(self.num_categories)
+            riskmodel_combination[i] = 1/rm_factor
+            riskmodels.append(riskmodel_combination.tolist())
+        return riskmodels
 
     def generate_risks(self):
         """
@@ -122,14 +132,14 @@ class RiskGenerator:
         ----------
         dict
         """
-
-        return {
+        
+        return [{
             "id": self.risks[i].get("risk_id"),
             "time": self.risks[i].get("risk_start_time"),
             "risk_factor": self.risks[i].get("risk_factor"),
             "risk_category": self.risks[i].get("risk_category"),
-            "risk_value": self.risks[i].get("risk_value")
-            for i in range(self.num_risks)}
+            "risk_value": self.risks[i].get("risk_value")}
+        for i in range(self.num_risks)] 
 
     def to_json(self):
         """

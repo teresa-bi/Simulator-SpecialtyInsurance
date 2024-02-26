@@ -1,8 +1,8 @@
 from __future__ import annotations
 import json
 
-from agents import Broker, Syndicate, Shareholder, ReinsuranceFirm, RiskModel
-import environment.event import CatastropheEvent, AttritionalLossEvent, AddRiskEvent, AddPremiumEvent, AddClaimEvent
+from agents import *
+from environment.event import *
 from environment.market import NoReinsurance_RiskOne, NoReinsurance_RiskFour, Reinsurance_RiskOne, Reinsurance_RiskFour
 
 

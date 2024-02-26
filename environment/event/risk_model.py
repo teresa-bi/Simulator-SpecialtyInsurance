@@ -171,8 +171,8 @@ class RiskModel:
                 expected_claim_total = expected_claim_fraction * offered_risk["value"]
 
                 # Record liquidity requirement and apply margin of safety for liquidity requirement
-                additional_required[categ_id] += expected_claim_total * self.,margin_of_safety
-                additional_var_|per_categ[categ_id] += expected_claim_total
+                additional_required[categ_id] += expected_claim_total * self.margin_of_safety
+                additional_var_per_categ[categ_id] += expected_claim_total
 
         # Additional value at risk should only occur in one category
         assert sum(additional_var_per_categ>0)<=1

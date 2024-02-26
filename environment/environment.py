@@ -8,8 +8,9 @@ from gymnasium import logger, spaces
 from gymnasium.envs.classic_control import utils
 from gymnasium.envs.registration import EnvSpec
 from gymnasium.error import DependencyNotInstalled
-from agents import Broker, Syndicate, Shareholder, ReinsuranceFirm
-from environment.event import EventGenerator, CatastropheEvent, AttritionalLossEvent, AddRiskEvent, AddPremiumEvent, AddClaimEvent, RiskModel
+from agents import *
+from environment.event import *
+from environment.event_generator import EventGenerator
 from manager import EventHandler, MarketManager
 
 class SpecialtyInsuranceMarketEnv(gym.Env):
