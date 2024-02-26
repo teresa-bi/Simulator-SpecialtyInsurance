@@ -8,10 +8,9 @@ from gymnasium import logger, spaces
 from gymnasium.envs.classic_control import utils
 from gymnasium.envs.registration import EnvSpec
 from gymnasium.error import DependencyNotInstalled
-from agents import *
-from environment.event import *
+from agents import Broker, Syndicate, ReinsuranceFirm, Shareholder
 from environment.event_generator import EventGenerator
-from manager import EventHandler, MarketManager
+from manager import *
 
 class SpecialtyInsuranceMarketEnv(gym.Env):
     """
@@ -44,6 +43,7 @@ class SpecialtyInsuranceMarketEnv(gym.Env):
 
         super(SpecialtyInsuranceMarketEnv, self).__init__()
 
+        self.sim_args = sim_args
         self.maxstep = self.sim_args["max_time"]
         self.manager_args = manager_args
         self.brokers = brokers
@@ -83,13 +83,13 @@ class SpecialtyInsuranceMarketEnv(gym.Env):
         # Catastrophe event 
         catastrophe_events = EventGenerator(self.risk_model_configs).generate_catastrophe_events(self.risks)
         # Attritioal loss event daily
-        attritional_loss_events = EventGenerator(self.risk_model_configs).generate_attritional_loss_events(sim_args)
+        attritional_loss_events = EventGenerator(self.risk_model_configs).generate_attritional_loss_events(self.sim_args, self.risks)
         # Broker risk event daily: broker generate risk according to poisson distribution
         broker_risk_events = EventGenerator(self.risk_model_configs).generate_risk_events(self.brokers)
         # Broker premium event monthly: broker pay premium to the syndicate 
         broker_premium_events = EventGenerator(self.risk_model_configs).generate_premium_events(self.brokers)
         # Broker claim event: when catastrophe happens, croker brings corresponding claim to syndicate 
-        broker_claim_events = EventGenerator(self.risk_model_configs).generate_claim_events(self.risks, self.brokers)
+        broker_claim_events = EventGenerator(self.risk_model_configs).generate_claim_events(self.brokers)
         # Initiate event handler
         event_handler = EventHandler(self.maxstep, catastrophe_events, attritional_loss_events, broker_risk_events, broker_premium_events, broker_claim_events)
 

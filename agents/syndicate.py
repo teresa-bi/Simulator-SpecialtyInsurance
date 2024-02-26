@@ -5,8 +5,7 @@ Contains all the capabilities of Syndicates
 import numpy as np
 import scipy.stats
 import copy
-from environment.event.risk_model import RiskModel
-from manager.insurance_contract import InsuranceContract
+from environment.risk_model import RiskModel
 import sys, pdb
 import uuid
 
@@ -75,6 +74,8 @@ class Syndicate:
 
         self.status = False   # status True means active, status False means exit (no contract or bankruptcy, at the begining the status is 0 because no syndicate joining the market
 
+        self.current_hold_contracts = []
+
         margin_of_safety_correction = (self.riskmodel_config["margin_of_safety"] + (num_risk_models - 1) * sim_args["margin_increase"])
 
         self.riskmodel = RiskModel(damage_distribution = self.riskmodel_config["damage_distribution"],
@@ -116,6 +117,32 @@ class Syndicate:
         self.recursion_limit = syndicate_args["insurers_recursion_limit"]
         self.capital_left_by_categ = [self.current_capital for i in range(self.num_risk_categories)]
         self.market_permanency_counter = 0
+
+    def add_contract(self, risks, broker_id, premium):
+        """
+        Add new contract to the current_hold_contracts list
+        """
+        self.current_hold_contracts.append({"risk_id": risks.get("risk_id"),
+                                    "broker_id": broker_id,
+                                    "risk_start_time": risks.get("risk_start_time"),
+                                    "risk_factor": risks.get("risk_factor"),
+                                    "risk_category": risks.get("risk_category"),
+                                    "risk_value": risks.get("risk_value"),
+                                    "syndicate_id": self.syndicated_id,
+                                    "premium": premium,
+                                    "risk_end_time": risks.get("risk_start_time")+365,
+                                    "pay": Flase})
+
+    def pay_claim(self, risk_id, broker_id, category_id, claim_value):
+        if self.current_capital >= claim_value:
+            self.current_capital -= claim_value
+            for i in range(len(self.current_hold_contracts)):
+                if (self.current_hold_contracts[i]["risk_id"] == risk_id) and (self.current_hold_contracts[i]["broker_id"] == broker_id): 
+                    self.current_hold_contracts[i]["pay"] == True
+        else:
+            self.current_capital -= claim_value
+     
+        
 
     def data(self):
         """

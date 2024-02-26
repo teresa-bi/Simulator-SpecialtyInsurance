@@ -1,5 +1,9 @@
 from __future__ import annotations
-from environment.event import *
+from environment.event.catastrophe import CatastropheEvent
+from environment.event.attritionalloss import AttritionalLossEvent
+from environment.event.add_risk import AddRiskEvent
+from environment.event.add_premium import AddPremiumEvent
+from environment.event.add_claim import AddClaimEvent
 from environment.market import NoReinsurance_RiskOne
 
 class EventGenerator():
@@ -26,18 +30,18 @@ class EventGenerator():
         self.inaccuracy_by_categ = []
         self.num_riskmodels = len(risk_model_configs)
         for i in range(self.num_riskmodels):
-            self.damage_distribution.append(risk_model_configs["damage_distribution"])
-            self.expire_immediately.append(risk_model_configs["expire_immediately"])
+            self.damage_distribution.append(risk_model_configs[i]["damage_distribution"])
+            self.expire_immediately.append(risk_model_configs[i]["expire_immediately"])
             self.catastrophe_separation_distribution.append(
-                risk_model_configs["catastrophe_separation_distribution"])
-            self.norm_premium.append(risk_model_configs["norm_premium"])
-            self.num_categories.append(risk_model_configs["num_categories"])
-            self.risk_value_mean.append(risk_model_configs["risk_value_mean"])
-            self.risk_factor_mean.append(risk_model_configs["risk_factor_mean"])
-            self.norm_profit_markup.append(risk_model_configs["norm_profit_markup"])
-            self.margin_of_safety.append(risk_model_configs["margin_of_safety"])
-            self.var_tail_prob.append(risk_model_configs["var_tail_prob"])
-            self.inaccuracy_by_categ.append(risk_model_configs["inaccuracy_by_categ"])
+                risk_model_configs[i]["catastrophe_separation_distribution"])
+            self.norm_premium.append(risk_model_configs[i]["norm_premium"])
+            self.num_categories.append(risk_model_configs[i]["num_categories"])
+            self.risk_value_mean.append(risk_model_configs[i]["risk_value_mean"])
+            self.risk_factor_mean.append(risk_model_configs[i]["risk_factor_mean"])
+            self.norm_profit_markup.append(risk_model_configs[i]["norm_profit_markup"])
+            self.margin_of_safety.append(risk_model_configs[i]["margin_of_safety"])
+            self.var_tail_prob.append(risk_model_configs[i]["var_tail_prob"])
+            self.inaccuracy_by_categ.append(risk_model_configs[i]["inaccuracy_by_categ"])
 
     def generate_catastrophe_events(self, risks):
         """
@@ -62,7 +66,7 @@ class EventGenerator():
 
         return catastrophe_events
 
-    def generate_attritional_loss_events(self, sim_args):
+    def generate_attritional_loss_events(self, sim_args, risks):
         """
         Generate a set of AttritionalLossEvent for an insurance market.
 
@@ -72,8 +76,8 @@ class EventGenerator():
             A list of AttritionalLossEvents
         """
         attritional_loss_events = []
-        for time in range(self.max_time):
-            attritional_loss_event = AttritionalLossEvent(time)
+        for time in range(sim_args["max_time"]):
+            attritional_loss_event = AttritionalLossEvent(time, time, risks[0].get("risk_factor"), risks[0].get("risk_category"), risks[0].get("risk_value"))
             attritional_loss_events.append(attritional_loss_event)
 
         return attritional_loss_events
@@ -93,9 +97,9 @@ class EventGenerator():
         """
         add_risk_events = []
         for broker_id in range(len(brokers)):
-            num_total_risks = len(broker[str(broker_id)].risks)
+            num_total_risks = len(brokers[broker_id].risks)
             for k in range(num_total_risks):
-                risk = broker[str(broker_id)].risks[str(k)]
+                risk = brokers[broker_id].risks[k]
                 add_risk_event = AddRiskEvent(risk["risk_id"], risk["broker_id"], risk["risk_start_time"], risk["risk_end_time"], risk["risk_factor"], risk["risk_category"], risk["risk_value"])
                 add_risk_events.append(add_risk_event)
 
@@ -116,9 +120,9 @@ class EventGenerator():
         """
         add_premium_events = []
         for broker_id in range(len(brokers)):
-            num_total_premiums = len(broker[str(broker_id)].underwritten_contract)
+            num_total_premiums = len(brokers[broker_id].underwritten_contracts)
             for k in range(num_total_premiums):
-                premium = broker[str(broker_id)].underwritten_contract[k]  #TODO: cannot be got from the begining, updated during the simulation, related to underwritten_contract
+                premium = brokers[broker_id].underwritten_contracts[k]  #TODO: cannot be got from the begining, updated during the simulation, related to underwritten_contracts
                 add_premium_event = AddPremiumEvent(premium["risk_id"], premium["broker_id"], premium["risk_start_time"], premium["risk_end_time"], premium["risk_category"], premium["risk_value"], premium["syndicate_id"], premium["premium"])
                 add_premium_events.append(add_premium_event)
 
@@ -131,8 +135,6 @@ class EventGenerator():
         Parameters
         ----------
         brokers: a list of Broker
-        risks: list
-            All the generated catastrophe risks
 
         Returns
         ----------
@@ -141,8 +143,8 @@ class EventGenerator():
         """
         add_claim_events = []
         for broker_id in range(len(brokers)):
-            for k in range(len(broker[str(broker_id)].underwritten_contract)):
-                claim = broker[str(broker_id)].underwritten_contract[k]
+            for k in range(len(brokers[broker_id].underwritten_contracts)):
+                claim = brokers[broker_id].underwritten_contracts[k]
                 if claim["claim"] == True:  #TODO: after the claim, it will be false
                     add_claim_event = AddClaimEvent(claim["risk_id"], claim["broker_id"], claim["risk_start_time"], claim["risk_end_time"], claim["risk_category"], claim["risk_value"], claim["syndicate_id"])
                     add_claim_events.append(add_claim_event)    

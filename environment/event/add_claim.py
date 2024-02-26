@@ -1,6 +1,6 @@
 from __future__ import annotations
 import json
-from environment.event import Event
+from environment.event.event import Event
 from environment.market import NoReinsurance_RiskOne, NoReinsurance_RiskFour, Reinsurance_RiskOne, Reinsurance_RiskFour
 
 class AddClaimEvent(Event):
@@ -39,7 +39,7 @@ class AddClaimEvent(Event):
         self.risk_value = risk_value
         self.syndicate_id = syndicate_id
       
-    def run(self, market):
+    def run(self, market, step_time):
         """
         Add claim to the insurance market
 

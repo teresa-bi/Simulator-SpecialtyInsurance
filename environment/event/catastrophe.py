@@ -1,7 +1,6 @@
 from __future__ import annotations
 import warnings
-from environment.event import Event
-from environment.environment import SpecialtyInsuranceMarketEnv
+from environment.event.event import Event
 
 class CatastropheEvent(Event):
     """
@@ -31,10 +30,8 @@ class CatastropheEvent(Event):
         self.risk_category = risk_category
         self.risk_value = risk_value
 
-        Event.__init__(self, start_time=start_time)
-
         
-    def run(self, market):
+    def run(self, market, step_time):
         """
         Add catastrophe to the insruance market
 
@@ -50,13 +47,49 @@ class CatastropheEvent(Event):
             The updated insurance market
         """
 
-        market.catastrophe_event[self.risk_id] = {"catastrophe_id": self.risk_id,
+        # Set time the market should be at once MarketManager.evolve(step_time) is complete 
+        if step_time is None:
+            end_time = market.time
+        else:
+            end_time = market.time + step_time
+
+        # If CatastropheEvent not yet initiated in the Market - add it
+        if self.risk_id not in market.catastrophe_event:
+            market.catastrophe_event[self.risk_id] = {"catastrophe_id": self.risk_id,
                                         "catastrophe_start_time": self.risk_start_time,
                                         "catastrophe_factor": self.risk_factor,
                                         "catastrophe_category": self.risk_category,
                                         "catastrophe_value": self.risk_value
                                         }
+
+        # Catastrophe will influce the broker claim
+        claim_value = [[[] for syndicate_id in range(len(market.syndicates))] for broker_id in range(len(market.brokers))]
+        for broker_id in range(len(market.brokers)):
+            for syndicate_id in range(len(market.syndicates)):
+                claim_value[broker_id][syndicate_id] = market.brokers[broker_id].ask_claim(syndicate_id, self.risk_category)
+
+        # Syndicates pay claim requirements and update status, Brokers receive claims and update status
+        for syndicate_id in range(len(market.syndicates)):
+            for broker_id in range(len(market.brokers)):
+                if market.syndicates[syndicate_id].current_capital >= claim_value[broker_id][syndicate_id]:
+                    # TODO: now pay claim according to broker id, can add other mechanism in the future
+                    market.syndicates[syndicate_id].pay_claim(broker_id, self.risk_category, claim_value[broker_id][syndicate_id])
+                    market.brokers[broker_id].receive_claim(syndicate_id, self.risk_category, claim_value[broker_id][syndicate_id])
+                else:
+                    market.syndicates[syndicate_id].pay_claim(broker_id, self.risk_category, claim_value[broker_id][syndicate_id])
+                    market.brokers[broker_id].receive_claim(syndicate_id, self.risk_category, market.syndicates[syndicate_id].current_capital)
+                    market.syndicates[syndicate_id].bankrupt()                 
+
         return market
+
+
+
+
+
+
+
+
+
 
     def data(self):
         """

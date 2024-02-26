@@ -17,6 +17,10 @@ class Broker:
         self.risks = []
         # Risks be covered, underwritten
         self.underwritten_contracts = []
+        # Risks not be covered
+        self.not_underwritten_risks = []
+        # Claims not being paid
+        self.not_paid_claims = []
 
     def generate_risks(self, time, num_risk):
         """
@@ -35,10 +39,9 @@ class Broker:
                                "broker_id": self.broker_id,
                                "risk_start_time": time,
                                "risk_end_time": time+12*30,
-                               "risk_factor": self.risk_model_configs[model_id].get("risk_factor"),
-                               "risk_category": self.risk_model_configs[model_id].get("risk_category"),
-                               "risk_value": self.risk_model_configs[model_id].get("risk_value")})
-        print
+                               "risk_factor": self.risk_model_configs[model_id].get("risk_factor_mean"),
+                               "risk_category": self.risk_model_configs[model_id].get("num_categories"),
+                               "risk_value": self.risk_model_configs[model_id].get("risk_value_mean")})
 
         return self.risks
 
@@ -79,7 +82,16 @@ class Broker:
 
         return matched_contracts
 
-    def pay_premium(self, syndicate_id):
+    def not_underwritten_risk(self):
+        """
+        Risks not being covered
+        """
+        for risk_id in range(len(self.risks)):
+            if self.risks[risk_id]["risk_id"] not in self.underwritten_contracts:
+                self.not_underwritten_risks.append(self.risks[risk_id])
+
+
+    def pay_premium(self, syndicate_id, category_id):
         """
         Pay premium to the syndicates
 
@@ -91,7 +103,7 @@ class Broker:
         matched_contracts = []
         total_premium = 0
         for i in range(len(self.underwritten_contracts)):
-            if self.underwritten_contracts[i].get("syndicated_id") == syndicated_id:
+            if (self.underwritten_contracts[i].get("syndicated_id") == syndicated_id) and (self.underwritten_contracts[i].get("risk_category") == category_id):
                 matched_contracts.append(self.underwritten_contracts[i])
         for i in range(len(matched_contracts)):
             total_premium += matched_contracts.get("premium")
@@ -131,6 +143,8 @@ class Broker:
             for contract in self.underwritten_contracts:
                 if (self.underwritten_contracts[contract].get("syndicated_id") == syndicated_id) and (self.underwritten_contracts[contract].get("risk_category") == category_id):
                     self.underwritten_contracts[contract]["claim"] = True
+                else:
+                    self.not_paid_claims.append(self.underwritten_contracts[contract])
 
     def data(self):
         """

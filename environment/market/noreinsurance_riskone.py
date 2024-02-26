@@ -39,16 +39,11 @@ class NoReinsurance_RiskOne:
         self.risk_model_configs = risk_model_configs
         
         # Status of risks and claims
-        # Broker_bring_risk 
-        self.broker_bring_risk = self.brokers.risks
-        self.underwritten_risk = self.brokers.underwritten_contracts
-        self.not_underwritten_risk = not_underwritten_risk()
-        # Broker_pay_premium
-        self.broker_pay_premium = self.syndicates.receive_premium
-        # Broker_bring_claim
-        self.broker_bring_claim = self.brokers.ask_claim
-        # Not paid claim
-        self.not_paid_claim = not_paid_claim()
+        self.catastrophe_event = []
+        self.attritional_loss_event = []
+        self.broker_bring_risk = []
+        self.broker_pay_premium = []
+        self.broker_bring_claim = []
 
     def data(self):
         """
@@ -94,22 +89,5 @@ class NoReinsurance_RiskOne:
 
         with open(filename, "w") as file:
             file.write(self.to_json())
-
-    def not_underwritten_risk(self):
-        not_underwritten_risks = []
-        under_written_riskid = []
-        for written_risk_id in range(len(self.brokers.underwritten_contracts)):
-            under_written_riskid.append(self.brokers.underwritten_contracts[written_risk_id]["risk_id"])
-        for bring_risk_id in range(len(self.brokers.risks)):
-            if self.brokers.risks[bring_risk_id]["risk_id"] not in under_written_riskid:
-                not_underwritten_risks.append(self.brokers.risks[bring_risk_id])
-        return not_underwritten_risks
-
-    def not_paid_claim(self):
-        not_paid_claims = []
-        for contract in len(self.underwritten_contracts):
-            if self.underwritten_contracts[contract]["claim"] == False:
-                not_paid_claims.append(self.underwritten_contracts[contract])
-        return not_paid_claims
 
 

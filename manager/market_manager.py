@@ -2,7 +2,6 @@ from __future__ import annotations
 import warnings
 
 import numpy as np
-from agents import *
 from environment.market import NoReinsurance_RiskOne, NoReinsurance_RiskFour, Reinsurance_RiskOne, Reinsurance_RiskFour
 from environment.event import *
 from manager.event_handler import EventHandler
@@ -13,7 +12,7 @@ class MarketManager:
     """
 
     def __init__(self, maxstep, manager_args, brokers, syndicates, reinsurancefirms, shareholders, risks, risk_model_configs, with_reinsurance, num_risk_models, 
-                catastrophe_events, attritional_loss_events, broker_risk_events, broker_premium_events, broker_claim_events, event_handler, logger, time = 0):
+                catastrophe_events, attritional_loss_events, broker_risk_events, broker_premium_events, broker_claim_events, event_handler, logger = None, time = 0):
         """
         Construct a new instance.
 

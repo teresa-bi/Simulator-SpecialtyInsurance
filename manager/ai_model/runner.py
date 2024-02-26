@@ -22,6 +22,10 @@ class AIRunner:
         self.with_reinsurance = with_reinsurance
         self.num_risk_models = num_risk_models
         self.trainer = None
+        if self.with_reinsurance == False:
+            self.scenario = str("noreinsurance")
+        else:
+            self.scenario = str("reinsurance")
 
     def env_creator(self, env_config):
         """
@@ -38,14 +42,14 @@ class AIRunner:
         config={"log_level": "ERROR",
             "env": "SpecialtyInsuranceMarket-validation",
             "num_workers": 2,
-            "framework": "tf",
+            "framework": "torch",
             "evaluation_interval": 2, #num of training iter between evaluation
             "evaluation_duration": 20,
             "num_gpus": 0,
             "env_config": insurance_args}
         self.trainer = PPO(config=config)
 
-    def initial_training(self, top_dir, n):
+    def training(self, top_dir, n):
         """
         Initial Training Iteration for the PPO Trainer
         """
@@ -97,46 +101,12 @@ class AIRunner:
 
         self.trainer.restore(os.path.join(path0, path1, path2, path3, path4))
 
-    def compute_rewards(self, x):
-        """
-        Compute total rewards
-        """
-
-        args = {
-            "": x[0],
-            "": x[1],
-            "": x[2],
-            "": x[3],
-        }      #####TODO: auguments to be analysed in specialty insruance market simlation, forexample, incentive
-
-        validation_episodes = 1
-        env = SpecialtyInsuranceMarket(**args)
-        total_steps = 0
-        for epi in range(validation_episodes):
-            obs = env.reset()
-            done = False
-            total_reward = 0
-    
-            print(f"\nepisode: {epi} | ")
-            while not done:
-                if total_steps % 20 == 0: print(".", end="")   
-                action = self.trainer.compute_single_action(obs)   
-                total_steps += 1    
-                obs, reward, done, info = env.step(action)
-                #env.render()
-                total_reward += reward
-            print("Done")
-            print("Reward: ", total_reward)
-            #env.close()
-
-        return total_reward
-
     def testing(self):
         """
         Test the training performance
         """
 
-        insurance_args = {"simulation_args": self.sim_args,
+        insurance_args = {"sim_args": self.sim_args,
                 "manager_args": self.manager_args,
                 "brokers": self.brokers,
                 "syndicates": self.syndicates,
@@ -170,66 +140,42 @@ class AIRunner:
 
         return total_reward
 
-    def robust_training(self, scenario_training, top_dir, n):
-        """
-        Train agent with collected worse scenario
-        """
-        # Create a path to store the trained agent for each iteration
-        model_filepath = f"{top_dir}/{str(n)}/saved_models"
-        num_episode = 10
-        bar = IntProgress(min=0, max=num_episode)
-        display(bar)
-        for i in range(len(scenario_training)):
-            self.trainer.config["env_config"] = scenario_training[i]
-            for i in range(num_episode):
-                result = self.trainer.train() 
-                print("Progress:", i+1, "/", num_episode, end="\r")
-                bar.value += 1
-                if i % 10 == 0:
-                    self.trainer.save(model_filepath)
-
     def run(self):
         # Folder for recording
-        top_dir = "insurance_scenario_" + self.scenario + "_model_" + self.model
+        top_dir = "insurance_scenario_" + self.scenario + "_model_" + str(self.num_risk_models)
 
         # Register environment
         register_env("SpecialtyInsuranceMarket-validation", self.env_creator)
 
         # The number of training iteration for the RL agent
-        num_training = 100
+        num_training = 10
 
-        is_initial = True
+        insurance_args = {"sim_args": self.sim_args,
+                        "manager_args": self.manager_args,
+                        "brokers": self.brokers,
+                        "syndicates": self.syndicates,
+                        "reinsurancefirms": self.reinsurancefirms,
+                        "shareholders": self.shareholders,
+                        "risks": self.risks,
+                        "risk_model_configs": self.risk_model_configs,
+                        "with_reinsurance": self.with_reinsurance,
+                        "num_risk_models": self.num_risk_models}
+        self.ppo_trainer_creator(insurance_args)
+
         for n in range(num_training):
-            # Initialize the training policy pi_0
-            if is_initial:
-                # Initial arguments to define Specialty Insurance Market scenario 
-                insurance_args = {"simulation_args": self.sim_args,
-                                "manager_args": self.manager_args,
-                                "brokers": self.brokers,
-                                "syndicates": self.syndicates,
-                                "reinsurancefirms": self.reinsurancefirms,
-                                "shareholders": self.shareholders,
-                                "risks": self.risks,
-                                "risk_model_configs": self.risk_model_configs,
-                                "with_reinsurance": self.with_reinsurance,
-                                "num_risk_models": self.num_risk_models}
-                self.ppo_trainer_creator(insurance_args)
+            if n == 0:
         
                 # Return the trained trainer
-                self.initial_training(top_dir, n)
+                self.training(top_dir, n)
         
                 # Test the performance of the trained agent
                 rewards = self.testing()
-                is_initial = False
             else:
-                # For each training agent, initialize a training set
-                scenario_training = []
-                rewards_training = []
         
                 # Then train
                 self.trainer_restore(top_dir, n)
         
-                self.robust_training(scenario_training[:-10], top_dir, n)
+                self.training(top_dir, n)
         
                 # Test the performance of the trained agent
                 rewards = self.testing(self.trainer)

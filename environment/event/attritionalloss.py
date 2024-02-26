@@ -1,10 +1,10 @@
-from environment.event import Event
+from environment.event.event import Event
 
 class AttritionalLossEvent(Event):
     """
     Generate daily attritional loss
     """
-    def __init__(self,start_time):
+    def __init__(self,risk_id, risk_start_time, risk_factor, risk_category, risk_value):
         """
         Construct a new attritional loss event
 
@@ -28,9 +28,7 @@ class AttritionalLossEvent(Event):
         self.risk_category = risk_category
         self.risk_value = risk_value
 
-        Event.__init__(self, start_time=start_time, repeated=True)
-
-    def run(self, market):
+    def run(self, market, step_time):
         """
         Add attritional loss to the insruance market
 
@@ -52,6 +50,10 @@ class AttritionalLossEvent(Event):
                                         "attritional_loss_category": self.risk_category,
                                         "attritional_loss_value": self.risk_value
                                         }
+
+        for i in range(len(market.syndicates)):
+            market.syndicates.current_capital -= 0   # TODO: After considering attritional loss, this value will change
+
         return market
 
     def data(self):

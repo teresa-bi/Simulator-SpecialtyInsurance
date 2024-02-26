@@ -5,7 +5,6 @@ import numpy as np
 import random
 from environment.event import TruncatedDistWrapper
 
-
 class RiskGenerator:
     """
     Generate all the risks for the simulation in the form of RiskModel

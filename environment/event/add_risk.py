@@ -1,7 +1,7 @@
 from __future__ import annotations
 import json
 from agents import Broker
-from environment.event import Event
+from environment.event.event import Event
 from environment.market import NoReinsurance_RiskOne, NoReinsurance_RiskFour, Reinsurance_RiskOne, Reinsurance_RiskFour
 
 class AddRiskEvent(Event):
@@ -39,7 +39,7 @@ class AddRiskEvent(Event):
         self.risk_category = risk_category
         self.risk_value = risk_value
 
-    def run(self, market):
+    def run(self, market, step_time):
         """
         Add risk brought bt brokers to the insruance market 
 
@@ -54,7 +54,15 @@ class AddRiskEvent(Event):
             The updated market
         """
 
-        market.broker_bring_risk[self.risk_id] = {"risk_id": self.risk_id,
+        # Set time the market should be at once MarketManager.evolve(step_time) is complete 
+        if step_time is None:
+            end_time = market.time
+        else:
+            end_time = market.time + step_time
+
+        # If CatastropheEvent not yet initiated in the Market - add it
+        if self.risk_id not in market.broker_bring_risk:
+            market.broker_bring_risk[self.risk_id] = {"risk_id": self.risk_id,
                                                 "broker_id": self.broker_id,
                                                 "risk_start_time": self.risk_start_time,
                                                 "risk_end_time": self.risk_end_time,
@@ -62,6 +70,12 @@ class AddRiskEvent(Event):
                                                 "risk_category": self.risk_category,
                                                 "risk_value": self.risk_value
                                                 }
+
+        # Add risk will influence broker contract
+        for broker_id in range(len(market.brokers)):
+            for syndicate_id in range(len(market.syndicates)):
+                claim_value[broker_id][syndicate_id] = market.brokers[broker_id].ask_claim(syndicate_id, self.risk_category)
+        
 
         return market
 
