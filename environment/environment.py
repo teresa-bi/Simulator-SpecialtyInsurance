@@ -4,10 +4,7 @@ import numpy as np
 import cairosvg
 
 import gymnasium as gym
-from gymnasium import logger, spaces
-from gymnasium.envs.classic_control import utils
-from gymnasium.envs.registration import EnvSpec
-from gymnasium.error import DependencyNotInstalled
+from gymnasium import spaces
 from agents import Broker, Syndicate, ReinsuranceFirm, Shareholder
 from environment.event_generator import EventGenerator
 from manager import *
@@ -41,8 +38,6 @@ class SpecialtyInsuranceMarketEnv(gym.Env):
 
     def __init__(self, sim_args, manager_args, brokers, syndicates, reinsurancefirms, shareholders, risks, risk_model_configs, with_reinsurance, num_risk_models, dt = 1):
 
-        super(SpecialtyInsuranceMarketEnv, self).__init__()
-
         self.sim_args = sim_args
         self.maxstep = self.sim_args["max_time"]
         self.manager_args = manager_args
@@ -61,12 +56,20 @@ class SpecialtyInsuranceMarketEnv(gym.Env):
         self.num_risk_models = num_risk_models
         self.dt = dt
         self.mm = None
+
+        super(SpecialtyInsuranceMarketEnv, self).__init__()
         # Active syndicate list
         self.syndicate_active_list = []
         # Action list
         self.action_list = []
         # Catastrophe event at time t, including risk category and risk value
         self.catastrophe = []
+
+        # Define Action Space: syndicate line size from 0.5 to 0.9
+        self.action_space = spaces.Box(0.5, 0.9, dtype = np.float32)
+        
+        # Define Observation Space
+        self.observation_space = self.obs_space_creator()
 
         # Reset the environmnet
         self.reset()
@@ -238,4 +241,22 @@ class SpecialtyInsuranceMarketEnv(gym.Env):
                 obv.append(self.syndicate_active_list[i]["current_capital_category"][num])
             
         return np.array(obv, dtype = np.float32)
+
+    def obs_space_creator(self):
+        low = []
+        high = []
+        # risk_category, risk_value, current capital category for each syndicate
+        low.append(0.0)
+        high.append(4.0) # Number of risk category
+        low.append(0.0)
+        high.append(10000000) # risk limit
+        for i in range(len(self.syndicate_active_list)):
+            low.append(-10000000)
+            high.append(30000000)
+        # add relative range and bearing
+        for i in range(2):
+            low.append(-10000000)
+            high.append(30000000)
+        observation_space = spaces.Box(np.array(low, dtype=np.float32), np.array(high, dtype=np.float32)) 
+        return observation_space
    

@@ -4,7 +4,7 @@ class AttritionalLossEvent(Event):
     """
     Generate daily attritional loss
     """
-    def __init__(self,risk_id, risk_start_time, risk_factor, risk_category, risk_value):
+    def __init__(self, risk_id, risk_start_time, risk_factor, risk_category, risk_value):
         """
         Construct a new attritional loss event
 
@@ -43,8 +43,8 @@ class AttritionalLossEvent(Event):
         market: NoReinsurance_RiskOne
             The updated insurance market
         """
-
-        market.attritional_loss_event[self.risk_id] = {"attritional_loss_id": self.risk_id,
+        if self.risk_id not in market.attritional_loss_event:
+            market.attritional_loss_event[self.risk_id] = {"attritional_loss_id": self.risk_id,
                                         "attritional_loss_start_time": self.risk_start_time,
                                         "attritional_loss_factor": self.risk_factor,
                                         "attritional_loss_category": self.risk_category,
