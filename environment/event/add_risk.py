@@ -1,5 +1,6 @@
 from __future__ import annotations
 import json
+import warnings
 from agents import Broker
 from environment.event.event import Event
 from environment.market import NoReinsurance_RiskOne, NoReinsurance_RiskFour, Reinsurance_RiskOne, Reinsurance_RiskFour
@@ -62,14 +63,8 @@ class AddRiskEvent(Event):
 
         # If CatastropheEvent not yet initiated in the Market - add it
         if self.risk_id not in market.broker_bring_risk:
-            market.broker_bring_risk[self.risk_id] = {"risk_id": self.risk_id,
-                                                "broker_id": self.broker_id,
-                                                "risk_start_time": self.risk_start_time,
-                                                "risk_end_time": self.risk_end_time,
-                                                "risk_factor": self.risk_factor,
-                                                "risk_category": self.risk_category,
-                                                "risk_value": self.risk_value
-                                                }
+            warnings.warn(f"{self.risk_id} Event not in the market, cannot update...", UserWarning)
+            return market
 
         # Add risk will influence broker contract
         for broker_id in range(len(market.brokers)):

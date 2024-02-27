@@ -1,3 +1,4 @@
+import warnings
 from environment.event.event import Event
 
 class AttritionalLossEvent(Event):
@@ -44,15 +45,11 @@ class AttritionalLossEvent(Event):
             The updated insurance market
         """
         if self.risk_id not in market.attritional_loss_event:
-            market.attritional_loss_event[self.risk_id] = {"attritional_loss_id": self.risk_id,
-                                        "attritional_loss_start_time": self.risk_start_time,
-                                        "attritional_loss_factor": self.risk_factor,
-                                        "attritional_loss_category": self.risk_category,
-                                        "attritional_loss_value": self.risk_value
-                                        }
+            warnings.warn(f"{self.risk_id} Event not in the market, cannot update...", UserWarning)
+            return market
 
         for i in range(len(market.syndicates)):
-            market.syndicates.current_capital -= 0   # TODO: After considering attritional loss, this value will change
+            market.syndicates[i].current_capital -= 0   # TODO: After considering attritional loss, this value will change
 
         return market
 

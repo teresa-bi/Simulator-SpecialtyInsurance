@@ -132,21 +132,22 @@ class EventHandler:
 
                 # Store the event_id to be removed
                 catastrophe_events_to_remove_from_ongoing[event_id] = 1
-
+       
         # Attritional loss event
         attritional_loss_events_to_remove_from_ongoing = {}
         for event_id, event in self.ongoing_attritional_loss.items():
             market = event.run(market, step_time=step_time)
             if not event.repeated:
-                self.attritional_loss_catastrophe[event_id] = event
+                self.completed_attritional_loss[event_id] = event
                 attritional_loss_events_to_remove_from_ongoing[event_id] = 1
+       
 
         # Broker brought risk event
         broker_risk_events_to_remove_from_ongoing = {}
         for event_id, event in self.ongoing_broker_risk.items():
             market = event.run(market, step_time=step_time)
             if not event.repeated:
-                self.broker_risk_catastrophe[event_id] = event
+                self.completed_broker_risk[event_id] = event
                 broker_risk_events_to_remove_from_ongoing[event_id] = 1
 
         # Broker brought premium event
@@ -154,7 +155,7 @@ class EventHandler:
         for event_id, event in self.ongoing_broker_premium.items():
             market = event.run(market, step_time=step_time)
             if not event.repeated:
-                self.broker_premium_catastrophe[event_id] = event
+                self.completed_qbroker_premium[event_id] = event
                 broker_premium_events_to_remove_from_ongoing[event_id] = 1
 
         # Broker brought claim event
@@ -162,7 +163,7 @@ class EventHandler:
         for event_id, event in self.ongoing_broker_claim.items():
             market = event.run(market, step_time=step_time)
             if not event.repeated:
-                self.broker_claim_catastrophe[event_id] = event
+                self.completed_broker_claim[event_id] = event
                 broker_claim_events_to_remove_from_ongoing[event_id] = 1
 
         # Temporary dict to store which events to remove from the upcoming dict
@@ -192,7 +193,7 @@ class EventHandler:
         # Remove newly-started events from the upcoming event dict
         for event_id in catastrophe_events_to_remove_from_upcoming:
             del self.upcoming_catastrophe[event_id]
-
+        
         # Attritional loss event
         attritional_loss_events_to_remove_from_upcoming = {}
         for event_id, event in self.upcoming_attritional_loss.items():

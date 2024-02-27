@@ -76,7 +76,7 @@ class EventGenerator():
             A list of AttritionalLossEvents
         """
         attritional_loss_events = []
-        for time in range(sim_args["max_time"]):
+        for time in range(sim_args.get("max_time")):
             attritional_loss_event = AttritionalLossEvent(time, time, risks[0].get("risk_factor"), risks[0].get("risk_category"), risks[0].get("risk_value"))
             attritional_loss_events.append(attritional_loss_event)
 
