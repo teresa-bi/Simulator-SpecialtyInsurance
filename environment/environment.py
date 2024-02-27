@@ -14,7 +14,7 @@ class SpecialtyInsuranceMarketEnv(gym.Env):
     This environment corresponds to Syndicates Lloyd's of London 
 
     ### Action Space
-    For each syndiacte, the offering line size for each contract
+    For each syndiacte, the offering line size for each contract and corresponding price
 
     ### Observation Space
     For each syndicate, the active or exit status, the remaining capital amount in each risk category
@@ -60,16 +60,26 @@ class SpecialtyInsuranceMarketEnv(gym.Env):
         super(SpecialtyInsuranceMarketEnv, self).__init__()
         # Active syndicate list
         self.syndicate_active_list = []
-        # Action list
-        self.action_list = []
-        # Catastrophe event at time t, including risk category and risk value
-        self.catastrophe = []
+        # Initialise events, actions, and states 
+        self.catastrophe_events = []
+        self.attritional_loss_events = []
+        self.broker_risk_events = []
+        self.broker_premium_events = []
+        self.broker_claim_events = []
+        self.action_map_dict = {}
+        self.state_encoder_dict = {}
+        self.step_track = 0
 
-        # Define Action Space: syndicate line size from 0.5 to 0.9
-        self.action_space = spaces.Box(0.5, 0.9, dtype = np.float32)
+        # Define Action Space
+        self.action_space = self.set_action_space()
         
         # Define Observation Space
         self.observation_space = self.obs_space_creator()
+
+        # Define Action Space: syndicate line size from 0.5 to 0.9
+        # self.action_space = spaces.Box(0.5, 0.9, dtype = np.float32)
+        # Define Observation Space
+        # self.observation_space = self.obs_space_creator()
 
         # Reset the environmnet
         self.reset()
@@ -84,17 +94,16 @@ class SpecialtyInsuranceMarketEnv(gym.Env):
         self.risks = self.initial_risks
 
         # Catastrophe event 
-        catastrophe_events = EventGenerator(self.risk_model_configs).generate_catastrophe_events(self.risks)
+        self.catastrophe_events = EventGenerator(self.risk_model_configs).generate_catastrophe_events(self.risks)
         # Attritioal loss event daily
-        attritional_loss_events = EventGenerator(self.risk_model_configs).generate_attritional_loss_events(self.sim_args, self.risks)
+        self.attritional_loss_events = EventGenerator(self.risk_model_configs).generate_attritional_loss_events(self.sim_args, self.risks)
         # Broker risk event daily: broker generate risk according to poisson distribution
-        broker_risk_events = EventGenerator(self.risk_model_configs).generate_risk_events(self.brokers)
-        # Broker premium event monthly: broker pay premium to the syndicate 
-        broker_premium_events = EventGenerator(self.risk_model_configs).generate_premium_events(self.brokers)
-        # Broker claim event: when catastrophe happens, croker brings corresponding claim to syndicate 
-        broker_claim_events = EventGenerator(self.risk_model_configs).generate_claim_events(self.brokers)
-        # Initiate event handler
-        event_handler = EventHandler(self.maxstep, catastrophe_events, attritional_loss_events, broker_risk_events, broker_premium_events, broker_claim_events)
+        self.broker_risk_events = EventGenerator(self.risk_model_configs).generate_risk_events(self.brokers)
+        event_handler = EventHandler(self.maxstep, catastrophe_events, attritional_loss_events, broker_risk_events)
+        # Broker pay premium according to underwritten contracts
+        self.broker_premium_events = []
+        # Broker ask for claim if the contract affected by catastrophe
+        self.broker_claim_events = []
 
         # Initiate market manager
         self.mm = MarketManager(self.maxstep, self.manager_args, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.risks, self.risk_model_configs, self.with_reinsurance, self.num_risk_models, catastrophe_events, attritional_loss_events, broker_risk_events, broker_premium_events, broker_claim_events, event_handler)
@@ -105,21 +114,18 @@ class SpecialtyInsuranceMarketEnv(gym.Env):
         for sy in self.mm.market.syndicates:
             if self.mm.market.syndicates[sy].status == True:
                 self.syndicate_active_list.append(sy)
-        
-        # Initiate action list for syndicates, no syndicate joined the market at the begining, but set action for all the syndicates becuase RL require the same size action size, for exit syndicate and for no action, the actions are 0
-        self.action_list = []
-        # Cannot know the number of risks brought by brokers each day, so set a max number and the action size is fixed
-        max_number_risks_per_day = 100
+
+        # Create action map and state list
         for sy in self.syndicate_active_list:
-            for r in max_number_risks_per_day:
-                self.action_list.append(0)
+            self.action_map_dict[sy] = self.action_map_creator(sy)
+            self.state_encoder_dict[sy] = self.state_encoder(sy)
 
         # Initiate time step
         self.timestep = -1
         self.step_track = 0
         self.log = []
 
-        return self.state_encoder()
+        return self.state_encoder_dict
         
     def step(self, action):
         
@@ -129,17 +135,17 @@ class SpecialtyInsuranceMarketEnv(gym.Env):
         self.send_action2env(action)
         market = self.mm.evolve(self.dt)
 
+        # Check termination status
+        done = self.check_termination()
+
         # Time
         self.timestep += 1
-
-        # Get next observation
-        obs = self.state_encoder()
 
         # Compute rewards
         reward = self.compute_reward()
 
-        # Check termination status
-        done = self.check_termination()
+        # Get next observation
+        obs = self.state_encoder()
 
         # Update Plot 
         self.draw2file(market)
@@ -259,4 +265,33 @@ class SpecialtyInsuranceMarketEnv(gym.Env):
             high.append(30000000)
         observation_space = spaces.Box(np.array(low, dtype=np.float32), np.array(high, dtype=np.float32)) 
         return observation_space
+
+    def action_map_creator(self, syndicate_id, broker_id, risk_id):
+        action_map = []
+        action_map.append(None)
+        for cs in callsigns:
+            action_map.append(Action(syndicate_id, action, risk_id, broker_id))
+            action_map.append(Action(cs, "change_heading_by", 10))
+            action_map.append(Action(cs, "change_flight_level_to", self.em.environment.aircraft[cs].flight_plan.exit.fl))
+        return action_map
+
+    def set_action_space(self):
+        tmp_action_map = self.action_map_creator("tmp")
+        return spaces.Discrete(len(tmp_action_map))
+
+    def obs_space_creator(self):
+        low, high = [], []
+
+        low.extend( [  -1.0,    -1.0,     -1.0,  -1.0])
+        high.extend([ 360.0,    500.0,   360.0, 500.0])
+        observation_space = spaces.Box(np.array(low, dtype=np.float32), 
+                                       np.array(high, dtype=np.float32)) 
+        return observation_space
+
+        # ---- Other codes
+        # # current and cleared heading, exit heading, handed dist from centreline, along track distance
+        # # current flight level, cleared flight level, exit flight level, transferred
+        # low.extend( [-180.0,  -1500,    0.0,   0.0,   0.0])
+        # high.extend([180.0,  1500.0,  500.0, 500.0, 500.0])
+
    

@@ -19,6 +19,8 @@ class Broker:
         self.underwritten_contracts = []
         # Risks not be covered
         self.not_underwritten_risks = []
+        # Contracts affected by the catastrophe 
+        self.affected_contracts = []
         # Claims not being paid
         self.not_paid_claims = []
 
