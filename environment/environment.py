@@ -111,14 +111,14 @@ class SpecialtyInsuranceMarketEnv(gym.Env):
         
         # Set per syndicate active status and build status list
         self.syndicate_active_list = []   # Store syndicates currently in the market
-        for sy in self.mm.market.syndicates:
-            if self.mm.market.syndicates[sy].status == True:
-                self.syndicate_active_list.append(sy)
+        for syndicate_id in self.mm.market.syndicates:
+            if self.mm.market.syndicates[syndicate_id].status == True:
+                self.syndicate_active_list.append(syndicate_id)
 
         # Create action map and state list
         for sy in self.syndicate_active_list:
-            self.action_map_dict[sy] = self.action_map_creator(sy)
-            self.state_encoder_dict[sy] = self.state_encoder(sy)
+            self.action_map_dict[syndicate_id] = self.action_map_creator(syndicate_id)
+            self.state_encoder_dict[syndicate_id] = self.state_encoder(syndicate_id)
 
         # Initiate time step
         self.timestep = -1
@@ -127,30 +127,49 @@ class SpecialtyInsuranceMarketEnv(gym.Env):
 
         return self.state_encoder_dict
         
-    def step(self, action):
-        
-        log = {}  
+    def step(self, action_dict):
+
+        obs_dict = {}
+        reward_dict = {}
+        done_dict = {}
+        log_dict = {}  
 
         # Update environemnt after actions
-        self.send_action2env(action)
+        parsed_actions = []        
+        for syndicate_id, action in action_dict.items():
+            # update action map
+            self.action_map = self.action_map_creator(syndicate_id)
+            parsed_ac2add = self.action_map[action]
+            parsed_actions.append(parsed_ac2add)
+        
+        self.send_action2env(parsed_actions)
+        
         market = self.mm.evolve(self.dt)
-
-        # Check termination status
-        done = self.check_termination()
-
-        # Time
         self.timestep += 1
 
-        # Compute rewards
-        reward = self.compute_reward()
+        # Compute rewards and get next observation
+        for syndicate_id, action in action_dict.items():
+            reward_dict[syndicate_id] = self.compute_reward(action, syndicate_id)
+            obs_dict[syndicate_id] = self.state_encoder(syndicate_id)
+            log_dict[syndicate_id] = {}
+        
+        # Check termination
+        for syndicate_id in self.syndicate_active_list:
+            done_dict[syndicate_id] = self.check_termination(syndicate_id)
 
-        # Get next observation
-        obs = self.state_encoder()
-
-        # Update Plot 
+        # Update plot 
         self.draw2file(market)
 
-        return obs, reward, done, log
+        # All done termination check
+        all_done = True
+        for _, callsign_done in done_dict.items():
+            if callsign_done is False:
+                all_done = False
+                break
+        
+        done_dict["__all__"] = all_done
+
+        return obs_dict, reward_dict, done_dict, log_dict
 
     def draw2file(self, market):
 
@@ -159,29 +178,28 @@ class SpecialtyInsuranceMarketEnv(gym.Env):
 
         self.step_track += 1
 
-    def check_termination(self):
+    def check_termination(self, syndicate_id):
 
         # Update per syndicate status, True-active in market, False-exit market becuase of no contract or bankruptcy
         market = self.mm.market
-        for sy in market.syndicates:
-            if market.syndicates[sy].status == False:
-                self.syndicate_active[sy] = False
-                del self.syndicate_active_list[sy]
+        sy = market.syndicates[syndicate_id] 
+        if sy.status == False:
+            self.syndicate_active[syndicate_id] = False
+            del self.syndicate_active_list[syndicate_id]
 
-        # The simulation is done when all syndicates exit or bankrupt or reach the maximum time step
+        # The simulation is done when syndicates exit or bankrupt or reach the maximum time step
         run_complete = True
-        for sy in market.syndicates:
-            if self.syndicate_active[sy] == True:
-                run_complete = False
-                break
-        if run_complete or (self.timestep >= self.maxstep):
+        if self.syndicate_active[syndicate_id] == True:
+            run_complete = False
+            break
+        if run_complete or ((self.timestep+1) >= self.maxstep):
             done = True
         else:
             done = False
 
         return done
 
-    def compute_reward(self, action):
+    def compute_reward(self, action, syndicate_id):
 
         market = self.mm.market
         # calculate reward function
@@ -287,11 +305,5 @@ class SpecialtyInsuranceMarketEnv(gym.Env):
         observation_space = spaces.Box(np.array(low, dtype=np.float32), 
                                        np.array(high, dtype=np.float32)) 
         return observation_space
-
-        # ---- Other codes
-        # # current and cleared heading, exit heading, handed dist from centreline, along track distance
-        # # current flight level, cleared flight level, exit flight level, transferred
-        # low.extend( [-180.0,  -1500,    0.0,   0.0,   0.0])
-        # high.extend([180.0,  1500.0,  500.0, 500.0, 500.0])
 
    
