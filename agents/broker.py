@@ -24,23 +24,21 @@ class Broker:
         # Claims not being paid
         self.not_paid_claims = []
 
-    def generate_risks(self, time, num_risk):
+    def generate_risks(self, risks):
         """
         Return risks brought by broker daily, according to poission distribution
         """
-        if time > self.sim_time_span:
-            Exception("Sorry, simulation stopped")
-        random.seed(time + 123)
+        random.seed(123)
         model_id = random.randint(0,self.num_risk_models-1)
         self.risks = []
         ######TODO: need to be fixed, how to generate poission distribution risks
         #num_risks_daily = self.broker_lambda_risks
-        num_risks_daily = num_risk
+        num_risks_daily = len(risks)
         for index in range(num_risks_daily):
             self.risks.append({"risk_id": index,
                                "broker_id": self.broker_id,
-                               "risk_start_time": time,
-                               "risk_end_time": time+12*30,
+                               "risk_start_time": risks[index].get("risk_start_time"),
+                               "risk_end_time": risks[index].get("risk_start_time")+12*30,
                                "risk_factor": self.risk_model_configs[model_id].get("risk_factor_mean"),
                                "risk_category": self.risk_model_configs[model_id].get("num_categories"),
                                "risk_value": self.risk_model_configs[model_id].get("risk_value_mean")})

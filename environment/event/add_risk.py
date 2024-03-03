@@ -3,6 +3,7 @@ import json
 import warnings
 from agents import Broker
 from environment.event.event import Event
+from environment.event.risk import RiskEvent
 from environment.market import NoReinsurance_RiskOne, NoReinsurance_RiskFour, Reinsurance_RiskOne, Reinsurance_RiskFour
 
 class AddRiskEvent(Event):
@@ -55,22 +56,17 @@ class AddRiskEvent(Event):
             The updated market
         """
 
-        # Set time the market should be at once MarketManager.evolve(step_time) is complete 
-        if step_time is None:
-            end_time = market.time
-        else:
-            end_time = market.time + step_time
-
-        # If CatastropheEvent not yet initiated in the Market - add it
         if self.risk_id not in market.broker_bring_risk:
             warnings.warn(f"{self.risk_id} Event not in the market, cannot update...", UserWarning)
             return market
 
-        # Add risk will influence broker contract
         for broker_id in range(len(market.brokers)):
-            for syndicate_id in range(len(market.syndicates)):
-                claim_value[broker_id][syndicate_id] = market.brokers[broker_id].ask_claim(syndicate_id, self.risk_category)
-        
+            market.broker_bring_risk[broker_id][self.risk_id] = RiskEvent(self.risk_id, self.broker_id, self.risk_start_time, self.risk_end_time, self.risk_factor, self.risk_category, self.risk_value)
+
+        for syndicate_id in range(len(market.syndicates)):
+            for active_id in market.active_syndicate_list:
+                if syndicate_id == active_id:
+                    market.syndicates[syndicate_id].rereceived_risk(self.risk_id, self.broker_id, self.risk_start_time)
 
         return market
 

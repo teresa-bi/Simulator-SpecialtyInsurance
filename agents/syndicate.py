@@ -25,6 +25,7 @@ class Syndicate:
         self.syndicate_id = syndicate_id
         self.initial_capital = syndicate_args['initial_capital']
         self.current_capital = syndicate_args['initial_capital']
+        self.current_capital_category = [syndicate_args['initial_capital'] / risk_model_configs[0]["num_categories"] for x in range(risk_model_configs[0]["num_categories"])]
         self.acceptance_threshold = syndicate_args['initial_acceptance_threshold']
         self.acceptance_threshold_friction = syndicate_args['initial_acceptance_threshold_friction']
         self.reinsurance_limit = syndicate_args["reinsurance_limit"]
@@ -45,7 +46,7 @@ class Syndicate:
         self.capacity_target_decrement_factor = self.capacity_target_decrement_factor
         self.capacity_target_increment_factor = self.capacity_target_increment_factor
 
-        self.riskmodel_config = risk_model_configs[syndicate_id % len(risk_model_configs)]
+        self.riskmodel_config = risk_model_configs[int(syndicate_id) % len(risk_model_configs)]
         self.premium = self.riskmodel_config["norm_premium"]
         self.profit_target = self.riskmodel_config["norm_profit_markup"]
         self.excess_capital = self.current_capital
@@ -75,6 +76,8 @@ class Syndicate:
         self.status = False   # status True means active, status False means exit (no contract or bankruptcy, at the begining the status is 0 because no syndicate joining the market
 
         self.current_hold_contracts = []
+        # Include paid status, True or False
+        self.paid_claim = []
 
         margin_of_safety_correction = (self.riskmodel_config["margin_of_safety"] + (num_risk_models - 1) * sim_args["margin_increase"])
 
@@ -117,6 +120,15 @@ class Syndicate:
         self.recursion_limit = syndicate_args["insurers_recursion_limit"]
         self.capital_left_by_categ = [self.current_capital for i in range(self.num_risk_categories)]
         self.market_permanency_counter = 0
+        self.received_risk_list = []
+
+    def received_risk(self, risk_id, broker_id, start_time):
+        """
+        After broker send risk to the market, all the active syndicate receive risks and update their received_risk list
+        """
+        self.received_risk_list.append({"risk_id": risk_id,
+                                  "broker_id": broker_id,
+                                  "start_time": start_time})
 
     def add_contract(self, risks, broker_id, premium):
         """
@@ -673,7 +685,7 @@ class Syndicate:
         """
         self.syndicate_id
 
-    def update_status(self, ):
+    def update_status(self, actions_to_apply):
         self.update_capital
         self.update_underwrite_risk_categories
 
@@ -713,19 +725,6 @@ class Syndicate:
         interests = ( 1 + self.interest_rate) * update_capital()
 
         return current_capital
-
-    def pay_claim(self, ):
-        """
-        Pay for claim based on risk category and line size
-        """
-        if self.leader: 
-            self.lead_line_size
-        elif self.follower:
-            self.syndicate_follow_line_size
-        else:
-            payment = 0
-
-        return payment
 
     def ask_payment_from_reinsurancefirms(self, ):
         """

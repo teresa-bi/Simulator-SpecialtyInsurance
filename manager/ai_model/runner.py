@@ -5,6 +5,9 @@ from ray import tune
 from ray.rllib.algorithms.ppo import PPO
 from ipywidgets import IntProgress
 from environment.environment import SpecialtyInsuranceMarketEnv
+from ray.rllib.policy.policy import PolicySpec
+from gymnasium.spaces import Box
+import numpy as np
 
 class AIRunner:
     """
@@ -38,14 +41,31 @@ class AIRunner:
         """
         Choose PPO Algorithm for Training
         """
-    
+        low, high = [], []
+        n = len(self.syndicates)
+        low.extend([0.0, 0.0])
+        high.extend([10.0, 10000000.0]) # Number of risk category, risk limit, current capital
+        for num in range(self.risk_model_configs[0]["num_categories"]):
+            low.append(-10000000.0)
+            high.append(30000000.0)
         config={"log_level": "ERROR",
             "env": "SpecialtyInsuranceMarket-validation",
-            "num_workers": 2,
-            "framework": "torch",
+            "num_workers": 1,
+            "framework": "tf",
+            "model": {
+                "fcnet_hiddens": [32, 16],
+                "fcnet_activation": "relu",
+                },
             "evaluation_interval": 2, #num of training iter between evaluation
             "evaluation_duration": 20,
             "num_gpus": 0,
+            "multiagent": {
+            "policies": {
+                self.syndicates[i].syndicate_id: PolicySpec(observation_space=Box(np.array(low, dtype=np.float32), np.array(high, dtype=np.float32)), action_space=Box(0.5, 0.9, dtype = np.float32)) for i in range(n)
+                
+            },
+            "policies_to_train": ["0"]
+            },
             "env_config": insurance_args}
         self.trainer = PPO(config=config)
 
@@ -63,18 +83,30 @@ class AIRunner:
 
         bar = IntProgress(min=0, max=num_episode)
         display(bar)
-        convergence_track = []
+        list_mean_rewards = []
+        list_min_rewards = []
+        list_max_rewards = []
+        list_train_step = []
 
         for i in range(num_episode):
-            result = self.trainer.train()        
+            self.trainer.train()        
             print("Progress:", i+1, "/", num_episode, end="\r")
             bar.value += 1
-            convergence_track.append(result["episode_reward_mean"])
-            if i % 10 == 0:
-                self.trainer.save(model_filepath)
-            if i % 10 == 0:
-                plt.plot(convergence_track)
-                plt.show()
+            if (i+1) % config["evaluation_interval"] == 0:
+                list_mean_rewards.append(trainer.evaluation_metrics["evaluation"]["episode_reward_mean"])
+                list_min_rewards.append(trainer.evaluation_metrics["evaluation"]["episode_reward_min"])
+                list_max_rewards.append(trainer.evaluation_metrics["evaluation"]["episode_reward_max"])
+                list_train_step.append(i+1)
+
+    # Plot mean reward
+    def find_nearest(array, value):
+        array = np.asarray(array)
+        idx = (np.abs(array - value)).argmin()
+        return idx, array[idx]
+    def plot():
+        x = list_train_step
+        y = list_mean_rewards
+        plot_utils.plot_eval(y, x)
 
     def trainer_restore(self, top_dir, n):
   
@@ -118,27 +150,32 @@ class AIRunner:
                 "num_risk_models": self.num_risk_models}
 
         validation_episodes = 1
-        env = SpecialtyInsuranceMarket(**insurance_args)
-        total_steps = 0
+        
         for epi in range(validation_episodes):
-            obs = env.reset()
-            done = False
-            total_reward = 0
+            env = SpecialtyInsuranceMarket(**insurance_args)
     
             print(f"\nepisode: {epi} | ")
-            while not done:
-                if total_steps % 20 == 0: 
-                    print(".", end="")   
-                action = self.trainer.compute_single_action(obs)   
-                total_steps += 1    
-                obs, reward, done, info = env.step(action)
-                #env.render()
-                total_reward += reward
-            print("Done")
-            print("Reward: ", total_reward)
-            #env.close()
+            total_steps = 0
+            done = {"__all__": False}
+            all_rewards[epi] = {}
+    
+            obs = env.reset()
+    
+            while not done["__all__"]:
+                if total_steps % 20 == 0: print(".", end="")
+        
+                action_dict = trainer.compute_actions(obs)  
+                total_steps += 1
+        
+                obs, reward, done, info = env.step(action_dict, 
+                                          draw_to_file=True)
+                for k, v in reward.items():
+                    if k not in all_rewards[epi]:
+                        all_rewards[epi][k] = [v]
+                    else:
+                        all_rewards[epi][k].append(v)
 
-        return total_reward
+        return all_rewards
 
     def run(self):
         # Folder for recording
@@ -169,7 +206,7 @@ class AIRunner:
                 self.training(top_dir, n)
         
                 # Test the performance of the trained agent
-                rewards = self.testing()
+                #rewards = self.testing()
             else:
         
                 # Then train
@@ -178,5 +215,5 @@ class AIRunner:
                 self.training(top_dir, n)
         
                 # Test the performance of the trained agent
-                rewards = self.testing(self.trainer)
+                #rewards = self.testing(self.trainer)
                 

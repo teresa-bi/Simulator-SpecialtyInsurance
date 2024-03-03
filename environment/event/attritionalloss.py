@@ -29,30 +29,6 @@ class AttritionalLossEvent(Event):
         self.risk_category = risk_category
         self.risk_value = risk_value
 
-    def run(self, market, step_time):
-        """
-        Add attritional loss to the insruance market
-
-        Parameters
-        ----------
-        market: NoReinsurance_RiskOne
-
-            The insurance market to accept attritional loss event
-
-        Returns
-        -------
-        market: NoReinsurance_RiskOne
-            The updated insurance market
-        """
-        if self.risk_id not in market.attritional_loss_event:
-            warnings.warn(f"{self.risk_id} Event not in the market, cannot update...", UserWarning)
-            return market
-
-        for i in range(len(market.syndicates)):
-            market.syndicates[i].current_capital -= 0   # TODO: After considering attritional loss, this value will change
-
-        return market
-
     def data(self):
         """
         Get the data as a serialisable dictionary.

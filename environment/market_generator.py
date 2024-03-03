@@ -49,20 +49,20 @@ class MarketGenerator:
         """
         # Generate brokers
         for i in range(self.broker_args["num_brokers"]):
-            self.brokers[i] = Broker(i, self.broker_args, self.num_risk_models, self.sim_args, self.risk_model_configs)
+            self.brokers[i] = Broker(str(i), self.broker_args, self.num_risk_models, self.sim_args, self.risk_model_configs)
 
         # Generate syndicates
         for i in range(self.syndicate_args["num_syndicates"]):
-            self.syndicates[i] = Syndicate(i, self.syndicate_args, self.num_risk_models, self.sim_args, self.risk_model_configs)
+            self.syndicates[i] = Syndicate(str(i), self.syndicate_args, self.num_risk_models, self.sim_args, self.risk_model_configs)
 
         # Generate reinsurancefirms
         if self.with_reinsurance:
             for i in range(self.reinsurancefirm_args["num_reinsurancefirms"]):
-                self.reinsurancefirms[i] = ReinsuranceFirm(i, self.reinsurancefirm_args, self.num_risk_models, self.risk_model_configs)
+                self.reinsurancefirms[i] = ReinsuranceFirm(str(i), self.reinsurancefirm_args, self.num_risk_models, self.risk_model_configs)
 
         # Generate shareholders
         for i in range(self.shareholder_args["num_shareholders"]):
-            self.shareholders[i] = Shareholder(i, self.shareholder_args, self.num_risk_models, self.risk_model_configs)
+            self.shareholders[i] = Shareholder(str(i), self.shareholder_args, self.num_risk_models, self.risk_model_configs)
 
         return self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders
 

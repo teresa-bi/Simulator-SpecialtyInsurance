@@ -119,17 +119,14 @@ class EventHandler:
 
         # Temporary dict to store which events to remove from the ongoing dict
         catastrophe_events_to_remove_from_ongoing = {}
-
         # Carry out ongoing (repeating) events
         for event_id, event in self.ongoing_catastrophe.items():
             # step_time is needed here for the Event
             # to ensure we get market status at the market.time after evolve(step_time) is completed i.e., current market.time + step_time
             market = event.run(market, step_time=step_time)
-
             # Check if the event is no longer to be repeated
             if not event.repeated:
                 self.completed_catastrophe[event_id] = event
-
                 # Store the event_id to be removed
                 catastrophe_events_to_remove_from_ongoing[event_id] = 1
        
@@ -140,7 +137,6 @@ class EventHandler:
             if not event.repeated:
                 self.completed_attritional_loss[event_id] = event
                 attritional_loss_events_to_remove_from_ongoing[event_id] = 1
-       
 
         # Broker brought risk event
         broker_risk_events_to_remove_from_ongoing = {}
@@ -168,7 +164,6 @@ class EventHandler:
 
         # Temporary dict to store which events to remove from the upcoming dict
         catastrophe_events_to_remove_from_upcoming = {}
-
         # Carry out the new events
         for event_id, event in self.upcoming_catastrophe.items():
             if event.start_time >= episode_start and event.start_time <= episode_end:
@@ -176,13 +171,11 @@ class EventHandler:
                 # to ensure we get market status at the market.time after
                 # evolve(step_time) is completed i.e., current market.time + step_time
                 market = event.run(market, step_time=step_time)
-
                 # Move the event to its new status
                 if event.repeated:
                     self.ongoing_catastrophe[event_id] = event
                 else:
                     self.completed_catastrophe[event_id] = event
-
                 # Store the event_id to be removed
                 catastrophe_events_to_remove_from_upcoming[event_id] = 1
 

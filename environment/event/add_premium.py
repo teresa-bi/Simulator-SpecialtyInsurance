@@ -2,6 +2,7 @@ from __future__ import annotations
 import json
 import warnings
 from environment.event.event import Event
+from environment.event.premium import PremiumEvent
 from environment.market import NoReinsurance_RiskOne, NoReinsurance_RiskFour, Reinsurance_RiskOne, Reinsurance_RiskFour
 
 class AddPremiumEvent(Event):
@@ -58,15 +59,8 @@ class AddPremiumEvent(Event):
             The updated market
         """
 
-        market.broker_pay_premium[self.risk_id] = {"risk_id": self.risk_id,
-                                                "broker_id": self.broker_id,
-                                                "risk_start_time": self.risk_start_time,
-                                                "risk_end_time": self.risk_end_time,
-                                                "risk_category": self.risk_category,
-                                                "risk_value": self.risk_value,
-                                                "syndicate_id": self.syndicate_id,
-                                                "premium": self.premium
-                                                }
+        for broker_id in range(len(market.brokers)):
+            market.broker_pay_premium[broker_id][self.risk_id] = PremiumEvent(self.risk_id, self.broker_id, self.risk_start_time, self.risk_end_time, self.risk_category, self.risk_value, self.syndicate_id, self.premium)
 
         return market
 
