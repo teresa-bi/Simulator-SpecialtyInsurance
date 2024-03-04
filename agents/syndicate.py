@@ -153,7 +153,6 @@ class Syndicate:
                     self.current_hold_contracts[i]["pay"] == True
         else:
             self.current_capital -= claim_value
-     
         
 
     def data(self):

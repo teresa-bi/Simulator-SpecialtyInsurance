@@ -39,7 +39,6 @@ class Event(ABC):
 
         return self.start_time < other_event.start_time
 
-    @abstractmethod
     def run(self, environment, **kwargs):
         """
         Apply Event to the Environment.

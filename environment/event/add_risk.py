@@ -4,7 +4,6 @@ import warnings
 from agents import Broker
 from environment.event.event import Event
 from environment.event.risk import RiskEvent
-from environment.market import NoReinsurance_RiskOne, NoReinsurance_RiskFour, Reinsurance_RiskOne, Reinsurance_RiskFour
 
 class AddRiskEvent(Event):
     """
@@ -56,12 +55,9 @@ class AddRiskEvent(Event):
             The updated market
         """
 
-        if self.risk_id not in market.broker_bring_risk:
-            warnings.warn(f"{self.risk_id} Event not in the market, cannot update...", UserWarning)
-            return market
-
         for broker_id in range(len(market.brokers)):
-            market.broker_bring_risk[broker_id][self.risk_id] = RiskEvent(self.risk_id, self.broker_id, self.risk_start_time, self.risk_end_time, self.risk_factor, self.risk_category, self.risk_value)
+            if self.risk_start_time == step_time:
+                market.broker_bring_risk[broker_id][self.risk_id] = RiskEvent(risk["risk_id"], risk["broker_id"], risk["risk_start_time"], risk["risk_end_time"], risk["risk_factor"], risk["risk_category"], risk["risk_value"])
 
         for syndicate_id in range(len(market.syndicates)):
             for active_id in market.active_syndicate_list:

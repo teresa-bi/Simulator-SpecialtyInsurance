@@ -59,10 +59,10 @@ class EventGenerator():
         """
         catastrophe_events = []
         for i in range(len(risks)):
-            catastrophe_event = AddCatastropheEvent(risks[i].get("risk_id"), risks[i].get("risk_start_time"),
+            add_catastrophe_event = AddCatastropheEvent(risks[i].get("risk_id"), risks[i].get("risk_start_time"),
                                                 risks[i].get("risk_factor"), risks[i].get("risk_category"),
                                                 risks[i].get("risk_value"))
-            catastrophe_events.append(catastrophe_event)
+            catastrophe_events.append(add_catastrophe_event)
 
         return catastrophe_events
 
@@ -77,8 +77,8 @@ class EventGenerator():
         """
         attritional_loss_events = []
         for time in range(sim_args.get("max_time")):
-            attritional_loss_event = AddAttritionalLossEvent(time, time, risks[0].get("risk_factor"), risks[0].get("risk_category"), risks[0].get("risk_value"))
-            attritional_loss_events.append(attritional_loss_event)
+            add_attritional_loss_event = AddAttritionalLossEvent(time, time, risks[0].get("risk_factor"), risks[0].get("risk_category"), risks[0].get("risk_value"))
+            attritional_loss_events.append(add_attritional_loss_event)
 
         return attritional_loss_events
 
