@@ -102,6 +102,9 @@ class EventHandler:
         with open(filename, "w") as file:
             file.write(self.to_json())
 
+    def add_premium_events(self, broker_premium_events):
+        
+
     def forward(self, market, step_time):
         """
         Evolve Market for the given time step [day] by applying Events.

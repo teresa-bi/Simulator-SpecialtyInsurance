@@ -60,6 +60,7 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
         self.num_risk_models = num_risk_models
         self.dt = dt
         self.mm = None
+        self.event_handler = None
 
         # Active syndicate list
         self.syndicate_active_list = []
@@ -107,10 +108,10 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
         self.broker_premium_events = []
         # Broker ask for claim if the contract affected by catastrophe
         self.broker_claim_events = []
-        event_handler = EventHandler(self.maxstep, self.catastrophe_events, self.attritional_loss_events, self.broker_risk_events, self.broker_premium_events, self.broker_claim_events)
+        self.event_handler = EventHandler(self.maxstep, self.catastrophe_events, self.attritional_loss_events, self.broker_risk_events, self.broker_premium_events, self.broker_claim_events)
 
         # Initiate market manager
-        self.mm = MarketManager(self.maxstep, self.manager_args, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.risks, self.risk_model_configs, self.with_reinsurance, self.num_risk_models, self.catastrophe_events, self.attritional_loss_events, self.broker_risk_events, self.broker_premium_events, self.broker_claim_events, event_handler)
+        self.mm = MarketManager(self.maxstep, self.manager_args, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.risks, self.risk_model_configs, self.with_reinsurance, self.num_risk_models, self.catastrophe_events, self.attritional_loss_events, self.broker_risk_events, self.broker_premium_events, self.broker_claim_events, self.event_handler)
         self.mm.evolve(self.dt)
         
         # Set per syndicate active status and build status list
@@ -151,11 +152,13 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
 
         # Update broker_premium_events, broker_claim_events, event_handler, market manager
         self.broker_premium_events = EventGenerator(self.risk_model_configs).generate_premium_events(self.brokers, self.timestep)
+        self.event_handler.add_premium_events(self.broker_premium_events)
         for i in range(len(self.catastrophe_events)):
             if self.catastrophe_events[i].risk_start_time == self.timestep:
                 self.broker_claim_events = EventGenerator(self.risk_model_configs).generate_claim_events(self.brokers, self.timestep)
-        event_handler = EventHandler(self.maxstep, self.catastrophe_events, self.attritional_loss_events, self.broker_risk_events, self.broker_premium_events, self.broker_claim_events)
-        self.mm = MarketManager(self.maxstep, self.manager_args, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.risks, self.risk_model_configs, self.with_reinsurance, self.num_risk_models, self.catastrophe_events, self.attritional_loss_events, self.broker_risk_events, self.broker_premium_events, self.broker_claim_events, event_handler)
+                self.event_handler.add_claim_events(self.broker_claim_events)
+        self.mm.update_premium_events(self.broker_premium_events, self.event_handler)
+        self.mm.update_claim_events(self.broker_claim_events, self.event_handler)
         
         market = self.mm.evolve(self.dt)
         self.timestep += 1
