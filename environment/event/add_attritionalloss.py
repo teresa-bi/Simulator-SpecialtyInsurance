@@ -1,6 +1,5 @@
 import warnings
 from environment.event.event import Event
-from environment.event.attritionalloss import AttritionalLossEvent
 
 class AddAttritionalLossEvent(Event):
     """
@@ -45,9 +44,6 @@ class AddAttritionalLossEvent(Event):
         market: NoReinsurance_RiskOne
             The updated insurance market
         """
-    
-        if self.risk_start_time == step_time:
-            market.attritional_loss_event[self.risk_id] = AttritionalLossEvent(self.risk_id, self.risk_start_time, self.risk_factor, self.risk_category, self.risk_value)
 
         for i in range(len(market.syndicates)):
             market.syndicates[i].current_capital -= 0   # TODO: After considering attritional loss, this value will change

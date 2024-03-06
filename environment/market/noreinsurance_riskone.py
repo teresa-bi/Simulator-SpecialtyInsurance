@@ -8,7 +8,7 @@ class NoReinsurance_RiskOne:
     """
     Basic insurance market including brokers, syndicates, sharholders, and one risk model
     """
-    def __init__(self, time, sim_maxstep, manager_args, brokers, syndicates, shareholders, risks, risk_model_configs, catastrophe_event, attritional_loss_event, broker_risk_event, broker_premium_event, broker_claim_event):
+    def __init__(self, time, sim_maxstep, manager_args, brokers, syndicates, shareholders, risks, risk_model_configs, broker_risk_event):
         """
         Construct a new instance.
 
@@ -44,11 +44,11 @@ class NoReinsurance_RiskOne:
         self.risk_model_configs = risk_model_configs
         
         # Status of risks and claims
-        self.catastrophe_event = catastrophe_event
-        self.attritional_loss_event = attritional_loss_event
+        #self.catastrophe_event = catastrophe_event
+        #self.attritional_loss_event = attritional_loss_event
         self.broker_bring_risk = broker_risk_event
-        self.broker_pay_premium = broker_premium_event
-        self.broker_bring_claim = broker_claim_event
+        #self.broker_pay_premium = broker_premium_event
+        #self.broker_bring_claim = broker_claim_event
 
     def data(self):
         """
@@ -94,5 +94,24 @@ class NoReinsurance_RiskOne:
 
         with open(filename, "w") as file:
             file.write(self.to_json())
+
+    def is_involved(self, syndicate_id):
+        """
+        Determine which syndicates are involved in the current quote application (leadership competetion)
+
+        Returns
+        ----------
+        dict[str, bool]
+            {syndicate id: whether syndicate is involved}
+        """
+
+        involved = {}
+
+        # TODO: will be fixed by some selection algorithm in the future
+        if self.syndicates[syndicate_id].status == True:
+            involved = {"syndicate_id": syndicate_id, 
+                        "selected": True}
+
+        return involved
 
 

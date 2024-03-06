@@ -1,7 +1,6 @@
 from __future__ import annotations
 import warnings
 from environment.event.event import Event
-from environment.event.catastrophe import CatastropheEvent
 
 class AddCatastropheEvent(Event):
     """
@@ -46,11 +45,6 @@ class AddCatastropheEvent(Event):
         market: NoReinsurance_RiskOne
             The updated insurance market
         """
-
-        if self.risk_start_time == step_time:
-            market.catastrophe_event[self.risk_id] = CatastropheEvent(risks[i].get("risk_id"), risks[i].get("risk_start_time"),
-                                                risks[i].get("risk_factor"), risks[i].get("risk_category"),
-                                                risks[i].get("risk_value"))
 
         # Catastrophe will influce the broker claim
         claim_value = [[[] for syndicate_id in range(len(market.syndicates))] for broker_id in range(len(market.brokers))]

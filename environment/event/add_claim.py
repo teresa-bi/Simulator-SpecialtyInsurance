@@ -2,7 +2,6 @@ from __future__ import annotations
 import json
 import warnings
 from environment.event.event import Event
-from environment.event.claim import ClaimEvent
 
 class AddClaimEvent(Event):
     """
@@ -54,9 +53,7 @@ class AddClaimEvent(Event):
         market: NoReinsurance_RiskOne
             The updated market
         """
-        for broker_id in range(len(market.brokers)):
-            if self.risk_start_time == step_time:
-                market.broker_bring_claim[broker_id][self.risk_id] = ClaimEvent(claim["risk_id"], claim["broker_id"], claim["risk_start_time"], claim["risk_end_time"], claim["risk_category"], claim["risk_value"], claim["syndicate_id"])
+        
 
         return market
 

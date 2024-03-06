@@ -9,7 +9,7 @@ class EventHandler:
     The EventHandler applies events to the internal environment (market) of the Environment Manager
     """
 
-    def __init__(self, maxstep, catastrophe_events, attritional_loss_events, broker_risk_events, broker_premium_events, broker_claim_events):
+    def __init__(self, maxstep, broker_risk_events):
         """
         Construct a new instance.
 
@@ -31,25 +31,25 @@ class EventHandler:
 
         # Events to be carried out some time in the future
         # Events are stored internally in a dictionary to allow for O(1) access/removal
-        self.upcoming_catastrophe = {event_id: event for (event_id, event) in enumerate(catastrophe_events)}
-        self.upcoming_attritional_loss = {event_id: event for (event_id, event) in enumerate(attritional_loss_events)}
+        #self.upcoming_catastrophe = {event_id: event for (event_id, event) in enumerate(catastrophe_events)}
+        #self.upcoming_attritional_loss = {event_id: event for (event_id, event) in enumerate(attritional_loss_events)}
         self.upcoming_broker_risk = {event_id: event for (event_id, event) in enumerate(broker_risk_events)}
-        self.upcoming_broker_premium = {event_id: event for (event_id, event) in enumerate(broker_premium_events)}
-        self.upcoming_broker_claim = {event_id: event for (event_id, event) in enumerate(broker_claim_events)}
+        #self.upcoming_broker_premium = {event_id: event for (event_id, event) in enumerate(broker_premium_events)}
+        #self.upcoming_broker_claim = {event_id: event for (event_id, event) in enumerate(broker_claim_events)}
 
         # Events that are currently underway and should be carried out at each time-step
-        self.ongoing_catastrophe = {}
-        self.ongoing_attritional_loss = {}
+        #self.ongoing_catastrophe = {}
+        #self.ongoing_attritional_loss = {}
         self.ongoing_broker_risk = {}
-        self.ongoing_broker_premium = {}
-        self.ongoing_broker_claim = {}
+        #self.ongoing_broker_premium = {}
+        #self.ongoing_broker_claim = {}
 
         # Events that have been completed
-        self.completed_catastrophe = {}
-        self.completed_attritional_loss = {}
+        #self.completed_catastrophe = {}
+        #self.completed_attritional_loss = {}
         self.completed_broker_risk = {}
-        self.completed_broker_premium = {}
-        self.completed_broker_claim = {}
+        #self.completed_broker_premium = {}
+        #self.completed_broker_claim = {}
 
     def data(self):
         """
@@ -61,21 +61,21 @@ class EventHandler:
         """
 
         return {
-            "upcoming_catastrophe": [(event_id, event.data()) for (event_id, event) in self.upcoming_catastrophe.items()],
-            "upcoming_attritional_loss": [(event_id, event.data()) for (event_id, event) in self.upcoming_attritional_loss.items()],
+            #"upcoming_catastrophe": [(event_id, event.data()) for (event_id, event) in self.upcoming_catastrophe.items()],
+            #"upcoming_attritional_loss": [(event_id, event.data()) for (event_id, event) in self.upcoming_attritional_loss.items()],
             "upcoming_broker_risk": [(event_id, event.data()) for (event_id, event) in self.upcoming_broker_risk.items()],
-            "upcoming_broker_premium": [(event_id, event.data()) for (event_id, event) in self.upcoming_broker_premium.items()],
-            "upcoming_broker_claim": [(event_id, event.data()) for (event_id, event) in self.upcoming_broker_claim.items()],
-            "ongoing_catastrophe": [(event_id, event.data()) for (event_id, event) in self.ongoing_catastrophe.items()],
-            "ongoing_attritional_loss": [(event_id, event.data()) for (event_id, event) in self.ongoing_attritional_loss.items()],
+            #"upcoming_broker_premium": [(event_id, event.data()) for (event_id, event) in self.upcoming_broker_premium.items()],
+            #"upcoming_broker_claim": [(event_id, event.data()) for (event_id, event) in self.upcoming_broker_claim.items()],
+            #"ongoing_catastrophe": [(event_id, event.data()) for (event_id, event) in self.ongoing_catastrophe.items()],
+            #"ongoing_attritional_loss": [(event_id, event.data()) for (event_id, event) in self.ongoing_attritional_loss.items()],
             "ongoing_broker_risk": [(event_id, event.data()) for (event_id, event) in self.ongoing_broker_risk.items()],
-            "ongoing_broker_premium": [(event_id, event.data()) for (event_id, event) in self.ongoing_broker_premium.items()],
-            "ongoing_broker_claim": [(event_id, event.data()) for (event_id, event) in self.ongoing_broker_claim.items()],
-            "completed_catastrophe": [(event_id, event.data()) for (event_id, event) in self.completed_catastrophe.items()],
-            "completed_attritional_loss": [(event_id, event.data()) for (event_id, event) in self.completed_attritional_loss.items()],
+            #"ongoing_broker_premium": [(event_id, event.data()) for (event_id, event) in self.ongoing_broker_premium.items()],
+            #"ongoing_broker_claim": [(event_id, event.data()) for (event_id, event) in self.ongoing_broker_claim.items()],
+            #"completed_catastrophe": [(event_id, event.data()) for (event_id, event) in self.completed_catastrophe.items()],
+            #"completed_attritional_loss": [(event_id, event.data()) for (event_id, event) in self.completed_attritional_loss.items()],
             "completed_broker_risk": [(event_id, event.data()) for (event_id, event) in self.completed_broker_risk.items()],
-            "completed_broker_premium": [(event_id, event.data()) for (event_id, event) in self.completed_broker_premium.items()],
-            "completed_broker_claim": [(event_id, event.data()) for (event_id, event) in self.completed_broker_claim.items()],
+            #"completed_broker_premium": [(event_id, event.data()) for (event_id, event) in self.completed_broker_premium.items()],
+            #"completed_broker_claim": [(event_id, event.data()) for (event_id, event) in self.completed_broker_claim.items()],
         }
 
     def to_json(self) -> str:
@@ -102,7 +102,7 @@ class EventHandler:
         with open(filename, "w") as file:
             file.write(self.to_json())
 
-    def add_premium_events(self, broker_premium_events):
+    #def add_premium_events(self, broker_premium_events):
         
 
     def forward(self, market, step_time):
@@ -120,6 +120,7 @@ class EventHandler:
         episode_start = market.time
         episode_end = episode_start + step_time
 
+        """
         # Temporary dict to store which events to remove from the ongoing dict
         catastrophe_events_to_remove_from_ongoing = {}
         # Carry out ongoing (repeating) events
@@ -139,7 +140,7 @@ class EventHandler:
             market = event.run(market, step_time=step_time)
             if not event.repeated:
                 self.completed_attritional_loss[event_id] = event
-                attritional_loss_events_to_remove_from_ongoing[event_id] = 1
+                attritional_loss_events_to_remove_from_ongoing[event_id] = 1"""
 
         # Broker brought risk event
         broker_risk_events_to_remove_from_ongoing = {}
@@ -149,6 +150,7 @@ class EventHandler:
                 self.completed_broker_risk[event_id] = event
                 broker_risk_events_to_remove_from_ongoing[event_id] = 1
 
+        """
         # Broker brought premium event
         broker_premium_events_to_remove_from_ongoing = {}
         for event_id, event in self.ongoing_broker_premium.items():
@@ -163,8 +165,9 @@ class EventHandler:
             market = event.run(market, step_time=step_time)
             if not event.repeated:
                 self.completed_broker_claim[event_id] = event
-                broker_claim_events_to_remove_from_ongoing[event_id] = 1
+                broker_claim_events_to_remove_from_ongoing[event_id] = 1"""
 
+        """
         # Temporary dict to store which events to remove from the upcoming dict
         catastrophe_events_to_remove_from_upcoming = {}
         # Carry out the new events
@@ -203,7 +206,7 @@ class EventHandler:
         for event_id in attritional_loss_events_to_remove_from_ongoing:
             del self.ongoing_attritional_loss[event_id]
         for event_id in attritional_loss_events_to_remove_from_upcoming:
-            del self.upcoming_attritional_loss[event_id]
+            del self.upcoming_attritional_loss[event_id]"""
 
         # Broker brought risk event
         broker_risk_events_to_remove_from_upcoming = {}
@@ -220,6 +223,7 @@ class EventHandler:
         for event_id in broker_risk_events_to_remove_from_upcoming:
             del self.upcoming_broker_risk[event_id]
 
+        """
         # Broker pay premium event
         broker_premium_events_to_remove_from_upcoming = {}
         for event_id, event in self.upcoming_broker_premium.items():
@@ -248,7 +252,7 @@ class EventHandler:
         for event_id in broker_claim_events_to_remove_from_ongoing:
             del self.ongoing_broker_claim[event_id]
         for event_id in broker_claim_events_to_remove_from_upcoming:
-            del self.upcoming_broker_claim[event_id]
+            del self.upcoming_broker_claim[event_id]"""
 
         return market
 

@@ -82,7 +82,7 @@ class EventGenerator():
 
         return attritional_loss_events
 
-    def generate_risk_events(self, brokers, risks):
+    def generate_risk_events(self, sim_args, brokers, risks):
         """
         Generate a set of AddRiskEvent for an insurance market.
 
@@ -96,13 +96,14 @@ class EventGenerator():
             A list of AddRiskEvents
         """
         add_risk_events = []
-        for broker_id in range(len(brokers)):
-            brokers[broker_id].generate_risks(risks)
-            num_total_risks = len(brokers[broker_id].risks)
-            for k in range(num_total_risks):
-                risk = brokers[broker_id].risks[k]
-                add_risk_event = AddRiskEvent(risk["risk_id"], risk["broker_id"], risk["risk_start_time"], risk["risk_end_time"], risk["risk_factor"], risk["risk_category"], risk["risk_value"])
-                add_risk_events.append(add_risk_event)
+        for i in range(len(brokers)):
+            num_risk = 0
+            for time in range(sim_args.get("max_time")):
+                for k in range(len(risks)):
+                    risk = risks[k]
+                    add_risk_event = AddRiskEvent(num_risk, brokers[i].broker_id, time, time+12*30, risk["risk_factor"], risk["risk_category"], risk["risk_value"])
+                    add_risk_events.append(add_risk_event)
+                    num_risk += 1
 
         return add_risk_events
 

@@ -2,7 +2,6 @@ from __future__ import annotations
 import json
 import warnings
 from environment.event.event import Event
-from environment.event.premium import PremiumEvent
 
 class AddPremiumEvent(Event):
     """
@@ -58,9 +57,6 @@ class AddPremiumEvent(Event):
             The updated market
         """
 
-        for broker_id in range(len(market.brokers)):
-            if self.risk_start_time == step_time:
-                market.broker_pay_premium[broker_id][self.risk_id] = PremiumEvent(premium["risk_id"], premium["broker_id"], premium["risk_start_time"], premium["risk_end_time"], premium["risk_category"], premium["risk_value"], premium["syndicate_id"], premium["premium"])
 
         return market
 

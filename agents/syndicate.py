@@ -56,9 +56,9 @@ class Syndicate:
         self.capital_last_periods = list(np.zeros(4,dtype=int)*self.current_capital)
 
         self.premium_internal_weight = syndicate_args['actuarial_pricing_internal_weight']
-        self.leader_list = {}  # Include risk_id, broker_id, line_size
+        self.play_leader_in_contracts = {}  # Include risk_id, broker_id, line_size
         self.lead_line_size = syndicate_args['lead_line_size']
-        self.follower_list = {}  # Include risk_id, broker_id, line_size
+        self.play_follower_in_contracts = {}  # Include risk_id, broker_id, line_size
         self.follow_line_size = syndicate_args['follow_line_size']
         self.loss_experiency_weight = syndicate_args['loss_experiency_weight']
         self.volatility_weight = syndicate_args['volatility_weight']
@@ -170,9 +170,8 @@ class Syndicate:
             "current_capital": self.current_capital,
             "premium_internal_weight": self.premium_internal_weight,
             "interest_rate": self.interest_rate,
-            "leader_list": self.leader_list,
-            "follower_list": self.follower_list,
-            "dividends_of_profit": self.dividends_of_profit,
+            "play_leader_in_contracts": self.play_leader_in_contracts,
+            "play_follower_in_contracts": self.play_follower_in_contracts,
             "loss_experiency_weight": self.loss_experiency_weight,
             "volatility_weight": self.volatility_weight,
             "underwriter_markup_recency_weight": self.underwriter_markup_recency_weight,
@@ -185,7 +184,6 @@ class Syndicate:
             "exit_capital_threshold": self.exit_capital_threshold,
             "exit_time_limit": self.exit_time_limit,
             "premium_sensitivity": self.premium_sensitivity,
-            "initial_acceptance_threshold": self.initial_acceptance_threshold,
             "acceptance_threshold_friction": self.acceptance_threshold_friction
         }
 
@@ -213,104 +211,7 @@ class Syndicate:
         with open(filename, "w") as file:
             file.write(self.to_json())
 
-    def iterate(self, time):
-        # Obtain investments yield
-        self.obtain_yield(time)
-
-        # Realise due payments
-        self.effect_payments(time)
-        if isleconfig.verbose:
-            print(time, ":", self.id, len(self.underwrittem_contracts), self.current_capital, self.status)
-
-        self.make_reinsurance_claims(time)
-
-        # Mature contracts
-        if isleconfig.verbose:
-            print("Number of underwritten contracts", len(self.underwritten_contracts))
-        maturing = [contract for contract in self.underwritten_contracts if contract.expiration <= time]
-        for contract in maturing:
-            self.underwritten_contracts.remove(contract)
-            contract.mature(time)
-        contracts_dissolved = len(maturing)
-
-        # Effect payments from contracts
-        [contract.check_payment_due(time) for contract in self.underwritten_contracts]
-
-        if self.status:
-            """
-            Request risks to be considered for underwriting in the next period and collect those for this period
-            """
-            new_risks = []
-            if self.is_insurer:
-                new_risks += self.simulation.solicit_insurance_requests(self.id, self.current_capital, self)
-            if self.is_insurer:
-                new_risks += self.simulation.solicit_reinsurance_requests(self.id, self.current_capital, self)
-            contracts_offered = len(new_risks)
-
-            if isleconfig.verbose and contracts_offered < 2 * contracts_dissolved:
-                print("Something wrong: agent {0:d} receives too few new contracts {1:d} <= {2:d}".format(self.id, contracts_offered, 2*contracts_dissolved))
-
-            new_nonproportional_risks = [risk for risk in new_risks if risk.get("insurancetype")=='excess-of-loss' and risk["owner"] is not self]
-
-            new_risks = [risk for risk in new_risks if risk.get("insurancetype") in ['proportional', None] and risk["owner"] is not self]
-
-            # Deal with non-proportionala risks first as they must evaluate each requet separatly, then wwith proportional ones
-            [reinrisks_per_categ, number_reinrisks_categ] = self.risks_reinrisks_organizer(new_nonproportional_risks)
-
-            for repetition in range(self.recursion_limit):
-                former_reinrisks_per_categ = copy.copy(reinrisks_per_categ)
-                [reinrisks_per_categ, not_accepted_reinrisks] = self.process_newrisks_reinsurer(reinrisks_per_categ, number_reinrisks_categ, time)
-                if former_reinrisks_per_categ == reinrisks_per_categ:
-                    break
-
-            self.simulation.return_reinrisks(not_accepted_reinrisks)
-
-            underwritten_risks = [{"value": contract.value, "category": contract.category, "risk_factor": contract.risk_factor, "deductible": contract.deductible, "excess": contract.excess, "insurancetype": contract.insurancetype, "run_time": contract_runtime} for contract in self.underwritten_contracts if contract.reinsurance_share != 1.0]
-
-            """
-            Obtain risk model evaluation (VaR) for underwriting decisions and for capacity specific decisions
-            """
-            expected_profit, acceptable_by_category, capital_left_by_categ, var_per_risk_per_categ, self.excess_capital = self.riskmodel.evaluate(underwritten_risks, self.current_capital)
-
-            """
-            Handle adjusting capacity target and capacity
-            """
-            max_var_by_categ = self.current_capital - self.excess_capital
-            self.adjust_capacity_target(max_var_by_categ)
-            actual_capacity = self.increase_capacity(time, max_var_by_categ)
-
-            """
-            Handle capital market interactions: capital history and dividends
-            """
-            self.capital_last_periods = [self.current_capital] + self.capital_last_periods[:3]
-            self.adjust_dividends(time, actual_capacity)
-            self.pay_dividends(time)
-
-            """
-            Make underwriting decisions, category-wise
-            """
-            growth_limit = max(50,2 * len(self.underwritten_contracts) + contracts_dissolved)
-            if sum(acceptable_by_category) > growth_kimit:
-                acceptable_by_category = np.asarray(acceptable_by_category).astype(np.double)
-                acceptable_by_category = acceptable_by_category * growth_limit / sum(acceptable_by_category)
-                acceptable_by_category = np.int64(np.round(acceptable_by_category))
-
-                [risks_per_categ, number_risks_categ] = self.risks_reinrisks_organizer(new_risks)
-
-                for repetition in range(self.recursion_limit):
-                    # Find an efficient way to stop the recursion if there are no more risks to accept or if it is not accepting any more over several iterations
-                    former_risks_per_categ = copy.copy(risks_per_categ)
-                    # Process all the new risks in order to keep the portfolio as balanced as possible
-                    [risks_per_categ, not_accepted_risks] = self.process_newrisks_insurer(risks_per_categ, number_risks_caateg, acceptable_by_category, var_per_risk_per_categ, capital_left_by_categ, time)
-                    if former_risks_per_categ == risks_per_categ:
-                        break
-
-                # Return unacceptables
-                self.simulation.return_risks(not_accepted_risks)
-
-        self.market_permanency(time)
-        self.toll_over(time)
-        self.estimated_var()
+    
 
     def obtain_yield(self, time):
         amount = self.current_capital * self.interest_rate             # TODO: agent should not award her own interest. This interest rate should be taken from self.simulation with a getter method
@@ -389,40 +290,6 @@ class Syndicate:
                 category_reinsurane.dissolve(time)
         self.status = False
 
-    def receive_obligation(self, amount, recipient, due_time, purpose):
-        obligation = {"amount": amount, "recipient": recipient, "due_time": due_time, "purpose": purpose}
-        self.obligations.append(obligation)
-
-    def effect_payments(self, time):
-        due = [item for item in self.obligations if item["due_time"]<=time]
-        self.obligations = [item for item in self.obligations if item["due_time"]>time]
-        sum_due = sum([item["amount"] for item in due])
-        if sum_due > self.current_capital:
-            self.obligations += due
-            self.enter_illiquidity(time)
-            self.simulation.record_unrecovered_claims(sum_due - self.current_capital)
-        else:
-            for obligation in due:
-                self.pay(obligation)
-
-    def pay(self, obligation):
-        amount = obligation["amount"]
-        recipient = obligation["recipient"]
-        purpose = obligation["purpose"]
-        if self.get_operational() and recipient.get_operational():
-            self.current_capital -= amount
-            if purpose != "dividend":
-                self.profits_losses -= amount
-            recipient.receive(amount)
-
-    def receive(self, amount):
-        """
-        Accept cash payment
-        """
-
-        self.current_capital += amount
-        self.profits_losses += amount
-
     def pay_dividends(self, time):
         self.receive_obligation(self.per_period_dividend, self.owner, time, 'dividend')
 
@@ -432,78 +299,6 @@ class Syndicate:
 
     def increase_capacity(self):
         raise AttributeError("Method is not implemented in MetaInsuranceOrg, just in inheriting Insurance Firm instances")
-
-    def get_cash(self):
-        return self.current_capital
-
-    def get_excess_capital(self):
-        return self.excess_capital
-
-    def logme(self):
-        self.log('cash', self.current_capital)
-        self.log('underwritten_contracts', self.underwritten_contracts)
-        self.log('operaional', self.status)
-
-    def len_underwritten_contracts(self):
-        return len(self.underwritten_contracts)
-
-    def get_operational(self):
-        return self.status
-
-    def get_profitslosses(self):
-        return self.profits_losses
-
-    def get_underwritten_contracts(self):
-        return self.underwritten_contracts
-
-    def get_pointer(self):
-        return self
-
-    def estimated_var(self):
-        self.counter_category = np.zeros(self.num_risk_categories)
-        self.var_category = np.zeros(self.num_risk_categories)
-
-        self.var_counter = 0
-        self.var_counter_per_risk = 0
-        self.var_sum = 0
-
-        if self.status:
-            for contract in self.underwritten_contracts:
-                self.counter_category[contract.category] = self.counter_category[contract.category] + 1
-                self.var_category[contract.category] = self.var_category[contract.category] + contract.initial_VaR
-
-            for category in range(len(self.counter_category)):
-                self.var_counter = self.var_counter + self.counter_category[category] * self.riskmodel.inaccuracy[category]
-                self.var_sum = self.var_sum + self.var_category[category]
-
-            if not sum(self.counter_category) == 0:
-                self.var_counter_per_risk = self.var_counter / sum(self.counter_category)
-            else:
-                self.var_counter_per_risk = 0
-
-    def increase_capacity(self, time):
-        assert False, "Method not implemented, should be implemented in inheriting classses"
-
-    def adjust_dividend(self, time):
-        assert False, "Method not implemented, should be implemented in inheriting classses"
-
-    def adjust_capacity_target(self, time):
-        assert False, "Method not implemented, should be implemented in inheriting classses"
-
-    def risk_reinrisks_organizer(self, new_risks):
-        """
-        Organize the new risks received by the insurer or reinsurer
-        """
-        # Organize the new risks received by the insurer (or reinsurer) by category
-        risks_per_categ = [[] for x in range(self.simulation_parameters["no_categories"])]
-        # Count the new risks received by the insurer (or reinsurer) by category
-        number_risks_categ = [[] for x in range(self.simualtion_parameters["no_categories"])]
-
-        for categ_id in range(self.simulation_parameters["no_categories"]):
-            risks_per_categ[categ_id] = [risk for risk in new_risks if risk["category"] == categ_id]
-            number_risks_categ[categ_id] = len(risks_per_categ[categ_id])
-
-        return risks_per_categ, number_risks_categ
 
     def balanced_portfolio(self, risk, capital_left_by_categ, var_per_risk):
         """

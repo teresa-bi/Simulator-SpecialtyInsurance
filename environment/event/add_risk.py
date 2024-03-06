@@ -3,7 +3,6 @@ import json
 import warnings
 from agents import Broker
 from environment.event.event import Event
-from environment.event.risk import RiskEvent
 
 class AddRiskEvent(Event):
     """
@@ -55,14 +54,10 @@ class AddRiskEvent(Event):
             The updated market
         """
 
-        for broker_id in range(len(market.brokers)):
-            if self.risk_start_time == step_time:
-                market.broker_bring_risk[broker_id][self.risk_id] = RiskEvent(risk["risk_id"], risk["broker_id"], risk["risk_start_time"], risk["risk_end_time"], risk["risk_factor"], risk["risk_category"], risk["risk_value"])
-
         for syndicate_id in range(len(market.syndicates)):
-            for active_id in market.active_syndicate_list:
-                if syndicate_id == active_id:
-                    market.syndicates[syndicate_id].rereceived_risk(self.risk_id, self.broker_id, self.risk_start_time)
+            involved = market.is_involved(syndicate_id)
+            if involved.get("selected") == True:
+                market.syndicates[syndicate_id].rereceived_risk(self.risk_id, self.broker_id, self.risk_start_time)
 
         return market
 
