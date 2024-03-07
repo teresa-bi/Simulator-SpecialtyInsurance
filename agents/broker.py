@@ -45,7 +45,7 @@ class Broker:
 
         return self.risks
 
-    def add_contract(self, risks, syndicated_id, premium):
+    def add_contract(self, risks, syndicated_id, follow_syndicates_id, premium):
         """
         Add new contract to the current underwritten_contracts list
         """
@@ -56,6 +56,7 @@ class Broker:
                                     "risk_category": risks.get("risk_category"),
                                     "risk_value": risks.get("risk_value"),
                                     "syndicate_id": syndicated_id,
+                                    "follow_syndicates_id": follow_syndicates_id,
                                     "premium": premium,
                                     "risk_end_time": risks.get("risk_start_time")+365,
                                     "claim": Flase})
@@ -82,14 +83,12 @@ class Broker:
 
         return matched_contracts
 
-    def not_underwritten_risk(self):
+    def not_underwritten_risk(self, risks):
         """
         Risks not being covered
         """
-        for risk_id in range(len(self.risks)):
-            if self.risks[risk_id]["risk_id"] not in self.underwritten_contracts:
-                self.not_underwritten_risks.append(self.risks[risk_id])
-
+        if risks["risk_id"] not in self.underwritten_contracts:
+            self.not_underwritten_risks.append(risks["risk_id"])
 
     def pay_premium(self, syndicate_id, category_id):
         """

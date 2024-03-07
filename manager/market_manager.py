@@ -170,28 +170,39 @@ class MarketManager:
 
     def evolve_action_market(self, starting_broker_risk, step_time):
         """
-        Evolve the specified Syndicate in the Market for step_time [day].
+        Evolve the syndicate, broker, risk in the market for step_time [day].
 
         Parameters
         ----------
-        syndicates: List[str]
-            A list of Syndicate identifiers to evolve in time.
+        starting_broker_risk: AddRiskEvent
+            The current risk event.
         step_time: float
             Amount of time in days to evolve the Market for.
-
-        Returns
-        ----------
-        Dict[str, Syndicate]
-            The syndicate status during step_time. The dictionary keys are Syndicate identifiers.
         """
 
-        syndicates_status = {}
+        # Update the status of brokers and syndicates in the market
+        risk_id = starting_broker_risk.risk_id
+        broker_id = starting_broker_risk.broker_id
+        if self.actions_to_apply != None:
+            lead_syndicate_id = self.actions_to_apply[0].syndicate
+            follow_syndicates_id = [self.actions_to_apply[i].syndicate for i in range(1,len(self.actions_to_apply))]
+            premium = starting_broker_risk.risk_value # TODO: will be changed in the future
+            risks = {"risk_id": starting_broker_risk.risk_id,
+                    "risk_start_time": starting_broker_risk.risk_start_time,
+                    "risk_factor": starting_broker_risk.risk_factor,
+                    "risk_category": starting_broker_risk.risk_category,
+                    "risk_value": starting_broker_risk.risk_value}
+            self.market.brokers[broker_id].add_contract(risks, lead_syndicate_id, follow_syndicates_id, premium)
+            self.market.syndicates[lead_syndicate_id].add_leader(risks, self.actions_to_apply[0].line_size, premium)
+            self.market.syndicates[lead_syndicate_id].add_contract(risks, broker_id, premium)
+            for sy in range(len(follow_syndicates_id)):
+                self.market.syndicates[follow_syndicates_id[sy]].add_follower(risks, self.actions_to_apply[1+sy].line_size, premium)
+                self.market.syndicates[follow_syndicates_id[sy]].add_contract(risks, broker_id, premium)
+        else:
+            self.market.brokers[broker_id].not_underwritten_risk(risks)
 
-        for syndicate in range(len(self.syndicates)):
-
-            syndicates_status = self.syndicates[syndicate].update_status(self.actions_to_apply)
-
-        return syndicates_status
+        # Update the status of syndicates in the market
+        self.market.syndicates.add_leader(risks, line_size, premium)
 
     def evolve(self, step_time):
         """
@@ -387,7 +398,7 @@ class MarketManager:
         # If there are any upcoming events or any syndicates active in the market,
         # then we aren't finished.
         any_events_left = len(self.event_handler.upcoming) > 0
-        any_syndicate_left = len(self.market.syndicate) > 0
+        any_syndicate_left = len(self.market.syndicates) > 0
 
         return not (any_events_left or any_syndicate_left)
 
@@ -405,35 +416,43 @@ class MarketManager:
             List of Actions to issue to Syndicate.
         """
 
-        all_syndicates = [action.syndicate for action in actions]
-        exit_syndicates = [syndicate for syndicate in all_syndicates if syndicate not in self.market.syndicates]
-        active_syndicates = [syndicate for syndicate in all_syndicates if syndicate not in exit_syndicates]
-        uncontrollable_syndicates = [
-            syndicate for syndicate in active_syndicates if not self.market.syndicates[syndicate].controllable
-        ]
+        # Choose the leader and save its action, the first syndicate with the highest line size wins 
+        # TODO: will add selection algorithm in the future
+        
+        sum_line_size
+        for sy in range(len(self.market.syndicates)):
+            sum_line_size += actions[sy].line_size
+        
+        if sum_line_size < 1:
+            # Refuse the quote
+            accept_actions = None
+        else:
+            # Accept the quote
+            accept_actions = []
+            line_size = 0
+            syndicate_id = []
+            for sy in range(len(self.market.syndicates)):
+                if actions[sy].line_size > line_size:
+                    line_size = actions[sy].line_size
+                    syndicate_id.append(sy)
 
-        # save Actions that cannot be issued and warn
-        if len(exit_syndicates) > 0:
-            warnings.warn(
-                f"Cannot issue actions to {', '.join(exit_syndicates)} (syndicate not recognized)...", UserWarning
-            )
-        if len(uncontrollable_syndicates) > 0:
-            warnings.warn(
-                f"Cannot issue actions to {', '.join(uncontrollable_syndicates)} (Syndicate not controllable)...",
-                UserWarning,
-            )
-        refused_actions = [
-            action
-            for action in actions
-            if (action.syndicate in exit_syndicates) or (action.syndicate in uncontrollable_syndicates)
-        ]
+            accept_actions.append(actions[syndicate_id[0]])
+            # Assign line size to the rest syndicates, FIFO
+            rest_line_size = 1 - line_size
+            while rest_line_size > 0:
+                for sy in range(len(self.market.syndicates)):
+                    if sy not in  syndicate_id:
+                        if actions[sy].line_size > rest_line_size:
+                            actions[sy].line_size = rest_line_size
+                            accept_actions.append(actions[sy])
+                            syndicate_id.append(sy)
+                            break
+                        else:
+                            rest_line_size -= actions[sy].line_size
+                            accept_actions.append(actions[sy])
+                            syndicate_id.append(sy)
 
-        # store the not allowed actions if there are any
-        if len(refused_actions) > 0:
-            self.actions_not_issued[self.market.time] = refused_actions
-
-        # save Actions to issue
-        accept_actions = [action for action in actions if action not in refused_actions]
+        # Save Actions to issue
         self.actions_to_apply = accept_actions
 
     def log_data(self, file_prefix, market, issued_actions, not_issued_actions

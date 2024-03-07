@@ -56,9 +56,9 @@ class Syndicate:
         self.capital_last_periods = list(np.zeros(4,dtype=int)*self.current_capital)
 
         self.premium_internal_weight = syndicate_args['actuarial_pricing_internal_weight']
-        self.play_leader_in_contracts = {}  # Include risk_id, broker_id, line_size
+        self.play_leader_in_contracts = []  # Include risk_id, broker_id, line_size
         self.lead_line_size = syndicate_args['lead_line_size']
-        self.play_follower_in_contracts = {}  # Include risk_id, broker_id, line_size
+        self.play_follower_in_contracts = []  # Include risk_id, broker_id, line_size
         self.follow_line_size = syndicate_args['follow_line_size']
         self.loss_experiency_weight = syndicate_args['loss_experiency_weight']
         self.volatility_weight = syndicate_args['volatility_weight']
@@ -129,6 +129,18 @@ class Syndicate:
         self.received_risk_list.append({"risk_id": risk_id,
                                   "broker_id": broker_id,
                                   "start_time": start_time})
+
+    def add_leader(risks, line_size, premium):
+        self.play_leader_in_contracts.append({"risk_id": risks.get("risk_id"),
+                                    "broker_id": risks.get("broker_id"),
+                                    "line_size": line_size,
+                                    "premium": premium})
+
+    def add_follower(risks, line_size, premium):
+        self.play_follower_in_contracts.append({"risk_id": risks.get("risk_id"),
+                                    "broker_id": risks.get("broker_id"),
+                                    "line_size": line_size,
+                                    "premium": premium})
 
     def add_contract(self, risks, broker_id, premium):
         """

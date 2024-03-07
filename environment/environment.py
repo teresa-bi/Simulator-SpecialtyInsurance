@@ -299,5 +299,5 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
         return action_map
 
     def set_action_space(self):
-        return gym.spaces.Box(0.5, 0.9, dtype = np.float32)
+        return gym.spaces.Box(0.0, 0.9, dtype = np.float32)
    
