@@ -183,15 +183,15 @@ class MarketManager:
         # Update the status of brokers and syndicates in the market
         risk_id = starting_broker_risk.risk_id
         broker_id = starting_broker_risk.broker_id
-        if self.actions_to_apply != None:
+        risks = {"risk_id": starting_broker_risk.risk_id,
+                "risk_start_time": starting_broker_risk.risk_start_time,
+                "risk_factor": starting_broker_risk.risk_factor,
+                "risk_category": starting_broker_risk.risk_category,
+                "risk_value": starting_broker_risk.risk_value}
+        if len(self.actions_to_apply) > 0:
             lead_syndicate_id = self.actions_to_apply[0].syndicate
             follow_syndicates_id = [self.actions_to_apply[i].syndicate for i in range(1,len(self.actions_to_apply))]
             premium = starting_broker_risk.risk_value # TODO: will be changed in the future
-            risks = {"risk_id": starting_broker_risk.risk_id,
-                    "risk_start_time": starting_broker_risk.risk_start_time,
-                    "risk_factor": starting_broker_risk.risk_factor,
-                    "risk_category": starting_broker_risk.risk_category,
-                    "risk_value": starting_broker_risk.risk_value}
             self.market.brokers[broker_id].add_contract(risks, lead_syndicate_id, follow_syndicates_id, premium)
             self.market.syndicates[lead_syndicate_id].add_leader(risks, self.actions_to_apply[0].line_size, premium)
             self.market.syndicates[lead_syndicate_id].add_contract(risks, broker_id, premium)
@@ -199,10 +199,7 @@ class MarketManager:
                 self.market.syndicates[follow_syndicates_id[sy]].add_follower(risks, self.actions_to_apply[1+sy].line_size, premium)
                 self.market.syndicates[follow_syndicates_id[sy]].add_contract(risks, broker_id, premium)
         else:
-            self.market.brokers[broker_id].not_underwritten_risk(risks)
-
-        # Update the status of syndicates in the market
-        self.market.syndicates.add_leader(risks, line_size, premium)
+            self.market.brokers[0].not_underwritten_risk(risks)
 
     def evolve(self, step_time):
         """
@@ -425,7 +422,7 @@ class MarketManager:
         
         if sum_line_size < 1:
             # Refuse the quote
-            accept_actions = None
+            accept_actions = []
         else:
             # Accept the quote
             accept_actions = []

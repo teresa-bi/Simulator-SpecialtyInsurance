@@ -80,8 +80,15 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
         self._agent_ids = set(self.agents)
         self.dones = set()
         self._spaces_in_preferred_format = True
-        self.observation_space = gym.spaces.Dict({self.syndicates[i].syndicate_id: self.obs_space_creator() for i in range(self.n)})
-        self.action_space = gym.spaces.Dict({self.syndicates[i].syndicate_id: self.set_action_space() for i in range(self.n)})
+        self.observation_space = gym.spaces.Dict({
+            "0": gym.spaces.Box(low=-1,high=1,shape=(2,)),
+            "1": gym.spaces.Box(low=-1,high=1,shape=(2,)),
+            "2": gym.spaces.Box(low=-1,high=1,shape=(2,))
+        })
+        self.action_space = gym.spaces.Dict({
+            "0": gym.spaces.Box(0.0, 0.9, dtype = np.float32),
+            "1": gym.spaces.Box(0.0, 0.9, dtype = np.float32),
+            "2": gym.spaces.Box(0.0, 0.9, dtype = np.float32)})
 
         super(SpecialtyInsuranceMarketEnv, self).__init__()
 
@@ -162,6 +169,7 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
         
         market = self.mm.evolve(self.dt)
         self.timestep += 1
+        print(self.timestep)
 
         # Compute rewards and get next observation
         for syndicate_id, action in action_dict.items():
@@ -206,10 +214,7 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
             del self.syndicate_active_list[syndicate_id]
 
         # The simulation is done when syndicates exit or bankrupt or reach the maximum time step
-        run_complete = True
-        if self.syndicate_active[syndicate_id] == True:
-            run_complete = False
-        if run_complete or ((self.timestep+1) >= self.maxstep):
+        if self.timestep >= self.maxstep:
             terminated = True
         else:
             terminated = False
@@ -280,14 +285,12 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
         return obs
 
     def obs_space_creator(self):
-        low, high = [], []
         # risk_category, risk_value, current capital for each category for each syndicate
-        low.extend([0.0, 0.0])
-        high.extend([10.0, 10000000.0]) # Number of risk category, risk limit, current capital
-        for num in range(self.risk_model_configs[0]["num_categories"]):
-            low.append(-10000000.0)
-            high.append(30000000.0)
-        observation_space = gym.spaces.Box(np.array(low, dtype=np.float32), np.array(high, dtype=np.float32)) 
+        low, high = [], []
+        low.extend([0.0, 0.0, -10000000, -10000000, -10000000, -10000000])
+        high.extend([10.0, 10000000, 30000000, 30000000, 30000000, 30000000])
+        observation_space = gym.spaces.Box(np.array(low, dtype=np.float32), 
+                                       np.array(high, dtype=np.float32)) 
         return observation_space
 
     def action_map_creator(self, syndicate, line_size):
