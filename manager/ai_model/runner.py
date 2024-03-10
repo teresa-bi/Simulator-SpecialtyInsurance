@@ -2,7 +2,7 @@ import os
 import ray
 from ray.tune.registry import register_env
 from ray import tune
-from ray.rllib.algorithms.ppo import PPO
+from ray.rllib.algorithms.dqn import DQN
 from ipywidgets import IntProgress
 from environment.environment import SpecialtyInsuranceMarketEnv
 from ray.rllib.policy.policy import PolicySpec
@@ -37,37 +37,27 @@ class AIRunner:
 
         return SpecialtyInsuranceMarketEnv(**env_config)
 
-    def ppo_trainer_creator(self, insurance_args):
-        """
-        Choose PPO Algorithm for Training
-        """
-        low, high = [], []
-        n = len(self.syndicates)
-        low.extend([0.0, 0.0])
-        high.extend([10.0, 10000000.0]) # Number of risk category, risk limit, current capital
-        for num in range(self.risk_model_configs[0]["num_categories"]):
-            low.append(-10000000.0)
-            high.append(30000000.0)
-        config={"log_level": "ERROR",
-            "env": "SpecialtyInsuranceMarket-validation",
-            "num_workers": 1,
+    def dqn_trainer_creator(insurance_args):
+    
+        config = {
+            "environment": "SpecialtyInsuranceMarket-validation",
+            "env_config": insurance_args,
             "framework": "tf",
-            "model": {
-                "fcnet_hiddens": [32, 16],
-                "fcnet_activation": "relu",
-                },
-            "evaluation_interval": 2, #num of training iter between evaluation
-            "evaluation_duration": 20,
-            "num_gpus": 0,
-            "multiagent": {
-            "policies": {
-                self.syndicates[i].syndicate_id: PolicySpec(observation_space=Box(np.array(low, dtype=np.float32), np.array(high, dtype=np.float32)), action_space=Box(0.5, 0.9, dtype = np.float32)) for i in range(n)
-                
+            "multi_agent": {"policies":{
+                # The Policy we are actually learning.
+                "learnable_policy": PolicySpec(
+                    observation_space=gym.spaces.Box(low=-1000000,high=1000000,shape=(6,), dtype = np.float32),
+                    action_space=gym.spaces.Box(0.0, 0.9, dtype = np.float32)
+                ),
+                }, 
+                     "policy_mapping_fn": lambda agent_id, *args, **kwargs: [
+                "learnable_policy",
+                ][agent_id % 1],
+                     "policies_to_train":["learnable_policy"],
             },
-            "policies_to_train": ["0"]
-            },
-            "env_config": insurance_args}
-        self.trainer = PPO(config=config)
+        }
+    
+        self.trainer = DQN(config=config)
 
     def training(self, top_dir, n):
         """
@@ -197,7 +187,7 @@ class AIRunner:
                         "risk_model_configs": self.risk_model_configs,
                         "with_reinsurance": self.with_reinsurance,
                         "num_risk_models": self.num_risk_models}
-        self.ppo_trainer_creator(insurance_args)
+        self.dqn_trainer_creator(insurance_args)
 
         for n in range(num_training):
             if n == 0:

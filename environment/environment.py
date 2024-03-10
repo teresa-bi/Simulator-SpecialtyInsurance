@@ -1,7 +1,6 @@
 import os
 import random
 import numpy as np
-import cairosvg
 
 import gym
 import ray
@@ -81,9 +80,9 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
         self.dones = set()
         self._spaces_in_preferred_format = True
         self.observation_space = gym.spaces.Dict({
-            "0": gym.spaces.Box(low=-1,high=1,shape=(2,)),
-            "1": gym.spaces.Box(low=-1,high=1,shape=(2,)),
-            "2": gym.spaces.Box(low=-1,high=1,shape=(2,))
+            "0": gym.spaces.Box(low=-1000000,high=1000000,shape=(6,), dtype = np.float32),
+            "1": gym.spaces.Box(low=-1000000,high=1000000,shape=(6,), dtype = np.float32),
+            "2": gym.spaces.Box(low=-1000000,high=1000000,shape=(6,), dtype = np.float32)
         })
         self.action_space = gym.spaces.Dict({
             "0": gym.spaces.Box(0.0, 0.9, dtype = np.float32),

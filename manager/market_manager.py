@@ -415,40 +415,41 @@ class MarketManager:
 
         # Choose the leader and save its action, the first syndicate with the highest line size wins 
         # TODO: will add selection algorithm in the future
-        
-        sum_line_size
-        for sy in range(len(self.market.syndicates)):
-            sum_line_size += actions[sy].line_size
-        
-        if sum_line_size < 1:
-            # Refuse the quote
-            accept_actions = []
-        else:
-            # Accept the quote
-            accept_actions = []
-            line_size = 0
-            syndicate_id = []
+        if actions is not None:
+            sum_line_size = 0
             for sy in range(len(self.market.syndicates)):
-                if actions[sy].line_size > line_size:
-                    line_size = actions[sy].line_size
-                    syndicate_id.append(sy)
-
-            accept_actions.append(actions[syndicate_id[0]])
-            # Assign line size to the rest syndicates, FIFO
-            rest_line_size = 1 - line_size
-            while rest_line_size > 0:
+                sum_line_size += actions[sy].line_size
+        
+            if sum_line_size < 1:
+                # Refuse the quote
+                accept_actions = []
+            else:
+                # Accept the quote
+                accept_actions = []
+                line_size = 0
+                syndicate_id = []
                 for sy in range(len(self.market.syndicates)):
-                    if sy not in  syndicate_id:
-                        if actions[sy].line_size > rest_line_size:
-                            actions[sy].line_size = rest_line_size
-                            accept_actions.append(actions[sy])
-                            syndicate_id.append(sy)
-                            break
-                        else:
-                            rest_line_size -= actions[sy].line_size
-                            accept_actions.append(actions[sy])
-                            syndicate_id.append(sy)
+                    if actions[sy].line_size > line_size:
+                        line_size = actions[sy].line_size
+                        syndicate_id.append(sy)
 
+                accept_actions.append(actions[syndicate_id[0]])
+                # Assign line size to the rest syndicates, FIFO
+                rest_line_size = 1 - line_size
+                while rest_line_size > 0:
+                    for sy in range(len(self.market.syndicates)):
+                        if sy not in  syndicate_id:
+                            if actions[sy].line_size > rest_line_size:
+                                actions[sy].line_size = rest_line_size
+                                accept_actions.append(actions[sy])
+                                syndicate_id.append(sy)
+                                break
+                            else:
+                                rest_line_size -= actions[sy].line_size
+                                accept_actions.append(actions[sy])
+                                syndicate_id.append(sy)
+        else:
+            accept_actions = []
         # Save Actions to issue
         self.actions_to_apply = accept_actions
 
