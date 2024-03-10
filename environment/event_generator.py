@@ -98,7 +98,7 @@ class EventGenerator():
         add_risk_events = []
         for i in range(len(brokers)):
             num_risk = 0
-            for time in range(sim_args.get("max_time")+1):
+            for time in range(sim_args.get("max_time")+2):
                 for k in range(len(risks)):
                     risk = risks[k]
                     add_risk_event = AddRiskEvent(num_risk, brokers[i].broker_id, time, time+12*30, risk["risk_factor"], risk["risk_category"], risk["risk_value"])

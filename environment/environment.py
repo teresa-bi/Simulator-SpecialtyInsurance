@@ -64,32 +64,22 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
         # Active syndicate list
         self.syndicate_active_list = []
         # Initialise events, actions, and states 
-        self.catastrophe_events = []
-        self.attritional_loss_events = []
         self.broker_risk_events = []
-        self.broker_premium_events = []
-        self.broker_claim_events = []
         self.action_map_dict = {}
         self.state_encoder_dict = {}
-        self.step_track = 0
 
         # Define Action Space, Define Observation Space
         self.n = len(self.syndicates)
-        self.agents = {self.syndicates[i].syndicate_id for i in range(self.n)}
+        self.agents = {self.syndicates[i].syndicate_id for i in range(self.n)} 
         self._agent_ids = set(self.agents)
         self.dones = set()
         self._spaces_in_preferred_format = True
         self.observation_space = gym.spaces.Dict({
-            "0": gym.spaces.Box(low=-1000000,high=1000000,shape=(6,), dtype = np.float32),
-            "1": gym.spaces.Box(low=-1000000,high=1000000,shape=(6,), dtype = np.float32),
-            "2": gym.spaces.Box(low=-1000000,high=1000000,shape=(6,), dtype = np.float32)
+            self.syndicates[i].syndicate_id: gym.spaces.Box(low=np.array([-1000000,-1000000,-1000000,-1000000,-1000000,-1000000]), 
+                                                     high=np.array([1000000,1000000,1000000,1000000,1000000,1000000]), dtype = np.float32) for i in range(self.n)
         })
         self.action_space = gym.spaces.Dict({
-            "0": gym.spaces.Box(0.0, 0.9, dtype = np.float32),
-            "1": gym.spaces.Box(0.0, 0.9, dtype = np.float32),
-            "2": gym.spaces.Box(0.0, 0.9, dtype = np.float32)})
-
-        super(SpecialtyInsuranceMarketEnv, self).__init__()
+            self.syndicates[i].syndicate_id: gym.spaces.Box(0.0, 0.9, dtype = np.float32) for i in range(self.n)})
 
         # Reset the environmnet
         self.reset()
@@ -126,17 +116,16 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
         
         # Set per syndicate active status and build status list
         self.syndicate_active_list = []   # Store syndicates currently in the market
-        for syndicate_id in self.mm.market.syndicates:
-            if self.mm.market.syndicates[syndicate_id].status == True:
-                self.syndicate_active_list.append(syndicate_id)
+        for sy in range(len(self.mm.market.syndicates)):
+            if self.mm.market.syndicates[sy].status == True:
+                self.syndicate_active_list.append(self.mm.market.syndicates[sy].syndicate_id)
 
         # Create action map and state list
         info_dict = {}
-        for syndicate_id in self.syndicate_active_list:
-            self.action_map_dict[syndicate_id] = self.action_map_creator(self.mm.market.syndicates[syndicate_id], 0)
-            #self.state_encoder_dict[syndicate_id] = self.state_encoder(syndicate_id)
-            self.state_encoder_dict = {i: self.observation_space[i].sample() for i in self.agents}
-            info_dict[syndicate_id] = self._get_info()
+        for sy in range(len(self.mm.market.syndicates)):
+            self.action_map_dict[self.mm.market.syndicates[sy].syndicate_id] = self.action_map_creator(self.mm.market.syndicates[sy], 0)
+            self.state_encoder_dict[self.mm.market.syndicates[sy].syndicate_id] = self.state_encoder(self.mm.market.syndicates[sy].syndicate_id)
+            info_dict[self.mm.market.syndicates[sy].syndicate_id] = None
 
         return self.state_encoder_dict, info_dict
         
@@ -149,7 +138,7 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
         parsed_actions = []        
         for syndicate_id, action in action_dict.items():
             # update action map
-            self.action_map = self.action_map_creator(self.mm.market.syndicates[syndicate_id],action)
+            self.action_map = self.action_map_creator(self.mm.market.syndicates[int(syndicate_id)],action)
             parsed_ac2add = self.action_map
             parsed_actions.append(parsed_ac2add)
         
@@ -174,13 +163,11 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
         for syndicate_id, action in action_dict.items():
             reward_dict[syndicate_id] = self.compute_reward(action, syndicate_id)
             obs_dict[syndicate_id]= self.state_encoder(syndicate_id)
-            info_dict[syndicate_id] = self._get_info()
+            info_dict[syndicate_id] = {}
             flag_dict[syndicate_id] = False
-        
-        # Check termination
-        for syndicate_id in self.syndicate_active_list:
             terminated_dict[syndicate_id] = self.check_termination(syndicate_id)
-
+            if terminated_dict[syndicate_id]:
+                self.dones.add(i)
         # Update plot 
         self.draw2file(market)
 
@@ -193,6 +180,7 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
         
         terminated_dict["__all__"] = all_terminated
         flag_dict["__all__"] = all_terminated
+        print(obs_dict, reward_dict, terminated_dict)
 
         return obs_dict, reward_dict, terminated_dict, flag_dict, info_dict
 
@@ -207,10 +195,7 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
 
         # Update per syndicate status, True-active in market, False-exit market becuase of no contract or bankruptcy
         market = self.mm.market
-        sy = market.syndicates[syndicate_id] 
-        if sy.status == False:
-            self.syndicate_active[syndicate_id] = False
-            del self.syndicate_active_list[syndicate_id]
+        sy = market.syndicates[int(syndicate_id)] 
 
         # The simulation is done when syndicates exit or bankrupt or reach the maximum time step
         if self.timestep >= self.maxstep:
@@ -238,7 +223,7 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
 
         # For each claim being paied +1 or refused -1
         if(self.timestep <= self.maxstep):
-            for claim in range(len(market.syndicate[syndicate_id].paid_claim)):
+            for claim in range(len(market.syndicates[int(syndicate_id)].paid_claim)):
                 if market.syndicate[syndicate_id].paid_claim[claim]["status"] == True:
                     r[1] += 1
                 else:
@@ -246,8 +231,8 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
 
         # Profit and Bankruptcy       
         if(self.timestep <= self.maxstep):
-            initial_capital = self.syndicate_status[syndicate_id].initial_capital
-            current_capital = self.syndicate_status[syndicate_id].update_capital()
+            initial_capital = market.syndicates[int(syndicate_id)].initial_capital
+            current_capital = market.syndicates[int(syndicate_id)].current_capital
             r[2] += current_capital - initial_capital
             if (current_capital - initial_capital) < 0:
                 r[3] -= 10000
@@ -256,30 +241,28 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
         reward = 0.0
         reward += np.sum(r)
 
-        return reward
+        return reward     
 
     def send_action2env(self, parsed_actions):               
             
         # Apply action
-        # Note that mm.receive_actions caches actions until mm.evolve is called in step
         if len(parsed_actions) > 0:
-            self.mm.receive_actions(actions=parsed_actions)          
+            self.mm.receive_actions(actions=parsed_actions) 
     
     def state_encoder(self, syndicate_id):
 
         ### Observation Space:             
         obs = []
-        market = self.mm.market
-        for risk in range(len(market.risks)):
-            if market.risks[risk]["risk_start_time"] == self.timestep:
+        for risk in range(len(self.broker_risk_events)):
+            if self.broker_risk_events[risk].risk_start_time == self.timestep+1:
+                print(self.timestep+1)
                 # Catastrophe risk category and risk value
-                obs.append(market.risks[risk]["risk_category"])
-                obs.append(market.risks[risk]["risk_value"])
-
+                obs.append(self.broker_risk_events[risk].risk_category)
+                obs.append(self.broker_risk_events[risk].risk_value)
+        
         # Syndicates status current capital in 
-        obs.append(self.syndicates[syndicate_id]["current_capital"])
-        for num in range(len(self.syndicates[syndicate_id].current_capital_category)):
-            obs.append(self.syndicates[syndicate_id].current_capital_category[num])
+        for num in range(len(self.syndicates[int(syndicate_id)].current_capital_category)):
+            obs.append(self.syndicates[int(syndicate_id)].current_capital_category[num])
             
         return obs
 
@@ -294,9 +277,10 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
 
     def action_map_creator(self, syndicate, line_size):
 
-        for r in range(len(syndicate.received_risk_list)):
-            if syndicate.received_risk_list["start_time"] == self.timestep:
-                action_map = Action(syndicate.syndicate_id, line_size, syndicate.received_risk[r]["risk_id"], syndicate.received_risk[r]["broker_id"])
+        action_map = None
+        for risk in range(len(self.broker_risk_events)):
+            if self.broker_risk_events[risk].risk_start_time == self.timestep+1:
+                action_map = Action(syndicate.syndicate_id, line_size/10, self.broker_risk_events[risk].risk_id, self.broker_risk_events[risk].broker_id)
        
         return action_map
 
