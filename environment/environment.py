@@ -79,7 +79,7 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
                                                      high=np.array([1000000,1000000,1000000,1000000,1000000,1000000]), dtype = np.float32) for i in range(self.n)
         })
         self.action_space = gym.spaces.Dict({
-            self.syndicates[i].syndicate_id: gym.spaces.Box(0.0, 0.9, dtype = np.float32) for i in range(self.n)})
+            self.syndicates[i].syndicate_id: gym.spaces.Box(0.5, 0.9, dtype = np.float32) for i in range(self.n)})
 
         # Reset the environmnet
         self.reset()
@@ -155,7 +155,7 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
         self.mm.update_claim_events(self.broker_claim_events, self.event_handler)"""
 
         
-        market = self.mm.evolve(self.dt)
+        self.mm.market = self.mm.evolve(self.dt)
         self.timestep += 1
         print(self.timestep)
 
@@ -169,7 +169,7 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
             if terminated_dict[syndicate_id]:
                 self.dones.add(i)
         # Update plot 
-        self.draw2file(market)
+        self.draw2file(self.mm.market)
 
         # All done termination check
         all_terminated = True
@@ -280,10 +280,10 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
         action_map = None
         for risk in range(len(self.broker_risk_events)):
             if self.broker_risk_events[risk].risk_start_time == self.timestep+1:
-                action_map = Action(syndicate.syndicate_id, line_size/10, self.broker_risk_events[risk].risk_id, self.broker_risk_events[risk].broker_id)
+                action_map = Action(syndicate.syndicate_id, line_size, self.broker_risk_events[risk].risk_id, self.broker_risk_events[risk].broker_id)
        
         return action_map
 
     def set_action_space(self):
-        return gym.spaces.Box(0.0, 0.9, dtype = np.float32)
+        return gym.spaces.Box(0.5, 0.9, dtype = np.float32)
    

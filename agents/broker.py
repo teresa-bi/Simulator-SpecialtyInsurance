@@ -59,7 +59,7 @@ class Broker:
                                     "follow_syndicates_id": follow_syndicates_id,
                                     "premium": premium,
                                     "risk_end_time": risks.get("risk_start_time")+365,
-                                    "claim": Flase})
+                                    "claim": False})
 
     def delete_contract(self, risks, syndicated_id):
         """

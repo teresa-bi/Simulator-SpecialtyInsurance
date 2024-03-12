@@ -130,13 +130,13 @@ class Syndicate:
                                   "broker_id": broker_id,
                                   "start_time": start_time})
 
-    def add_leader(risks, line_size, premium):
+    def add_leader(self, risks, line_size, premium):
         self.play_leader_in_contracts.append({"risk_id": risks.get("risk_id"),
                                     "broker_id": risks.get("broker_id"),
                                     "line_size": line_size,
                                     "premium": premium})
 
-    def add_follower(risks, line_size, premium):
+    def add_follower(self, risks, line_size, premium):
         self.play_follower_in_contracts.append({"risk_id": risks.get("risk_id"),
                                     "broker_id": risks.get("broker_id"),
                                     "line_size": line_size,
@@ -152,10 +152,13 @@ class Syndicate:
                                     "risk_factor": risks.get("risk_factor"),
                                     "risk_category": risks.get("risk_category"),
                                     "risk_value": risks.get("risk_value"),
-                                    "syndicate_id": self.syndicated_id,
+                                    "syndicate_id": self.syndicate_id,
                                     "premium": premium,
                                     "risk_end_time": risks.get("risk_start_time")+365,
-                                    "pay": Flase})
+                                    "pay": False})
+        for i in range(len(self.current_capital_category)):
+            if i == risks.get("risk_category"):
+                self.current_capital_category[i] -= risks.get("risk_value")
 
     def pay_claim(self, risk_id, broker_id, category_id, claim_value):
         if self.current_capital >= claim_value:
