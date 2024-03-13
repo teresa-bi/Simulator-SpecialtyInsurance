@@ -8,7 +8,7 @@ class NoReinsurance_RiskOne:
     """
     Basic insurance market including brokers, syndicates, sharholders, and one risk model
     """
-    def __init__(self, time, sim_maxstep, manager_args, brokers, syndicates, shareholders, risks, risk_model_configs, broker_risk_event):
+    def __init__(self, time, sim_maxstep, manager_args, brokers, syndicates, shareholders, risks, risk_model_configs, catastrophe_event, attritional_loss_event, broker_risk_event, broker_premium_event, broker_claim_event):
         """
         Construct a new instance.
 
@@ -44,11 +44,11 @@ class NoReinsurance_RiskOne:
         self.risk_model_configs = risk_model_configs
         
         # Status of risks and claims
-        #self.catastrophe_event = catastrophe_event
-        #self.attritional_loss_event = attritional_loss_event
+        self.catastrophe_event = catastrophe_event
+        self.attritional_loss_event = attritional_loss_event
         self.broker_bring_risk = broker_risk_event
-        #self.broker_pay_premium = broker_premium_event
-        #self.broker_bring_claim = broker_claim_event
+        self.broker_pay_premium = broker_premium_event
+        self.broker_bring_claim = broker_claim_event
 
     def data(self):
         """

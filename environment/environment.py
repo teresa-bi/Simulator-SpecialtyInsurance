@@ -65,7 +65,10 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
         self.syndicate_active_list = []
         # Initialise events, actions, and states
         self.catastrophe_events = [] 
+        self.attritional_loss_events = []
         self.broker_risk_events = []
+        self.broker_premium_events = []
+        self.broker_claim_events = []
         self.action_map_dict = {}
         self.state_encoder_dict = {}
 
@@ -102,17 +105,17 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
         # Catastrophe event 
         self.catastrophe_events = EventGenerator(self.risk_model_configs).generate_catastrophe_events(self.risks)
         # Attritioal loss event daily
-        #self.attritional_loss_events = EventGenerator(self.risk_model_configs).generate_attritional_loss_events(self.sim_args, self.risks)
+        self.attritional_loss_events = EventGenerator(self.risk_model_configs).generate_attritional_loss_events(self.sim_args, self.risks)
         # Broker risk event daily: broker generate risk according to poisson distribution
         self.broker_risk_events = EventGenerator(self.risk_model_configs).generate_risk_events(self.sim_args, self.brokers, self.risks)
         # Broker pay premium according to underwritten contracts
-        #self.broker_premium_events = []
+        self.broker_premium_events = []
         # Broker ask for claim if the contract affected by catastrophe
-        #self.broker_claim_events = []
-        #self.event_handler = EventHandler(self.maxstep, self.catastrophe_events, self.attritional_loss_events, self.broker_risk_events, self.broker_premium_events, self.broker_claim_events)
-        self.event_handler = EventHandler(self.maxstep, self.catastrophe_events, self.broker_risk_events)
+        self.broker_claim_events = []
+        self.event_handler = EventHandler(self.maxstep, self.catastrophe_events, self.attritional_loss_events, self.broker_risk_events, self.broker_premium_events, self.broker_claim_events)
         # Initiate market manager
-        self.mm = MarketManager(self.maxstep, self.manager_args, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.risks, self.risk_model_configs, self.with_reinsurance, self.num_risk_models, self.catastrophe_events, self.broker_risk_events, self.event_handler)
+        self.mm = MarketManager(self.maxstep, self.manager_args, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.risks, self.risk_model_configs, self.with_reinsurance, self.num_risk_models, 
+                               self.catastrophe_events, self.attritional_loss_events, self.broker_risk_events, self.broker_premium_events, self.broker_claim_events, self.event_handler)
         self.mm.evolve(self.dt)
         
         # Set per syndicate active status and build status list

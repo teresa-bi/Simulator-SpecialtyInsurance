@@ -14,7 +14,7 @@ class MarketManager:
     Manage and evolve the market.
     """
 
-    def __init__(self, maxstep, manager_args, brokers, syndicates, reinsurancefirms, shareholders, risks, risk_model_configs, with_reinsurance, num_risk_models, catastrophe_events, broker_risk_events, event_handler, logger = None, time = 0):
+    def __init__(self, maxstep, manager_args, brokers, syndicates, reinsurancefirms, shareholders, risks, risk_model_configs, with_reinsurance, num_risk_models, catastrophe_events, attritional_loss_events, broker_risk_events, broker_premium_events, broker_claim_events, event_handler, logger = None, time = 0):
         """
         Construct a new instance.
 
@@ -53,11 +53,11 @@ class MarketManager:
         self.risk_model_configs = risk_model_configs
         self.with_reinsurance = with_reinsurance
         self.num_risk_models = num_risk_models
-        #self.catastrophe_events = catastrophe_events
-        #self.attritional_loss_events = attritional_loss_events
+        self.catastrophe_events = catastrophe_events
+        self.attritional_loss_events = attritional_loss_events
         self.broker_risk_events = broker_risk_events
-        #self.broker_premium_events = broker_premium_events
-        #self.broker_claim_events = broker_claim_events
+        self.broker_premium_events = broker_premium_events
+        self.broker_claim_events = broker_claim_events
         self.event_handler = event_handler
 
         """
@@ -73,7 +73,7 @@ class MarketManager:
                 self.market = Reinsurance_RiskFour(time, self.maxstep, self.manager_args, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.risks, self.risk_model_configs, self.catastrophe_events, self.attritional_loss_events, self.broker_risk_events, self.broker_premium_events, self.broker_claim_events)
         """
 
-        self.market = NoReinsurance_RiskOne(time, self.maxstep, self.manager_args, self.brokers, self.syndicates, self.shareholders, self.risks, self.risk_model_configs, self.broker_risk_events)
+        self.market = NoReinsurance_RiskOne(time, self.maxstep, self.manager_args, self.brokers, self.syndicates, self.shareholders, self.risks, self.risk_model_configs, self.catastrophe_events, self.attritional_loss_events, self.broker_risk_events, self.broker_premium_events, self.broker_claim_events)
 
         self.min_step_time = 1  # Day Event
 
@@ -116,16 +116,16 @@ class MarketManager:
         """
 
         # Sort upcoming events by start_time
-        #upcoming_catastrophe_events = list(self.event_handler.upcoming_catastrophe.values()) + list(self.event_handler.ongoing_catastrophe.values())
-        #upcoming_catastrophe_events.sort()
-        #upcoming_attritional_loss_events = list(self.event_handler.upcoming_attritional_loss.values()) + list(self.event_handler.ongoing_attritional_loss.values())
-        #upcoming_attritional_loss_events.sort()
+        upcoming_catastrophe_events = list(self.event_handler.upcoming_catastrophe.values()) + list(self.event_handler.ongoing_catastrophe.values())
+        upcoming_catastrophe_events.sort()
+        upcoming_attritional_loss_events = list(self.event_handler.upcoming_attritional_loss.values()) + list(self.event_handler.ongoing_attritional_loss.values())
+        upcoming_attritional_loss_events.sort()
         upcoming_broker_risk_events = list(self.event_handler.upcoming_broker_risk.values()) + list(self.event_handler.ongoing_broker_risk.values())
         upcoming_broker_risk_events.sort()
-        #upcoming_broker_premium_events = list(self.event_handler.upcoming_broker_premium.values()) + list(self.event_handler.ongoing_broker_premium.values())
-        #upcoming_broker_premium_events.sort()
-        #upcoming_broker_claim_events = list(self.event_handler.upcoming_broker_claim.values()) + list(self.event_handler.ongoing_broker_claim.values())
-        #upcoming_broker_claim_events.sort()
+        upcoming_broker_premium_events = list(self.event_handler.upcoming_broker_premium.values()) + list(self.event_handler.ongoing_broker_premium.values())
+        upcoming_broker_premium_events.sort()
+        upcoming_broker_claim_events = list(self.event_handler.upcoming_broker_claim.values()) + list(self.event_handler.ongoing_broker_claim.values())
+        upcoming_broker_claim_events.sort()
 
         # Check if there are any upcoming events left
         #if ((len(upcoming_catastrophe_events) == 0) and (len(upcoming_attritional_loss_events) == 0) and (len(upcoming_broker_risk_events) == 0)
@@ -133,16 +133,16 @@ class MarketManager:
             #return None
 
         # Get time to next event
-        #next_catastrophe_event = upcoming_catastrophe_events[0]
-        #time_to_next_catastrophe_event = next_catastrophe_event.start_time - self.market.time
-        #next_attritional_loss_event = upcoming_attritional_loss_events[0]
-        #time_to_next_attritional_loss_event = next_attritional_loss_event.start_time - self.market.time
+        next_catastrophe_event = upcoming_catastrophe_events[0]
+        time_to_next_catastrophe_event = next_catastrophe_event.start_time - self.market.time
+        next_attritional_loss_event = upcoming_attritional_loss_events[0]
+        time_to_next_attritional_loss_event = next_attritional_loss_event.start_time - self.market.time
         next_broker_risk_event = upcoming_broker_risk_events[0]
         time_to_next_broker_risk_event = next_broker_risk_event.start_time - self.market.time
-        #next_broker_premium_event = upcoming_broker_premium_events[0]
-        #time_to_next_broker_premium_event = next_broker_premium_event.start_time - self.market.time
-        #next_broker_claim_event = upcoming_broker_claim_events[0]
-        #time_to_next_broker_claim_event = next_broker_claim_event.start_time - self.market.time
+        next_broker_premium_event = upcoming_broker_premium_events[0]
+        time_to_next_broker_premium_event = next_broker_premium_event.start_time - self.market.time
+        next_broker_claim_event = upcoming_broker_claim_events[0]
+        time_to_next_broker_claim_event = next_broker_claim_event.start_time - self.market.time
 
         #return time_to_next_catastrophe_event, time_to_next_attritional_loss_event, time_to_next_broker_risk_event, time_to_next_broker_premium_event, time_to_next_broker_claim_event
         return time_to_next_broker_risk_event
