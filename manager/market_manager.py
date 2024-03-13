@@ -14,7 +14,7 @@ class MarketManager:
     Manage and evolve the market.
     """
 
-    def __init__(self, maxstep, manager_args, brokers, syndicates, reinsurancefirms, shareholders, risks, risk_model_configs, with_reinsurance, num_risk_models, broker_risk_events, event_handler, logger = None, time = 0):
+    def __init__(self, maxstep, manager_args, brokers, syndicates, reinsurancefirms, shareholders, risks, risk_model_configs, with_reinsurance, num_risk_models, catastrophe_events, broker_risk_events, event_handler, logger = None, time = 0):
         """
         Construct a new instance.
 
@@ -168,7 +168,7 @@ class MarketManager:
 
         return syndicates_status
 
-    def evolve_action_market(self, starting_broker_risk, step_time):
+    def evolve_action_market(self, starting_broker_risk):
         """
         Evolve the syndicate, broker, risk in the market for step_time [day].
 
@@ -222,76 +222,20 @@ class MarketManager:
         market_start_time = self.market.time
         market_end_time = self.market.time + step_time
 
-        #upcoming_catastrophe = [
-            #e.risk_id for e in self.event_handler.upcoming_catastrophe.values() if isinstance(e, AddCatastropheEvent)
-        #]
-
-        #upcoming_attritional_loss = [
-            #e.risk_id for e in self.event_handler.upcoming_attritional_loss.values() if isinstance(e, AddAttritionalLossEvent)
-        #]
-
         upcoming_broker_risk = [
             e.risk_id for e in self.event_handler.upcoming_broker_risk.values() if isinstance(e, AddRiskEvent)
         ]
 
-        #upcoming_broker_premium = [
-            #e.risk_id for e in self.event_handler.upcoming_broker_premium.values() if isinstance(e, AddPremiumEvent)
-        #]
-
-        #upcoming_broker_claim = [
-            #e.risk_id for e in self.event_handler.upcoming_broker_claim.values() if isinstance(e, AddClaimEvent)
-        #]
-
         # Enact the events
         self.market = self.event_handler.forward(self.market, step_time)
 
-        # Track any newly-added events
-        #newly_added_catastrophe_events = {
-            #e.risk_id: e.risk_start_time
-            #for e in self.event_handler.upcoming_catastrophe.values()
-            #if isinstance(e, AddCatastropheEvent) and (e.risk_id in upcoming_catastrophe)
-        #}
-
-        #newly_added_attritional_loss_events = {
-            #e.risk_id: e.risk_start_time
-            #for e in self.event_handler.completed_attritional_loss.values()
-            #if isinstance(e, AddAttritionalLossEvent) and (e.risk_id in upcoming_attritional_loss)
-        #}
+        # Track any newly-added broker_risk events
 
         newly_added_broker_risk_events = {
             e.risk_id: e.risk_start_time
             for e in self.event_handler.completed_broker_risk.values()
             if isinstance(e, AddRiskEvent) and (e.risk_id in upcoming_broker_risk)
         }
-
-        #newly_added_broker_premium_events = {
-            #e.risk_id: e.risk_start_time
-            #for e in self.event_handler.completed_broker_premium.values()
-            #if isinstance(e, AddPremiumEvent) and (e.risk_id in upcoming_broker_premium)
-        #}
-
-        #newly_added_broker_claim_events = {
-            #e.risk_id: e.risk_start_time
-            #for e in self.event_handler.completed_broker_claim.values()
-            #if isinstance(e, AddClaimEvent) and (e.risk_id in upcoming_broker_claim)
-        #}
-
-        
-        #catastrophe_event_start_times = np.array(
-            #[
-            #    newly_added_catastrophe_events.get(risk_id)
-            #    for risk_id in upcoming_catastrophe
-            #    if newly_added_catastrophe_events.get(risk_id) != None
-            #]
-        #)
-
-        #attritional_loss_event_start_times = np.array(
-            #[
-            #    newly_added_attritional_loss_events.get(risk_id)
-            #    for risk_id in upcoming_attritional_loss
-            #    if newly_added_attritional_loss_events.get(risk_id) != None
-            #]
-        #)
 
         broker_risk_event_start_times = np.array(
             [
@@ -300,28 +244,6 @@ class MarketManager:
                 if newly_added_broker_risk_events.get(risk_id) != None
             ]
         )
-
-        #broker_premium_event_start_times = np.array(
-            #[
-            #    newly_added_broker_premium_events.get(risk_id)
-            #    for risk_id in upcoming_broker_premium
-            #    if newly_added_broker_premium_events.get(risk_id) != None
-            #]
-        #)
-
-        #broker_claim_event_start_times = np.array(
-            #[
-            #    newly_added_broker_claim_events.get(risk_id)
-            #    for risk_id in upcoming_broker_claim
-            #    if newly_added_broker_claim_events.get(risk_id) != None
-            #]
-        #)
-
-        #event_start_times = np.concatenate((catastrophe_event_start_times,
-        #                                    attritional_loss_event_start_times,
-        #                                    broker_risk_event_start_times,
-        #                                    broker_premium_event_start_times,
-        #                                    broker_claim_event_start_times))
 
         # Get the unique start times and sort
         sorted_unique_start_times = np.sort(np.unique(broker_risk_event_start_times))
@@ -332,48 +254,18 @@ class MarketManager:
             self.market.time = start_time
 
             # Get all the events starting at this time
-            #starting_catastrophe = None
-            #starting_attritional_loss = None
             starting_broker_risk = None
-            #starting_broker_premium = None
-            #starting_broker_claim = None
-            #for i in range(len(self.catastrophe_events)):
-               # if self.catastrophe_events[i].risk_start_time == start_time:
-                #    starting_catastrophe = self.catastrophe_events[i]
-            #for i in range(len(self.attritional_loss_events)):
-               # if self.attritional_loss_events[i].risk_start_time == start_time:
-                #    starting_attritional_loss = self.attritional_loss_events[i]
             for i in range(len(self.broker_risk_events)):
                 if self.broker_risk_events[i].risk_start_time == start_time:
                     starting_broker_risk = self.broker_risk_events[i]
-           # for i in range(len(self.broker_premium_events)):
-                #if self.broker_premium_events[i].risk_start_time == start_time:
-                #    starting_broker_premium = self.broker_premium_events[i]
-            #for i in range(len(self.broker_claim_events)):
-                #if self.broker_claim_events[i].risk_start_time == start_time:
-                 #   starting_broker_claim = self.broker_claim_events[i]
-
-            # Calculate the time they should proceed for
-            proceed_time = market_end_time - start_time
-
-            # edge case: the aircraft wants to move at the time env.time + step_time,
-            # in this case nothing needs to be done
-            if proceed_time == 0:
-                continue
 
             # Move along the corresponding syndicates
-            self.evolve_action_market(starting_broker_risk, proceed_time)
-
-        # Finally, save issued Actions and move the market time to the end time
-        if len(self.actions_to_apply) > 0:
-            self.actions_issued[market_start_time] = self.actions_to_apply
+            self.evolve_action_market(starting_broker_risk)
 
             # Empty all the actions to apply to syndicates
             self.actions_to_apply = []
 
         self.market.time = market_end_time
-
-        return self.market
 
     def syndicate_exit(self):
         """

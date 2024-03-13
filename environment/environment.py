@@ -63,7 +63,8 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
 
         # Active syndicate list
         self.syndicate_active_list = []
-        # Initialise events, actions, and states 
+        # Initialise events, actions, and states
+        self.catastrophe_events = [] 
         self.broker_risk_events = []
         self.action_map_dict = {}
         self.state_encoder_dict = {}
@@ -99,7 +100,7 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
         self.log = []
 
         # Catastrophe event 
-        #self.catastrophe_events = EventGenerator(self.risk_model_configs).generate_catastrophe_events(self.risks)
+        self.catastrophe_events = EventGenerator(self.risk_model_configs).generate_catastrophe_events(self.risks)
         # Attritioal loss event daily
         #self.attritional_loss_events = EventGenerator(self.risk_model_configs).generate_attritional_loss_events(self.sim_args, self.risks)
         # Broker risk event daily: broker generate risk according to poisson distribution
@@ -109,9 +110,9 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
         # Broker ask for claim if the contract affected by catastrophe
         #self.broker_claim_events = []
         #self.event_handler = EventHandler(self.maxstep, self.catastrophe_events, self.attritional_loss_events, self.broker_risk_events, self.broker_premium_events, self.broker_claim_events)
-        self.event_handler = EventHandler(self.maxstep, self.broker_risk_events)
+        self.event_handler = EventHandler(self.maxstep, self.catastrophe_events, self.broker_risk_events)
         # Initiate market manager
-        self.mm = MarketManager(self.maxstep, self.manager_args, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.risks, self.risk_model_configs, self.with_reinsurance, self.num_risk_models, self.broker_risk_events, self.event_handler)
+        self.mm = MarketManager(self.maxstep, self.manager_args, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.risks, self.risk_model_configs, self.with_reinsurance, self.num_risk_models, self.catastrophe_events, self.broker_risk_events, self.event_handler)
         self.mm.evolve(self.dt)
         
         # Set per syndicate active status and build status list
@@ -155,9 +156,8 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
         self.mm.update_claim_events(self.broker_claim_events, self.event_handler)"""
 
         
-        self.mm.market = self.mm.evolve(self.dt)
+        self.mm.evolve(self.dt)
         self.timestep += 1
-        print(self.timestep)
 
         # Compute rewards and get next observation
         for syndicate_id, action in action_dict.items():

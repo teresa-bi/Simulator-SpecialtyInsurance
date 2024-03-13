@@ -121,7 +121,7 @@ class Broker:
         matched_contracts = []
         claim_value = 0
         for i in range(len(self.underwritten_contracts)):
-            if (self.underwritten_contracts[i].get("syndicated_id") == syndicated_id) and (self.underwritten_contracts[i].get("risk_category") == category_id):
+            if (self.underwritten_contracts[i].get("syndicated_id") == syndicate_id) and (self.underwritten_contracts[i].get("risk_category") == category_id):
                 matched_contracts.append(self.underwritten_contracts[i])
         for i in range(len(matched_contracts)):
             claim_value += matched_contracts.get("risk_value") * ( 1 - self.deductible)
@@ -139,8 +139,8 @@ class Broker:
         """
         ask_claim_value = self.ask_claim(syndicate_id, category_id)
         if ask_claim_value == receive_claim_value:
-            for contract in self.underwritten_contracts:
-                if (self.underwritten_contracts[contract].get("syndicated_id") == syndicated_id) and (self.underwritten_contracts[contract].get("risk_category") == category_id):
+            for contract in range(len(self.underwritten_contracts)):
+                if (self.underwritten_contracts[contract].get("syndicate_id") == syndicate_id) and (self.underwritten_contracts[contract].get("risk_category") == category_id):
                     self.underwritten_contracts[contract]["claim"] = True
                 else:
                     self.not_paid_claims.append(self.underwritten_contracts[contract])
