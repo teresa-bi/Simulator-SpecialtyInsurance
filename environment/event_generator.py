@@ -54,8 +54,8 @@ class EventGenerator():
 
         Returns
         ----------
-        List[CatastropheEvent]
-            A list of CatastropheEvents
+        List[AddCatastropheEvent]
+            A list of AddCatastropheEvent
         """
         catastrophe_events = []
         for i in range(len(risks)):
@@ -72,8 +72,8 @@ class EventGenerator():
 
         Returns
         ----------
-        List[AttritionalLossEvent]
-            A list of AttritionalLossEvents
+        List[AddAttritionalLossEvent]
+            A list of AddAttritionalLossEvent
         """
         attritional_loss_events = []
         for time in range(sim_args.get("max_time")):
@@ -93,7 +93,7 @@ class EventGenerator():
         Returns
         ----------
         List[AddRiskEvent]
-            A list of AddRiskEvents
+            A list of AddRiskEvent
         """
         add_risk_events = []
         for i in range(len(brokers)):
@@ -111,11 +111,6 @@ class EventGenerator():
         """
         Generate a set of AddPremiumEvent for an insurance market. 
 
-        Parameters
-        ----------
-        brokers: a list of Broker
-        current_time: current market time
-
         Returns
         ----------
         List[AddPremiumEvent]
@@ -131,11 +126,6 @@ class EventGenerator():
     def generate_claim_events(self, sim_args):
         """
         Generate a set of AddClaimEvent for an insurance market.
-
-        Parameters
-        ----------
-        brokers: a list of Broker
-        current_time: current market time
 
         Returns
         ----------

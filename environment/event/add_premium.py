@@ -38,7 +38,13 @@ class AddPremiumEvent(Event):
         market: NoReinsurance_RiskOne
             The updated market
         """
-
+        n = len(market.broker_pay_premium)
+        count = 0
+        for i in range(n):
+            if self.risk_id != market.broker_pay_premium[i].risk_id:
+                count += 1
+        if count == n:
+            warnings.warn(f"{self.risk_id} Premium Event not in the Market, cannot update...", UserWarning)
 
         return market
 

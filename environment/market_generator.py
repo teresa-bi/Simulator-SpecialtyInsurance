@@ -37,7 +37,7 @@ class MarketGenerator:
         self.reinsurancefirm_args = reinsurancefirm_args
         self.shareholder_args = shareholder_args
         self.risk_model_configs = risk_model_configs
-        # Init list of agents
+        # Initiate list of agents
         self.brokers = {}
         self.syndicates = {}
         self.reinsurancefirms = {}

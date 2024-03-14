@@ -14,23 +14,23 @@ from manager import *
 
 class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
     """
-    This environment corresponds to Syndicates Lloyd's of London 
+    This environment corresponds to Syndicates in Lloyd's of London Market
 
     ### Action Space
-    For each syndiacte, the offering line size for each contract and corresponding price
+    For each syndiacte, the offering line size for each contract
 
     ### Observation Space
+    For each catastrophe, the risk category and risk value
     For each syndicate, the active or exit status, the remaining capital amount in each risk category
-    For each catastrophe, the risk category and the risk value
-
+    
     ### Rewards
     For each insurable risk being accepted or refused
-    For each claim being paied or refused bacaused of bankruptcy
-    For each syndicate, the profit +int or loss -int,
+    For each claim being paied or refused 
+    For each syndicate, the profit +int or loss -int
     For each syndicate, bankruptcy
 
     ### Starting State
-    All the activated agents holding their default settings, and all the risks 
+    All the activated agents holding their default settings, and all the events
 
     ### Episode End
     The episode ends if any one of the following occurs:
@@ -82,6 +82,7 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
             self.syndicates[i].syndicate_id: gym.spaces.Box(low=np.array([-1000000,-1000000,-1000000,-1000000,-1000000,-1000000]), 
                                                      high=np.array([1000000,1000000,1000000,1000000,1000000,1000000]), dtype = np.float32) for i in range(self.n)
         })
+        # TODO: line size can be chosen from 0.0 to <1.0
         self.action_space = gym.spaces.Dict({
             self.syndicates[i].syndicate_id: gym.spaces.Box(0.5, 0.9, dtype = np.float32) for i in range(self.n)})
 
@@ -101,22 +102,22 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
         self.timestep = -1
         self.step_track = 0
         self.log = []
-
         # Catastrophe event 
         self.catastrophe_events = EventGenerator(self.risk_model_configs).generate_catastrophe_events(self.risks)
         # Attritioal loss event daily
         self.attritional_loss_events = EventGenerator(self.risk_model_configs).generate_attritional_loss_events(self.sim_args, self.risks)
-        # Broker risk event daily: broker generate risk according to poisson distribution
+        # Broker risk event daily: TODO: broker generate risk according to poisson distribution
         self.broker_risk_events = EventGenerator(self.risk_model_configs).generate_risk_events(self.sim_args, self.brokers, self.risks)
         # Broker pay premium according to underwritten contracts
         self.broker_premium_events = EventGenerator(self.risk_model_configs).generate_premium_events(self.sim_args)
-        # Broker ask for claim if the contract affected by catastrophe
+        # Broker ask for claim if the contract reaches the end time
         self.broker_claim_events = EventGenerator(self.risk_model_configs).generate_claim_events(self.sim_args)
+        # Initiate event handler
         self.event_handler = EventHandler(self.maxstep, self.catastrophe_events, self.attritional_loss_events, self.broker_risk_events, self.broker_premium_events, self.broker_claim_events)
         # Initiate market manager
         self.mm = MarketManager(self.maxstep, self.manager_args, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.risks, self.risk_model_configs, self.with_reinsurance, self.num_risk_models, 
                                self.catastrophe_events, self.attritional_loss_events, self.broker_risk_events, self.broker_premium_events, self.broker_claim_events, self.event_handler)
-        self.mm.evolve(self.dt)
+        #self.mm.evolve(self.dt)
         
         # Set per syndicate active status and build status list
         self.syndicate_active_list = []   # Store syndicates currently in the market
@@ -148,7 +149,7 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
         
         self.send_action2env(parsed_actions)
 
-        # Evolve the market
+        # Evolve the market and update the time
         self.mm.evolve(self.dt)
         self.timestep += 1
 
@@ -173,7 +174,6 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
         
         terminated_dict["__all__"] = all_terminated
         flag_dict["__all__"] = all_terminated
-        print(obs_dict, reward_dict, terminated_dict)
 
         return obs_dict, reward_dict, terminated_dict, flag_dict, info_dict
 
@@ -190,7 +190,7 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
         market = self.mm.market
         sy = market.syndicates[int(syndicate_id)] 
 
-        # The simulation is done when syndicates exit or bankrupt or reach the maximum time step
+        # The simulation is done when the maximum time step is reached
         if self.timestep >= self.maxstep:
             terminated = True
         else:
@@ -232,7 +232,7 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
 
         # Sum reward
         reward = 0.0
-        reward += np.sum(r)
+        reward += r[0] + r[1] + r[2] + r[3]
 
         return reward     
 
@@ -259,24 +259,12 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
             
         return obs
 
-    def obs_space_creator(self):
-        # risk_category, risk_value, current capital for each category for each syndicate
-        low, high = [], []
-        low.extend([0.0, 0.0, -10000000, -10000000, -10000000, -10000000])
-        high.extend([10.0, 10000000, 30000000, 30000000, 30000000, 30000000])
-        observation_space = gym.spaces.Box(np.array(low, dtype=np.float32), 
-                                       np.array(high, dtype=np.float32)) 
-        return observation_space
-
     def action_map_creator(self, syndicate, line_size):
 
         action_map = None
-        for risk in range(len(self.broker_risk_events)):
-            if self.broker_risk_events[risk].risk_start_time == self.timestep+1:
-                action_map = Action(syndicate.syndicate_id, line_size, self.broker_risk_events[risk].risk_id, self.broker_risk_events[risk].broker_id)
+        for risk in range(len(broker_risk_events)):
+            if broker_risk_events[risk].risk_start_time == self.timestep+1:
+                action_map = Action(syndicate.syndicate_id, line_size, broker_risk_events[risk].risk_id, broker_risk_events[risk].broker_id)
        
         return action_map
-
-    def set_action_space(self):
-        return gym.spaces.Box(0.5, 0.9, dtype = np.float32)
    

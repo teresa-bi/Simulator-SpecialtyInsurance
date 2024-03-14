@@ -6,6 +6,9 @@ import json
 import random
 
 class Broker:
+    """
+    Instance for broker
+    """
     def __init__(self, broker_id, broker_args, num_risk_models, sim_args, risk_model_configs):
         self.broker_id = broker_id
         self.broker_lambda_risks = broker_args["lambda_risks_daily"]
@@ -23,27 +26,6 @@ class Broker:
         self.affected_contracts = []
         # Claims not being paid
         self.not_paid_claims = []
-
-    def generate_risks(self, risks):
-        """
-        Return risks brought by broker daily, according to poission distribution
-        """
-        random.seed(123)
-        model_id = random.randint(0,self.num_risk_models-1)
-        self.risks = []
-        ######TODO: need to be fixed, how to generate poission distribution risks
-        #num_risks_daily = self.broker_lambda_risks
-        num_risks_daily = len(risks)
-        for index in range(num_risks_daily):
-            self.risks.append({"risk_id": index,
-                               "broker_id": self.broker_id,
-                               "risk_start_time": risks[index].get("risk_start_time"),
-                               "risk_end_time": risks[index].get("risk_start_time")+12*30,
-                               "risk_factor": self.risk_model_configs[model_id].get("risk_factor_mean"),
-                               "risk_category": self.risk_model_configs[model_id].get("num_categories"),
-                               "risk_value": self.risk_model_configs[model_id].get("risk_value_mean")})
-
-        return self.risks
 
     def add_contract(self, risks, lead_syndicated_id, lead_line_size, follow_syndicates_id, follow_line_sizes, premium):
         """
@@ -98,10 +80,15 @@ class Broker:
 
         Return
         ------
-        total_premium: int
+        premium: int
             All the money should be paied to the specific syndicate
+        lead_syndicate_id: str
+           Index of leader syndicate
+        follow_syndicates_id: list
+           List of all follower syndicates
+        risk_category: int
+           Index of risk category
         """
-        
         premium = contract.get("premium")
         lead_syndicate_id = contract.get("lead_syndicate_id")
         follow_syndicates_id = contract.get("follow_syndicates_id")
@@ -109,7 +96,7 @@ class Broker:
         
         return premium, lead_syndicate_id, follow_syndicates_id, risk_category
 
-    def ask_claim(self, syndicate_id, follow_syndicates_id, category_id):
+    def ask_claim(self, contract):
         """
         Ask payment from syndicate for covered risks
 
@@ -118,27 +105,31 @@ class Broker:
         claim_value: int
             All the money should be paied by the specific syndicate
         """
-        matched_contracts = []
-        claim_value = 0
-        for i in range(len(self.underwritten_contracts)):
-            if (int(self.underwritten_contracts[i].get("lead_syndicate_id")) == int(syndicate_id)) and (int(self.underwritten_contracts[i].get("risk_category")) == int(category_id)):
-                matched_contracts.append(self.underwritten_contracts[i])
-            for num in range(len(follow_syndicates_id)):
-                if (follow_syndicates_id[num] in self.underwritten_contracts[i].get("follow_syndicates_id")) and (int(self.underwritten_contracts[i].get("risk_category")) == int(category_id)):
-                    matched_contracts.append(self.underwritten_contracts[i])
-        for i in range(len(matched_contracts)):
-            claim_value += matched_contracts[i].get("risk_value") * ( 1 - self.deductible)
+        claim_value = contract.get("risk_value") * ( 1 - self.deductible)
 
         return claim_value
 
     def end_contract_ask_claim(self, contract):
+        """
+        Ask payment from syndicate for the contract at the end time
 
-        claim = contract.get("risk_value")
+        Return
+        ------
+        claim_value: int
+            All the money should be paied by the specific syndicate
+        lead_syndicate_id: str
+           Index of leader syndicate
+        follow_syndicates_id: list
+           List of all follower syndicates
+        risk_category: int
+           Index of risk category
+        """
+        claim_value = contract.get("risk_value") * ( 1 - self.deductible)
         lead_syndicate_id = contract.get("lead_syndicate_id")
         follow_syndicates_id = contract.get("follow_syndicates_id")
         risk_category = contract.get("risk_category")
 
-        return claim, lead_syndicate_id, follow_syndicates_id, risk_category
+        return claim_value, lead_syndicate_id, follow_syndicates_id, risk_category
 
     def receive_claim(self, syndicate_id, category_id, require_claim_value, receive_claim_value):
         """

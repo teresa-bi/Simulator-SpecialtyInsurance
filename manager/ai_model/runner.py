@@ -1,13 +1,14 @@
 import os
 import ray
 from ray.tune.registry import register_env
-from ray import tune
-from ray.rllib.algorithms.dqn import DQN
+from ray.rllib.algorithms.ppo import PPO
 from ipywidgets import IntProgress
 from environment.environment import SpecialtyInsuranceMarketEnv
 from ray.rllib.policy.policy import PolicySpec
-from gymnasium.spaces import Box
 import numpy as np
+import gymnasium as gym
+from ray import air, tune
+from ray.rllib.examples.policy.random_policy import RandomPolicy
 
 class AIRunner:
     """
@@ -37,27 +38,42 @@ class AIRunner:
 
         return SpecialtyInsuranceMarketEnv(**env_config)
 
-    def dqn_trainer_creator(insurance_args):
+    def policy_mapping_fn(self, agent_id, episode, worker, **kwargs):
+        # agent0 -> main0
+        # agent1 -> main1
+        return f"main{agent_id[-1]}"
+
+    def ppo_trainer_creator(self, insurance_args):
     
         config = {
-            "environment": "SpecialtyInsuranceMarket-validation",
-            "env_config": insurance_args,
+            "env": "SpecialtyInsuranceMarket-validation",
             "framework": "tf",
             "multi_agent": {"policies":{
                 # The Policy we are actually learning.
-                "learnable_policy": PolicySpec(
-                    observation_space=gym.spaces.Box(low=-1000000,high=1000000,shape=(6,), dtype = np.float32),
-                    action_space=gym.spaces.Box(0.0, 0.9, dtype = np.float32)
+                "main0": PolicySpec(
+                    observation_space=gym.spaces.Box(low=np.array([-1000000,-1000000,-1000000,-1000000,-1000000,-1000000]), 
+                                                     high=np.array([1000000,1000000,3000000,3000000,3000000,3000000]), dtype = np.float32),
+                    action_space=gym.spaces.Box(0.5, 0.9, dtype = np.float32)
                 ),
+                "main1": PolicySpec(
+                    observation_space=gym.spaces.Box(low=np.array([-1000000,-1000000,-1000000,-1000000,-1000000,-1000000]), 
+                                                     high=np.array([1000000,1000000,3000000,3000000,3000000,3000000]), dtype = np.float32),
+                    action_space=gym.spaces.Box(0.5, 0.9, dtype = np.float32)
+                ),
+                "random": PolicySpec(policy_class=RandomPolicy),
                 }, 
-                     "policy_mapping_fn": lambda agent_id, *args, **kwargs: [
-                "learnable_policy",
-                ][agent_id % 1],
-                     "policies_to_train":["learnable_policy"],
+                        "policy_mapping_fn": self.policy_mapping_fn,
+                        "policies_to_train":["main0"],
             },
+            "observation_space": gym.spaces.Box(low=np.array([-1000000,-1000000,-1000000,-1000000,-1000000,-1000000]), 
+                                            high=np.array([1000000,1000000,3000000,3000000,3000000,3000000]), dtype = np.float32),
+            "action_space": gym.spaces.Box(0.5, 0.9, dtype = np.float32),
+            "env_config": insurance_args,
+            "evaluation_interval": 2,
+            "evaluation_duration": 20,
         }
     
-        self.trainer = DQN(config=config)
+        self.trainer = PPO(config=config)
 
     def training(self, top_dir, n):
         """
@@ -79,24 +95,16 @@ class AIRunner:
         list_train_step = []
 
         for i in range(num_episode):
-            self.trainer.train()        
+            self.trainer.train()     
             print("Progress:", i+1, "/", num_episode, end="\r")
             bar.value += 1
-            if (i+1) % config["evaluation_interval"] == 0:
+            if (i+1) % 2 == 0:
                 list_mean_rewards.append(trainer.evaluation_metrics["evaluation"]["episode_reward_mean"])
                 list_min_rewards.append(trainer.evaluation_metrics["evaluation"]["episode_reward_min"])
                 list_max_rewards.append(trainer.evaluation_metrics["evaluation"]["episode_reward_max"])
                 list_train_step.append(i+1)
-
-    # Plot mean reward
-    def find_nearest(array, value):
-        array = np.asarray(array)
-        idx = (np.abs(array - value)).argmin()
-        return idx, array[idx]
-    def plot():
-        x = list_train_step
-        y = list_mean_rewards
-        plot_utils.plot_eval(y, x)
+            if i % 10 == 0:
+                self.trainer.save(model_filepath)
 
     def trainer_restore(self, top_dir, n):
   
@@ -187,7 +195,7 @@ class AIRunner:
                         "risk_model_configs": self.risk_model_configs,
                         "with_reinsurance": self.with_reinsurance,
                         "num_risk_models": self.num_risk_models}
-        self.dqn_trainer_creator(insurance_args)
+        self.ppo_trainer_creator(insurance_args)
 
         for n in range(num_training):
             if n == 0:

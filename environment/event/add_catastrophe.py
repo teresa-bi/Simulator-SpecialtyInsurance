@@ -37,7 +37,6 @@ class AddCatastropheEvent(Event):
         Parameters
         ----------
         market: NoReinsurance_RiskOne
-
             The insurance market to accept catastrophe event
 
         Returns
@@ -45,7 +44,13 @@ class AddCatastropheEvent(Event):
         market: NoReinsurance_RiskOne
             The updated insurance market
         """
-        
+        n = len(market.catastrophe_event)
+        count = 0
+        for i in range(n):
+            if self.risk_id != market.catastrophe_event[i].risk_id:
+                count += 1
+        if count == n:
+            warnings.warn(f"{self.risk_id} Catastrophe not in the Market, cannot update...", UserWarning)
         
         return market 
 

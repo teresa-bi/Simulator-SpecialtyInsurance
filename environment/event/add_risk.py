@@ -54,6 +54,14 @@ class AddRiskEvent(Event):
             The updated market
         """
 
+        n = len(market.broker_bring_risk)
+        count = 0
+        for i in range(n):
+            if self.risk_id != market.broker_bring_risk[i].risk_id:
+                count += 1
+        if count == n:
+            warnings.warn(f"{self.risk_id} Risk Event not in the Market, cannot update...", UserWarning)
+
         for syndicate_id in range(len(market.syndicates)):
             involved = market.is_involved(syndicate_id)
             if involved.get("selected") == True:

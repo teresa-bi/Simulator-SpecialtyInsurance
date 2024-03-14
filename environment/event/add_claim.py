@@ -5,7 +5,7 @@ from environment.event.event import Event
 
 class AddClaimEvent(Event):
     """
-    Add claim event caused by catastrophe event
+    Add claim event caused by contracts end
     """
     def __init__(self, risk_id, risk_start_time):
         """
@@ -38,7 +38,13 @@ class AddClaimEvent(Event):
         market: NoReinsurance_RiskOne
             The updated market
         """
-        
+        n = len(market.broker_bring_claim)
+        count = 0
+        for i in range(n):
+            if self.risk_id != market.broker_bring_claim[i].risk_id:
+                count += 1
+        if count == n:
+            warnings.warn(f"{self.risk_id} Claim Event not in the Market, cannot update...", UserWarning)
 
         return market
 
@@ -82,14 +88,3 @@ class AddClaimEvent(Event):
 
         with open(filename, "w") as file:
             file.write(self.to_json())
-
-    def get_syndicate_status(self, syndicates):
-        """
-        Update the syndicate status after the add premium event
-
-        Return
-        -------
-        All Syndicate status, TODO: include current capital, current capital in risk category
-        """
-        for sy_id in range(len(syndicates)):
-            syndicates[sy_id].receive(self.premium)

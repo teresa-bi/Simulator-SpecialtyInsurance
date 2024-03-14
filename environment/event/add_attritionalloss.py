@@ -45,7 +45,13 @@ class AddAttritionalLossEvent(Event):
             The updated insurance market
         """
 
-          # TODO: After considering attritional loss, this value will change
+        n = len(market.attritional_loss_event)
+        count = 0
+        for i in range(n):
+            if self.risk_id != market.attritional_loss_event[i].risk_id:
+                count += 1
+        if count == n:
+            warnings.warn(f"{self.risk_id} Attritional Loss Event not in the Market, cannot update...", UserWarning)
 
         return market
 

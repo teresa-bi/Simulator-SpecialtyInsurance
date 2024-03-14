@@ -98,28 +98,23 @@ class EventHandler:
         filename: str
             Path to file.
         """
-
         with open(filename, "w") as file:
             file.write(self.to_json())
 
-    #def add_premium_events(self, broker_premium_events):
-        
-
     def forward(self, market, step_time):
         """
-        Evolve Market for the given time step [day] by applying Events.
+        Evolve Market for the given time step (day) by applying Events.
 
         Parameters
         ----------
         market: NoReinsurance_RiskOne
-            The insurance market to apply Events to.
+            The market to apply events to.
         step_time: int
             Amount of time in days the market is evolving for.
         """
 
         episode_start = market.time
         episode_end = episode_start + step_time
-
         
         # Temporary dict to store which events to remove from the ongoing dict
         catastrophe_events_to_remove_from_ongoing = {}
@@ -211,6 +206,7 @@ class EventHandler:
         broker_risk_events_to_remove_from_upcoming = {}
         for event_id, event in self.upcoming_broker_risk.items():
             if event.start_time >= episode_start and event.start_time <= episode_end:
+                a = event.start_time
                 market = event.run(market, step_time=step_time)
                 if event.repeated:
                     self.ongoing_broker_risk[event_id] = event
@@ -251,6 +247,3 @@ class EventHandler:
             del self.ongoing_broker_claim[event_id]
         for event_id in broker_claim_events_to_remove_from_upcoming:
             del self.upcoming_broker_claim[event_id]
-
-        return market
-
