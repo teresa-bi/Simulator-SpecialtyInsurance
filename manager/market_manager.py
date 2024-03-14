@@ -190,16 +190,49 @@ class MarketManager:
                 "risk_value": starting_broker_risk.risk_value}
         if len(self.actions_to_apply) > 0:
             lead_syndicate_id = self.actions_to_apply[0].syndicate
+            lead_line_size = self.actions_to_apply[0].line_size
             follow_syndicates_id = [self.actions_to_apply[i].syndicate for i in range(1,len(self.actions_to_apply))]
+            follow_line_sizes = [self.actions_to_apply[i].line_size for i in range(1,len(self.actions_to_apply))]
             premium = starting_broker_risk.risk_value # TODO: will be changed in the future
-            self.market.brokers[broker_id].add_contract(risks, lead_syndicate_id, follow_syndicates_id, premium)
-            self.market.syndicates[lead_syndicate_id].add_leader(risks, self.actions_to_apply[0].line_size, premium)
-            self.market.syndicates[lead_syndicate_id].add_contract(risks, broker_id, premium)
+            self.market.brokers[int(broker_id)].add_contract(risks, lead_syndicate_id, lead_line_size, follow_syndicates_id, follow_line_sizes, premium)
+            self.market.syndicates[int(lead_syndicate_id)].add_leader(risks, self.actions_to_apply[0].line_size, premium)
+            self.market.syndicates[int(lead_syndicate_id)].add_contract(risks, broker_id, premium)
             for sy in range(len(follow_syndicates_id)):
-                self.market.syndicates[follow_syndicates_id[sy]].add_follower(risks, self.actions_to_apply[1+sy].line_size, premium)
-                self.market.syndicates[follow_syndicates_id[sy]].add_contract(risks, broker_id, premium)
+                self.market.syndicates[int(follow_syndicates_id[sy])].add_follower(risks, self.actions_to_apply[1+sy].line_size, premium)
+                self.market.syndicates[int(follow_syndicates_id[sy])].add_contract(risks, broker_id, premium)
         else:
             self.market.brokers[0].not_underwritten_risk(risks)
+
+    def run_catastrophe(self, starting_catastrophe):
+        # Catastrophe will influce the broker claim
+        claim_value = [0 for broker_id in range(len(self.market.brokers))]
+        for broker_id in range(len(self.market.brokers)):
+            num_contract = len(self.market.brokers[broker_id].underwritten_contracts)
+            # Find the affected contracts
+            for num in range(num_contract):
+                if int(self.market.brokers[broker_id].underwritten_contracts[num]["risk_category"]) == int(starting_catastrophe.risk_category):
+                    lead_syndicate_id = self.market.brokers[broker_id].underwritten_contracts[num]["lead_syndicate_id"]
+                    follow_syndicates_id = self.market.brokers[broker_id].underwritten_contracts[num]["follow_syndicates_id"]
+                    claim_value[broker_id] = self.market.brokers[broker_id].ask_claim(lead_syndicate_id, follow_syndicates_id, starting_catastrophe.risk_category)
+                    lead_claim_value = claim_value[broker_id] * self.market.brokers[broker_id].underwritten_contracts[num]["lead_line_size"]
+                    follow_claim_value = [claim_value[broker_id] * self.market.brokers[broker_id].underwritten_contracts[num]["follow_line_sizes"][i] for i in range(len(market.brokers[broker_id].underwritten_contracts[num]["follow_line_sizes"]))]
+                    # Syndicates pay claim requirements and update status, Brokers receive claims and update status
+                    if self.market.syndicates[int(lead_syndicate_id)].current_capital >= lead_claim_value:
+                        # TODO: now pay claim according to broker id, can add other mechanism in the future
+                        self.market.syndicates[int(lead_syndicate_id)].pay_claim(broker_id, starting_catastrophe.risk_category, lead_claim_value)
+                        self.market.brokers[broker_id].receive_claim(lead_syndicate_id, starting_catastrophe.risk_category, lead_claim_value, lead_claim_value)
+                    else:
+                        self.market.syndicates[int(lead_syndicate_id)].pay_claim(broker_id, starting_catastrophe.risk_category, lead_claim_value)
+                        self.market.brokers[broker_id].receive_claim(lead_syndicate_id, starting_catastrophe.risk_category, lead_claim_value, self.market.syndicates[syndicate_id].current_capital)
+                        self.market.syndicates[int(lead_syndicate_id)].bankrupt()  
+                    for follow_num in range(len(follow_syndicates_id)): 
+                        if self.market.syndicates[int(follow_syndicates_id[follow_num])].current_capital >= follow_claim_value[follow_num]:
+                            self.market.syndicates[int(follow_syndicates_id[follow_num])].pay_claim(broker_id, starting_catastrophe.risk_category, follow_claim_value[follow_num])
+                            self.market.brokers[broker_id].receive_claim(follow_syndicates_id[follow_num], starting_catastrophe.risk_category, follow_claim_value[follow_num], follow_claim_value[follow_num])
+                        else:
+                            self.market.syndicates[int(follow_syndicates_id[follow_num])].pay_claim(broker_id, starting_catastrophe.risk_category, follow_claim_value[follow_num])
+                            self.market.brokers[broker_id].receive_claim(syndicate_id, starting_catastrophe.risk_category, follow_claim_value[follow_num], self.market.syndicates[follow_syndicates_id[follow_num]].current_capital)
+                            self.market.syndicates[int(follow_syndicates_id[follow_num])].bankrupt() 
 
     def evolve(self, step_time):
         """
@@ -222,12 +255,28 @@ class MarketManager:
         market_start_time = self.market.time
         market_end_time = self.market.time + step_time
 
+        upcoming_catastrophe = [
+            e.risk_id for e in self.event_handler.upcoming_catastrophe.values() if isinstance(e, AddCatastropheEvent)
+        ]
+
+        upcoming_attritional_loss = [
+            e.risk_id for e in self.event_handler.upcoming_attritional_loss.values() if isinstance(e, AddAttritionalLossEvent)
+        ]
+
         upcoming_broker_risk = [
             e.risk_id for e in self.event_handler.upcoming_broker_risk.values() if isinstance(e, AddRiskEvent)
         ]
 
+        upcoming_broker_premium = [
+            e.risk_id for e in self.event_handler.upcoming_broker_premium.values() if isinstance(e, AddPremiumEvent)
+        ]
+
+        upcoming_broker_claim = [
+            e.risk_id for e in self.event_handler.upcoming_broker_claim.values() if isinstance(e, AddClaimEvent)
+        ]
+
         # Enact the events
-        self.market = self.event_handler.forward(self.market, step_time)
+        self.event_handler.forward(self.market, step_time)
 
         # Track any newly-added broker_risk events
 
@@ -264,6 +313,27 @@ class MarketManager:
 
             # Empty all the actions to apply to syndicates
             self.actions_to_apply = []
+
+        # Track any newly-added catastrophe events and execute
+        newly_added_catastrophe_events = {
+            e.risk_id: e.risk_start_time
+            for e in self.event_handler.completed_catastrophe.values()
+            if isinstance(e, AddCatastropheEvent) and (e.risk_id in upcoming_catastrophe)
+        }
+        catastrophe_event_start_times = np.array(
+            [
+                newly_added_catastrophe_events.get(risk_id)
+                for risk_id in upcoming_catastrophe
+                if newly_added_catastrophe_events.get(risk_id) != None
+            ]
+        )
+        sorted_unique_start_times = np.sort(np.unique(catastrophe_event_start_times))
+        for start_time in sorted_unique_start_times:
+            starting_catastrophe = None
+            for i in range(len(self.catastrophe_events)):
+                if self.catastrophe_events[i].risk_start_time == start_time:
+                    starting_catastrophe = self.catastrophe_events[i]
+            self.run_catastrophe(starting_catastrophe)
 
         self.market.time = market_end_time
 

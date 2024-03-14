@@ -107,7 +107,7 @@ class EventGenerator():
 
         return add_risk_events
 
-    def generate_premium_events(self, brokers, current_time):
+    def generate_premium_events(self, sim_args):
         """
         Generate a set of AddPremiumEvent for an insurance market. 
 
@@ -122,17 +122,13 @@ class EventGenerator():
             A list of AddPremiumEvents
         """
         add_premium_events = []
-        for broker_id in range(len(brokers)):
-            num_total_premiums = len(brokers[broker_id].underwritten_contracts)
-            for k in range(num_total_premiums):
-                premium = brokers[broker_id].underwritten_contracts[k]
-                if premium["risk_end_time"] <= current_time:
-                    add_premium_event = AddPremiumEvent(premium["risk_id"], premium["broker_id"], premium["risk_start_time"], premium["risk_end_time"], premium["risk_category"], premium["risk_value"], premium["syndicate_id"], premium["premium"])
-                    add_premium_events.append(add_premium_event)
+        for time in range(sim_args.get("max_time")):
+            add_premium_event = AddPremiumEvent(time, time)
+            add_premium_events.append(add_premium_event)
 
         return add_premium_events
 
-    def generate_claim_events(self, brokers, current_time):
+    def generate_claim_events(self, sim_args):
         """
         Generate a set of AddClaimEvent for an insurance market.
 
@@ -147,12 +143,8 @@ class EventGenerator():
             A list of AddClaimEvents
         """
         add_claim_events = []
-        for broker_id in range(len(brokers)):
-            for k in range(len(brokers[broker_id].underwritten_contracts)):
-                claim = brokers[broker_id].underwritten_contracts[k]
-                if claim["claim"] == True:  #TODO: after the claim, it will be false
-                    if claim["risk_end_time"] <= current_time:
-                        add_claim_event = AddClaimEvent(claim["risk_id"], claim["broker_id"], claim["risk_start_time"], claim["risk_end_time"], claim["risk_category"], claim["risk_value"], claim["syndicate_id"])
-                        add_claim_events.append(add_claim_event)    #TODO: now all category affected by catastrophe
+        for time in range(sim_args.get("max_time")):
+            add_claim_event = AddClaimEvent(time, time)
+            add_claim_events.append(add_claim_event)
 
         return add_claim_events

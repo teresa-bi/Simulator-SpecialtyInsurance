@@ -109,9 +109,9 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
         # Broker risk event daily: broker generate risk according to poisson distribution
         self.broker_risk_events = EventGenerator(self.risk_model_configs).generate_risk_events(self.sim_args, self.brokers, self.risks)
         # Broker pay premium according to underwritten contracts
-        self.broker_premium_events = []
+        self.broker_premium_events = EventGenerator(self.risk_model_configs).generate_premium_events(self.sim_args)
         # Broker ask for claim if the contract affected by catastrophe
-        self.broker_claim_events = []
+        self.broker_claim_events = EventGenerator(self.risk_model_configs).generate_claim_events(self.sim_args)
         self.event_handler = EventHandler(self.maxstep, self.catastrophe_events, self.attritional_loss_events, self.broker_risk_events, self.broker_premium_events, self.broker_claim_events)
         # Initiate market manager
         self.mm = MarketManager(self.maxstep, self.manager_args, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.risks, self.risk_model_configs, self.with_reinsurance, self.num_risk_models, 
@@ -148,17 +148,7 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
         
         self.send_action2env(parsed_actions)
 
-        # Update broker_risk_events, broker_premium_events, broker_claim_events, event_handler, market manager
-        """self.broker_premium_events = EventGenerator(self.risk_model_configs).generate_premium_events(self.brokers, self.timestep)
-        self.event_handler.add_premium_events(self.broker_premium_events)
-        for i in range(len(self.catastrophe_events)):
-            if self.catastrophe_events[i].risk_start_time == self.timestep:
-                self.broker_claim_events = EventGenerator(self.risk_model_configs).generate_claim_events(self.brokers, self.timestep)
-                self.event_handler.add_claim_events(self.broker_claim_events)
-        self.mm.update_premium_events(self.broker_premium_events, self.event_handler)
-        self.mm.update_claim_events(self.broker_claim_events, self.event_handler)"""
-
-        
+        # Evolve the market
         self.mm.evolve(self.dt)
         self.timestep += 1
 

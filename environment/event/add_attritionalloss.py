@@ -45,8 +45,7 @@ class AddAttritionalLossEvent(Event):
             The updated insurance market
         """
 
-        for i in range(len(market.syndicates)):
-            market.syndicates[i].current_capital -= 0   # TODO: After considering attritional loss, this value will change
+          # TODO: After considering attritional loss, this value will change
 
         return market
 

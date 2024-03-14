@@ -157,18 +157,21 @@ class Syndicate:
                                     "risk_end_time": risks.get("risk_start_time")+365,
                                     "pay": False})
         for i in range(len(self.current_capital_category)):
-            if i == risks.get("risk_category"):
+            if i == int(risks.get("risk_category")):
                 self.current_capital_category[i] -= risks.get("risk_value")
 
-    def pay_claim(self, risk_id, broker_id, category_id, claim_value):
-        if self.current_capital >= claim_value:
-            self.current_capital -= claim_value
-            for i in range(len(self.current_hold_contracts)):
-                if (self.current_hold_contracts[i]["risk_id"] == risk_id) and (self.current_hold_contracts[i]["broker_id"] == broker_id): 
-                    self.current_hold_contracts[i]["pay"] == True
-        else:
-            self.current_capital -= claim_value
-        
+    def pay_claim(self, broker_id, category_id, claim_value, pay_value):
+        for i in range(len(self.current_hold_contracts)):
+            if (int(self.current_hold_contracts[i]["broker_id"]) == int(broker_id)) and (int(self.current_hold_contracts[i]["risk_category"]) == int(category_id)): 
+                if self.current_capital >= claim_value:  
+                    self.current_hold_contracts[i]["pay"] = True      
+                    self.current_capital -= claim_value
+                else:
+                    self.current_capital -= claim_value
+
+    def receive_premium(self, premium, category_id):
+        self.current_capital_category[int(category_id)] += premium
+        self.current_capital += premium
 
     def data(self):
         """

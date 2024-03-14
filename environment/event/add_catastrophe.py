@@ -45,26 +45,9 @@ class AddCatastropheEvent(Event):
         market: NoReinsurance_RiskOne
             The updated insurance market
         """
-
-        # Catastrophe will influce the broker claim
-        claim_value = [[[] for syndicate_id in range(len(market.syndicates))] for broker_id in range(len(market.brokers))]
-        for broker_id in range(len(market.brokers)):
-            for syndicate_id in range(len(market.syndicates)):
-                claim_value[broker_id][syndicate_id] = market.brokers[broker_id].ask_claim(syndicate_id, self.risk_category)
-
-        # Syndicates pay claim requirements and update status, Brokers receive claims and update status
-        for syndicate_id in range(len(market.syndicates)):
-            for broker_id in range(len(market.brokers)):
-                if market.syndicates[syndicate_id].current_capital >= claim_value[broker_id][syndicate_id]:
-                    # TODO: now pay claim according to broker id, can add other mechanism in the future
-                    market.syndicates[syndicate_id].pay_claim(self.risk_id, broker_id, self.risk_category, claim_value[broker_id][syndicate_id])
-                    market.brokers[broker_id].receive_claim(syndicate_id, self.risk_category, claim_value[broker_id][syndicate_id])
-                else:
-                    market.syndicates[syndicate_id].pay_claim(broker_id, self.risk_category, claim_value[broker_id][syndicate_id])
-                    market.brokers[broker_id].receive_claim(syndicate_id, self.risk_category, market.syndicates[syndicate_id].current_capital)
-                    market.syndicates[syndicate_id].bankrupt()                 
-
-        return market
+        
+        
+        return market 
 
     def data(self):
         """
