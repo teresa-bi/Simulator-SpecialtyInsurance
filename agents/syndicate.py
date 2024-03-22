@@ -112,6 +112,9 @@ class Syndicate:
         self.market_permanency_counter = 0
         self.received_risk_list = []
 
+    def bankrupt(self):
+        pass
+
     def received_risk(self, risk_id, broker_id, start_time):
         """
         After broker send risk to the market, all the active syndicate receive risks and update their received_risk list
@@ -150,23 +153,22 @@ class Syndicate:
                                     "risk_value": risks.get("risk_value"),
                                     "syndicate_id": self.syndicate_id,
                                     "premium": premium,
-                                    "risk_end_time": risks.get("risk_start_time")+365,
+                                    "risk_end_time": risks.get("risk_end_time"),
                                     "pay": False})
         for i in range(len(self.current_capital_category)):
             if i == int(risks.get("risk_category")):
                 self.current_capital_category[i] -= risks.get("risk_value")
 
-    def pay_claim(self, broker_id, category_id, claim_value, pay_value):
+    def pay_claim(self, broker_id, category_id, claim_value):
         """
         Pay claim for ended contract and for contracts affected by catastrophe
         """
         for i in range(len(self.current_hold_contracts)):
-            if (int(self.current_hold_contracts[i]["broker_id"]) == int(broker_id)) and (int(self.current_hold_contracts[i]["risk_category"]) == int(category_id)): 
+            if (int(self.current_hold_contracts[i]["broker_id"]) == int(broker_id)) and (self.current_hold_contracts[i]["risk_category"] == category_id): 
                 if self.current_capital >= claim_value:  
-                    self.current_hold_contracts[i]["pay"] = True      
-                    self.current_capital -= claim_value
+                    self.current_hold_contracts[i]["pay"] = True  
                 else:
-                    self.current_capital -= claim_value
+                    self.current_hold_contracts[i]["pay"] = False
 
     def receive_premium(self, premium, category_id):
         """

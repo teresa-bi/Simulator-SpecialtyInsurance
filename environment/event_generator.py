@@ -101,7 +101,7 @@ class EventGenerator():
             for time in range(sim_args.get("max_time")+2):
                 for k in range(len(risks)):
                     risk = risks[k]
-                    add_risk_event = AddRiskEvent(num_risk, brokers[i].broker_id, time, time+12*30, risk["risk_factor"], risk["risk_category"], risk["risk_value"])
+                    add_risk_event = AddRiskEvent(num_risk, brokers[i].broker_id, time, time+1, risk["risk_factor"], risk["risk_category"], risk["risk_value"])
                     add_risk_events.append(add_risk_event)
                     num_risk += 1
 
@@ -117,7 +117,7 @@ class EventGenerator():
             A list of AddPremiumEvents
         """
         add_premium_events = []
-        for time in range(sim_args.get("max_time")):
+        for time in range(sim_args.get("max_time")+2):
             add_premium_event = AddPremiumEvent(time, time)
             add_premium_events.append(add_premium_event)
 
@@ -133,7 +133,7 @@ class EventGenerator():
             A list of AddClaimEvents
         """
         add_claim_events = []
-        for time in range(sim_args.get("max_time")):
+        for time in range(sim_args.get("max_time")+2):
             add_claim_event = AddClaimEvent(time, time)
             add_claim_events.append(add_claim_event)
 

@@ -22,8 +22,6 @@ class Broker:
         self.underwritten_contracts = []
         # Risks not be covered
         self.not_underwritten_risks = []
-        # Contracts affected by the catastrophe 
-        self.affected_contracts = []
         # Claims not being paid
         self.not_paid_claims = []
 
@@ -42,7 +40,7 @@ class Broker:
                                     "lead_line_size": lead_line_size,
                                     "follow_line_sizes": follow_line_sizes,
                                     "premium": premium,
-                                    "risk_end_time": risks.get("risk_start_time")+365,
+                                    "risk_end_time": risks.get("risk_end_time"),
                                     "claim": False})
 
     def delete_contract(self, risks, syndicated_id):
@@ -128,8 +126,14 @@ class Broker:
         lead_syndicate_id = contract.get("lead_syndicate_id")
         follow_syndicates_id = contract.get("follow_syndicates_id")
         risk_category = contract.get("risk_category")
+        lead_claim_value = float(contract.get("lead_line_size")) * claim_value
+        follow_line_sizes = contract.get("follow_line_sizes")
+        follow_claim_values = [None for i in range(len(follow_line_sizes))]
+        for i in range(len(follow_line_sizes)):
+            if follow_line_sizes[i] != None:
+                follow_claim_values[i] = float(follow_line_sizes[i]) * claim_value
 
-        return claim_value, lead_syndicate_id, follow_syndicates_id, risk_category
+        return claim_value, lead_syndicate_id, follow_syndicates_id, risk_category, lead_claim_value, follow_claim_values
 
     def receive_claim(self, syndicate_id, category_id, require_claim_value, receive_claim_value):
         """
