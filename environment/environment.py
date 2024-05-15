@@ -78,13 +78,14 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
         self._agent_ids = set(self.agents)
         self.dones = set()
         self._spaces_in_preferred_format = True
+        gym.logger.set_level(40)
         self.observation_space = gym.spaces.Dict({
             self.syndicates[i].syndicate_id: gym.spaces.Box(low=np.array([-1000000,-1000000,-1000000,-1000000,-1000000,-1000000]), 
                                                      high=np.array([1000000,1000000,1000000,1000000,1000000,1000000]), dtype = np.float32) for i in range(self.n)
         })
         # TODO: line size can be chosen from 0.0 to <1.0
         self.action_space = gym.spaces.Dict({
-            self.syndicates[i].syndicate_id: gym.spaces.Box(0.5, 0.9, dtype = np.float32) for i in range(self.n)})
+            self.syndicates[i].syndicate_id: gym.spaces.Box(np.float32(0.5), np.float32(0.9), dtype = np.float32) for i in range(self.n)})
 
         # Reset the environmnet
         self.reset()

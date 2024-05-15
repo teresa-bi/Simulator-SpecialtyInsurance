@@ -6,6 +6,7 @@ import numpy as np
 import pdb
 import listify
 
+"""
 LOG_DEFAULT = ('total_cash total_excess_capital total_profitslosses total_contracts'
                'total_operational total_reincash total_reinexcess_capital total_reinprofitslosses'
                'total_reincontracts total_reinoperational total_catbondsoperational market_premium'
@@ -13,9 +14,15 @@ LOG_DEFAULT = ('total_cash total_excess_capital total_profitslosses total_contra
                'cumulative_claims insurance_firms_cash reinsurance_firms_cash market_diffvar'
                'rc_event_schedule_initial rc_event_damage_initial number_riskmodels'
                 ).split('')
+"""
+LOG_DEFAULT = ('total_cash total_excess_capital total_profitslosses total_contracts'
+               'market_reinpremium cumulative_bankruptcies cumulative_market_exits cumulative_unrecovered_claims'
+               'cumulative_claims insurance_firms_cash'
+               'rc_event_schedule_initial rc_event_damage_initial number_riskmodels'
+                ).split(" ")
 
 class Logger():
-    def __init__(self, no_riskmodels=None, rc_event_schedule_initial=None, rc_event_damage_initial=None):
+    def __init__(self, no_riskmodels, risk_event_scehdule_initial, initial_broker, initial_syndicate):
         """
         Record initial event schedule of simulation run
         Prepare history_logs attribute as dict for the logs
@@ -24,18 +31,21 @@ class Logger():
         ----------
         no_categories: int
             Number of peril regions
-        rc_event_schedule_initial: list of lists of int
+        risk_event_schedule_initial: list of lists of int
             Times of risk events by category
-        rc_event_damage_initial: list of arrays of float
-            Damage by peril for each category as share of total possible damage
+        initial_broker: data of initial brokers
+        initial_syndicate: data of initial syndicates
         """
 
         # Record number of riskmodels
         self.number_riskmodels = no_riskmodels
 
         # Record initial event schedule
-        self.rc_event_schedule_initial = rc_event_scehdule_initial
-        self.rc_event_damage_initial = rc_event_damage_initial
+        self.risk_event_schedule_initial = risk_event_scehdule_initial
+
+        # Record agent information
+        self.broker = initial_broker
+        self.syndicate = initial_syndicate
 
         # Prepare history log dict
         self.history_logs = {}
@@ -43,7 +53,7 @@ class Logger():
         # Variables pertaining to insurance sector
         insurance_sector = ('total_cash total_excess_capital total_profits_losses'
                             'total_contracts total_operational cumulative_bankruptcies'
-                            'cumulative_market_exits cumulative_claims cumulative_unrecovered_claims').split('')
+                            'cumulative_market_exits cumulative_claims cumulative_unrecovered_claims').split(" ")
 
         for _v in insurance_sector:
             self.history_logs[_v] = []
@@ -116,7 +126,27 @@ class Logger():
         # Restore history log
         self.history_logs = log
 
+    """
     def save_log(self, background_run):
+        
+        Save log to disk of local machine
+
+        Parameter
+        ---------
+        background_run: bool
+            An ensemble run (True) or not (False)
+        
+        if background_run:
+            to_log = self.replication_log_prepare()
+        else:
+            to_log = self.single_log_prepare()
+
+        for filename, data, operation_character in to_log:
+            with open(filename, operation_character) as wfile:
+                wfile.write(str(data) + "\n")
+    """
+    
+    def save_log(self):
         """
         Save log to disk of local machine
 
@@ -125,10 +155,7 @@ class Logger():
         background_run: bool
             An ensemble run (True) or not (False)
         """
-        if background_run:
-            to_log = self.replication_log_prepare()
-        else:
-            to_log = self.single_log_prepare()
+        to_log = self.single_log_prepare()
 
         for filename, data, operation_character in to_log:
             with open(filename, operation_character) as wfile:

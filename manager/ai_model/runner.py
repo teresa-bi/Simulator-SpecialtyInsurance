@@ -3,7 +3,7 @@ import ray
 from ray.tune.registry import register_env
 from ray.rllib.algorithms.ppo import PPO
 from ipywidgets import IntProgress
-from environment.environment import SpecialtyInsuranceMarketEnv
+from environment.multi_agent_env import MultiAgentBasedModel
 from ray.rllib.policy.policy import PolicySpec
 import numpy as np
 import gymnasium as gym
@@ -36,7 +36,7 @@ class AIRunner:
         Register specialty insurance market environment for The rllib
         """
 
-        return SpecialtyInsuranceMarketEnv(**env_config)
+        return MultiAgentBasedModel(**env_config)
 
     def policy_mapping_fn(self, agent_id, episode, worker, **kwargs):
         # agent0 -> main0
@@ -142,7 +142,7 @@ class AIRunner:
                 "syndicates": self.syndicates,
                 "reinsurancefirms": self.reinsurancefirms,
                 "shareholders": self.shareholders,
-                "risks": self.risks,
+                "catastrophes": self.risks,
                 "risk_model_configs": self.risk_model_configs,
                 "with_reinsurance": self.with_reinsurance,
                 "num_risk_models": self.num_risk_models}
@@ -150,7 +150,7 @@ class AIRunner:
         validation_episodes = 1
         
         for epi in range(validation_episodes):
-            env = SpecialtyInsuranceMarket(**insurance_args)
+            env = MultiAgentBasedModel(**insurance_args)
     
             print(f"\nepisode: {epi} | ")
             total_steps = 0
@@ -191,7 +191,7 @@ class AIRunner:
                         "syndicates": self.syndicates,
                         "reinsurancefirms": self.reinsurancefirms,
                         "shareholders": self.shareholders,
-                        "risks": self.risks,
+                        "catastrophes": self.risks,
                         "risk_model_configs": self.risk_model_configs,
                         "with_reinsurance": self.with_reinsurance,
                         "num_risk_models": self.num_risk_models}

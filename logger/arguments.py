@@ -4,7 +4,7 @@ Contains all the simulation parameters
 
 def get_arguments():
 
-    sim_args = {"max_time": 30000, # Simualtion time step daily
+    sim_args = {"max_time": 30, # Simualtion time step daily
         "num_run_per_setting": 400, # Number of replication runs per simulation settings
         "mean_contract_runtime": 12,
         "contract_runtime_halfspread": 2,
@@ -14,16 +14,16 @@ def get_arguments():
         }
 
     manager_args = {"lead_top_k": 2, # The number of lead syndicates a broker reaches out to
-        "follow_top_k": 5, # The number of follow syndicates a broker reaches out to
+        "follow_top_k": 2, # The number of follow syndicates a broker reaches out to
         "topology_broker_syndicate": 10 #####TODO Consider how to set the network topology
         }
 
-    broker_args = {"num_brokers": 100, # Number of brokers in simulation
+    broker_args = {"num_brokers": 1, # Number of brokers in simulation
         "lambda_risks_daily": 0.06,  # Lambda value for the Poisson distribution used by the broker process to generate new risks
         "decuctible": 0.2 # Percentage of risk value 
         }
 
-    syndicate_args = {"num_syndicates": 20, # Number of syndicates in simulation
+    syndicate_args = {"num_syndicates": 3, # Number of syndicates in simulation
         "initial_capital": 10000000, # Initial capital of each syndicate
         "lead_line_size": 0.5, # Default lead quote line size
         "follow_line_size": 0.1, # Default follow quote line size
@@ -77,8 +77,8 @@ def get_arguments():
     shareholder_args = {"num_shareholders": 1 # Number of shareholders in simulation
         }
 
-    risk_args = {"num_risks": 20000, # Number of risks
-        "num_categories": 10, # Number of peril regions for the catastrophe
+    risk_args = {"num_risks": 1, # Number of risks
+        "num_categories": 4, # Number of peril regions for the catastrophe
         "risk_limit": 10000000, # The maximum value of the risk
         "inaccuracy_riskmodels": 2,
         "riskmodel_margin_of_safety": 2,
@@ -100,8 +100,10 @@ def get_arguments():
         "value_at_risk_tail_probability": 0.005
 
         }
+    
+    seed = 234234
 
-    return sim_args, manager_args, broker_args, syndicate_args, reinsurancefirm_args,  shareholder_args, risk_args
+    return sim_args, manager_args, broker_args, syndicate_args, reinsurancefirm_args,  shareholder_args, risk_args, seed
 
 
 
