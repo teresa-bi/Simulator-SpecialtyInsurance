@@ -101,6 +101,7 @@ class MarketManager:
         """
         for i in range(len(self.market.syndicates)):
             self.market.syndicates[i].current_capital -= starting_attritional_loss.risk_value * 0.001
+            self.market.syndicates[i].profits_losses -= starting_attritional_loss.risk_value * 0.001
 
     def run_broker_premium(self, starting_broker_premium):
         """
@@ -144,26 +145,32 @@ class MarketManager:
                     self.market.syndicates[int(lead_syndicate_id)].pay_claim(broker_id, risk_category, lead_claim_value)
                     self.market.syndicates[int(lead_syndicate_id)].current_capital -= lead_claim_value
                     self.market.syndicates[int(lead_syndicate_id)].current_capital_category[risk_category] -= lead_claim_value
+                    self.market.syndicates[int(lead_syndicate_id)].profits_losses -= lead_claim_value
                     self.market.brokers[broker_id].receive_claim(lead_syndicate_id, risk_category, lead_claim_value, lead_claim_value)
                 else:
                     self.market.syndicates[int(lead_syndicate_id)].pay_claim(broker_id, risk_category, lead_claim_value)
                     self.market.syndicates[int(lead_syndicate_id)].current_capital -= lead_claim_value
                     self.market.syndicates[int(lead_syndicate_id)].current_capital_category[risk_category] -= lead_claim_value
+                    self.market.syndicates[int(lead_syndicate_id)].profits_losses -= lead_claim_value
                     self.market.brokers[broker_id].receive_claim(lead_syndicate_id, risk_category, lead_claim_value, self.market.syndicates[lead_syndicate_id].current_capital)
                     self.market.syndicates[int(lead_syndicate_id)].bankrupt() 
+                    self.market.syndicates[int(lead_syndicate_id)].excess_capital = 0
                 for follow_num in range(len(follow_syndicates_id)): 
                     if follow_syndicates_id[follow_num] != None: 
                         if self.market.syndicates[int(follow_syndicates_id[follow_num])].current_capital >= follow_claim_values[follow_num]:
                             self.market.syndicates[int(follow_syndicates_id[follow_num])].pay_claim(broker_id, risk_category, follow_claim_values[follow_num])
                             self.market.syndicates[int(follow_syndicates_id[follow_num])].current_capital -= follow_claim_values[follow_num]
                             self.market.syndicates[int(follow_syndicates_id[follow_num])].current_capital_category[risk_category] -= follow_claim_values[follow_num]
+                            self.market.syndicates[int(follow_syndicates_id[follow_num])].profits_losses -= follow_claim_values[follow_num]
                             self.market.brokers[broker_id].receive_claim(follow_syndicates_id[follow_num], risk_category, follow_claim_values[follow_num], follow_claim_values[follow_num])
                         else:
                             self.market.syndicates[int(follow_syndicates_id[follow_num])].pay_claim(broker_id, risk_category, follow_claim_values[follow_num])
                             self.market.syndicates[int(follow_syndicates_id[follow_num])].current_capital -= follow_claim_values[follow_num]
                             self.market.syndicates[int(follow_syndicates_id[follow_num])].current_capital_category[risk_category] -= follow_claim_values[follow_num]
+                            self.market.syndicates[int(follow_syndicates_id[follow_num])].profits_losses -= follow_claim_values[follow_num]
                             self.market.brokers[broker_id].receive_claim(follow_syndicates_id[follow_num], risk_category, follow_claim_values[follow_num], self.market.syndicates[int(follow_syndicates_id)].current_capital)
                             self.market.syndicates[int(follow_syndicates_id[follow_num])].bankrupt()
+                            self.market.syndicates[int(follow_syndicates_id[follow_num])].excess_capital = 0
 
     def run_catastrophe(self, starting_catastrophe):
         """
@@ -188,12 +195,14 @@ class MarketManager:
                     self.market.syndicates[int(lead_syndicate_id)].current_capital -= lead_claim_value
                     self.market.syndicates[int(lead_syndicate_id)].current_capital_category[risk_category] -= lead_claim_value
                     self.market.brokers[broker_id].receive_claim(lead_syndicate_id, risk_category, lead_claim_value, lead_claim_value)
+                    expected_profit, acceptable_by_category, cash_left_by_categ, var_per_risk_per_categ, self.excess_capital = self.riskmodel.evaluate(underwritten_risks, self.cash)
                 else:
                     self.market.syndicates[int(lead_syndicate_id)].pay_claim(broker_id, risk_category, lead_claim_value)
                     self.market.syndicates[int(lead_syndicate_id)].current_capital -= lead_claim_value
                     self.market.syndicates[int(lead_syndicate_id)].current_capital_category[risk_category] -= lead_claim_value
                     self.market.brokers[broker_id].receive_claim(lead_syndicate_id, risk_category, lead_claim_value, self.market.syndicates[lead_syndicate_id].current_capital)
                     self.market.syndicates[int(lead_syndicate_id)].bankrupt() 
+                    self.market.syndicates[int(lead_syndicate_id)].excess_capital = 0
                 for follow_num in range(len(follow_syndicates_id)): 
                     if follow_syndicates_id[follow_num] != None: 
                         if self.market.syndicates[int(follow_syndicates_id[follow_num])].current_capital >= follow_claim_values[follow_num]:
@@ -207,6 +216,7 @@ class MarketManager:
                             self.market.syndicates[int(follow_syndicates_id[follow_num])].current_capital_category[risk_category] -= follow_claim_values[follow_num]
                             self.market.brokers[broker_id].receive_claim(follow_syndicates_id[follow_num], risk_category, follow_claim_values[follow_num], self.market.syndicates[int(follow_syndicates_id)].current_capital)
                             self.market.syndicates[int(follow_syndicates_id[follow_num])].bankrupt()
+                            self.market.syndicates[int(follow_syndicates_id[follow_num])].excess_capital = 0
 
     def evolve(self, step_time):
 

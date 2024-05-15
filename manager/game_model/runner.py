@@ -7,7 +7,6 @@ import ray
 from ray.tune.registry import register_env
 from ray.rllib.algorithms.ppo import PPO
 from environment.multi_agent_env import MultiAgentBasedModel
-from logger import logger
 from ray.rllib.policy.policy import PolicySpec
 import numpy as np
 import gymnasium as gym
@@ -40,8 +39,7 @@ class GameRunner:
             self.scenario = str("noreinsurance")
         else:
             self.scenario = str("reinsurance")
-        self.logger = logger.Logger(self.num_risk_models, self.risks, self.brokers, self.syndicates)
-
+        
     def env_creator(self, env_config):
         """
         Register specialty insurance market environment for The rllib
@@ -84,59 +82,6 @@ class GameRunner:
             "evaluation_duration": 20,
         }
         self.trainer = PPO(config=config)
-    
-    def save_data(self, brokers, syndicates, reinsurance_firms, shareholders):
-        """Method to collect statistics about the current state of the simulation. Will pass these to the 
-           Logger object (self.logger) to be recorded."""
-        # Collect data
-        total_cash_no = sum([insurancefirm.cash for insurancefirm in self.insurancefirms])
-        total_excess_capital = sum([insurancefirm.get_excess_capital() for insurancefirm in self.insurancefirms])
-        total_profitslosses =  sum([insurancefirm.get_profitslosses() for insurancefirm in self.insurancefirms])
-        total_contracts_no = sum([len(insurancefirm.underwritten_contracts) for insurancefirm in self.insurancefirms])
-        total_reincash_no = sum([reinsurancefirm.cash for reinsurancefirm in self.reinsurancefirms])
-        total_reinexcess_capital = sum([reinsurancefirm.get_excess_capital() for reinsurancefirm in self.reinsurancefirms])
-        total_reinprofitslosses =  sum([reinsurancefirm.get_profitslosses() for reinsurancefirm in self.reinsurancefirms])
-        total_reincontracts_no = sum([len(reinsurancefirm.underwritten_contracts) for reinsurancefirm in self.reinsurancefirms])
-        operational_no = sum([insurancefirm.operational for insurancefirm in self.insurancefirms])
-        reinoperational_no = sum([reinsurancefirm.operational for reinsurancefirm in self.reinsurancefirms])
-        catbondsoperational_no = sum([catbond.operational for catbond in self.catbonds])
-        
-        # Collect agent-level data
-        insurance_firms = [(insurancefirm.cash,insurancefirm.id,insurancefirm.operational) for insurancefirm in self.insurancefirms]
-        reinsurance_firms = [(reinsurancefirm.cash,reinsurancefirm.id,reinsurancefirm.operational) for reinsurancefirm in self.reinsurancefirms]
-        
-        # Prepare dict
-        current_log = {}
-        current_log['total_cash'] = total_cash_no
-        current_log['total_excess_capital'] = total_excess_capital
-        current_log['total_profitslosses'] = total_profitslosses
-        current_log['total_contracts'] = total_contracts_no
-        current_log['total_operational'] = operational_no
-        current_log['total_reincash'] = total_reincash_no
-        current_log['total_reinexcess_capital'] = total_reinexcess_capital
-        current_log['total_reinprofitslosses'] = total_reinprofitslosses
-        current_log['total_reincontracts'] = total_reincontracts_no
-        current_log['total_reinoperational'] = reinoperational_no
-        current_log['total_catbondsoperational'] = catbondsoperational_no
-        current_log['market_premium'] = self.market_premium
-        current_log['market_reinpremium'] = self.reinsurance_market_premium
-        current_log['cumulative_bankruptcies'] = self.cumulative_bankruptcies
-        current_log['cumulative_market_exits'] = self.cumulative_market_exits
-        current_log['cumulative_unrecovered_claims'] = self.cumulative_unrecovered_claims
-        current_log['cumulative_claims'] = self.cumulative_claims    #Log the cumulative claims received so far.
-        
-        # Add agent-level data to dict
-        current_log['insurance_firms_cash'] = insurance_firms
-        current_log['reinsurance_firms_cash'] = reinsurance_firms
-        current_log['market_diffvar'] = self.compute_market_diffvar()
-        
-        current_log['individual_contracts'] = []
-        individual_contracts_no = [len(insurancefirm.underwritten_contracts) for insurancefirm in self.insurancefirms]
-        for i in range(len(individual_contracts_no)):
-            current_log['individual_contracts'].append(individual_contracts_no[i])
-
-        # Call to Logger object
-        self.logger.record_data(current_log)
 
     def run(self):
         # Folder for recording
@@ -177,7 +122,9 @@ class GameRunner:
             total_steps += 1
         
             obs_dict, reward_dict, terminated_dict, flag_dict, info_dict = env.step(action_dict)
-        
-        self.save_data(env.mm.market.brokers, env.mm.market.syndicates, env.mm.market.reinsurancefirms, env.mm.market.shareholders)
-        #return self.logger.obtain_log(logs)
-        return 0
+
+            # Save data for every 10 steps
+            if total_steps % 10 == 0: 
+                env.save_data()
+
+        return self.logger.obtain_log()

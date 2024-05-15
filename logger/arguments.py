@@ -39,6 +39,7 @@ def get_arguments():
         "market_entry_probability": 0.3, # Default probability of entering the market
         "interest_rate": 0.001, # Interest rate for the capital monthly
         "exit_capital_threshold": 0.6, # Capital employment threshold for insurance firm exit
+        "cash_permanency_limit": 100,
         "exit_time_limit": 24, # Time limit for insurance firm exit
         "premium_sensitivity": 5, # Syndicate premium sensitivity parameter 1.29e-9?
         "initial_acceptance_threshold": 0.5,

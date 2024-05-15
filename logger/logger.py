@@ -93,7 +93,7 @@ class Logger():
                 for i in range(len(data_dict["individual_contracts"])):
                     self.history_logs["individual_contracts"][i].append(data_dict["individual_contracts"][i])
 
-    def obtian_log(self, requested_logs=LOG_DEFAULT):
+    def obtain_log(self, requested_logs=LOG_DEFAULT):
         """
         Transfer the log in the cloud
         """

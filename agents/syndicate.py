@@ -22,6 +22,7 @@ class Syndicate:
         self.non_proportional_reinsurance_level = syndicate_args["default_non_proportional_reinsurance_deductible"]
         self.capacity_target_decrement_threshold = syndicate_args["capacity_target_decrement_threshold"]
         self.capacity_target_increment_threshold = syndicate_args["capacity_target_increment_threshold"]
+        self.capital_permanency_limit = syndicate_args["cash_permanency_limit"]
         self.capacity_target_decrement_factor = syndicate_args["capacity_target_decrement_factor"]
         self.capacity_target_increment_factor = syndicate_args["capacity_target_increment_factor"]
         self.interest_rate = syndicate_args['interest_rate']
@@ -63,12 +64,13 @@ class Syndicate:
         self.exit_time_limit = syndicate_args['exit_time_limit']
         self.premium_sensitivity = syndicate_args['premium_sensitivity']
 
-        self.status = False   # status True means active, status False means exit (no contract or bankruptcy, at the begining the status is 0 because no syndicate joining the market
+        self.status = True   # status True means active, status False means exit (no contract or bankruptcy, at the begining the status is 0 because no syndicate joining the market
 
         self.current_hold_contracts = []
         # Include paid status, True or False
         self.paid_claim = []
-
+        # Include unpaid claims and loss
+        self.unpaid_claim = []
         margin_of_safety_correction = (self.riskmodel_config["margin_of_safety"] + (num_risk_models - 1) * sim_args["margin_increase"])
 
         self.riskmodel = RiskModel(damage_distribution = self.riskmodel_config["damage_distribution"],
@@ -113,6 +115,7 @@ class Syndicate:
         self.received_risk_list = []
 
     def bankrupt(self):
+
         pass
 
     def received_risk(self, risk_id, broker_id, start_time):
@@ -154,10 +157,13 @@ class Syndicate:
                                     "syndicate_id": self.syndicate_id,
                                     "premium": premium,
                                     "risk_end_time": risks.get("risk_end_time"),
-                                    "pay": False})
+                                    "pay": None})
         for i in range(len(self.current_capital_category)):
             if i == int(risks.get("risk_category")):
-                self.current_capital_category[i] -= risks.get("risk_value")
+                self.current_capital_category[i] -= risks.get("risk_value")   
+
+    def rereceived_risk(self, risk_id, broker_id, risk_start_time):
+        pass
 
     def pay_claim(self, broker_id, category_id, claim_value):
         """
@@ -167,6 +173,7 @@ class Syndicate:
             if (int(self.current_hold_contracts[i]["broker_id"]) == int(broker_id)) and (self.current_hold_contracts[i]["risk_category"] == category_id): 
                 if self.current_capital >= claim_value:  
                     self.current_hold_contracts[i]["pay"] = True  
+                    self.current_capital
                 else:
                     self.current_hold_contracts[i]["pay"] = False
 
