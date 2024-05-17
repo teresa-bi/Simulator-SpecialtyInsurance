@@ -8,7 +8,6 @@ class RiskModel:
     The risk model adopted by syndicates or reinsurance firms to cope with catestrophes
     """
     def __init__(self, damage_distribution, expire_immediately, catastrophe_separation_distribution, norm_premium, category_number, init_average_exposure, init_average_risk_factor, init_profit_estimate, margin_of_safety, var_tail_prob, inaccuracy):
-        self.damage_distribution = damage_distribution
         self.expire_immediately = expire_immediately
         self.catastrophe_separation_distribution = catastrophe_separation_distribution
         self.norm_premium = norm_premium
@@ -18,6 +17,7 @@ class RiskModel:
         self.init_profit_estimate = init_profit_estimate
         self.margin_of_safety = margin_of_safety
         self.var_tail_prob = var_tail_prob
+        self.damage_distribution = [damage_distribution for _ in range(self.category_number)]
         self.damage_distribution_stack = [[] for _ in range(self.category_number)] 
         self.inaccuracy = inaccuracy
 

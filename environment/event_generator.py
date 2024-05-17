@@ -4,7 +4,8 @@ from environment.event.add_attritionalloss import AddAttritionalLossEvent
 from environment.event.add_risk import AddRiskEvent
 from environment.event.add_premium import AddPremiumEvent
 from environment.event.add_claim import AddClaimEvent
-from environment.market import NoReinsurance_RiskOne
+from environment.event.distributiontruncated import TruncatedDistWrapper
+import scipy.stats
 
 class EventGenerator():
     """
@@ -43,25 +44,28 @@ class EventGenerator():
             self.var_tail_prob.append(risk_model_configs[i]["var_tail_prob"])
             self.inaccuracy_by_categ.append(risk_model_configs[i]["inaccuracy_by_categ"])
 
-    def generate_catastrophe_events(self, risks):
+    def generate_catastrophe_events(self, catastrophes):
         """
         Generate a set of CatastropheEvent for an insurance market.
 
         Parameters
         ----------
-        risks: list
-            All the generated catastrophe risks
+        catastrophes: list
+            All the generated catastrophe catastrophes
 
         Returns
         ----------
         List[AddCatastropheEvent]
             A list of AddCatastropheEvent
         """
+        non_truncated = scipy.stats.pareto(b=2, loc=0, scale=0.25)    #It is assumed that the damages of the catastrophes are drawn from a truncated Pareto distribution.
+        damage_distribution = TruncatedDistWrapper(lower_bound=0.25, upper_bound=1., dist=self.non_truncated)
+        cat_separation_distribution = scipy.stats.expon(0, self.simulation_parameters["event_time_mean_separation"])  #It is assumed that the time between catastrophes is exponentially distributed.
+
         catastrophe_events = []
-        for i in range(len(risks)):
-            add_catastrophe_event = AddCatastropheEvent(risks[i].get("risk_id"), risks[i].get("risk_start_time"),
-                                                risks[i].get("risk_factor"), risks[i].get("risk_category"),
-                                                risks[i].get("risk_value"))
+        for i in range(len(catastrophes)):
+            add_catastrophe_event = AddCatastropheEvent(catastrophes[i].get("catastrophe_id"), catastrophes[i].get("catastrophe_start_time"),
+                                                catastrophes[i].get("catastrophe_category"), risks[i].get("catastrophe_value"))
             catastrophe_events.append(add_catastrophe_event)
 
         return catastrophe_events
@@ -82,7 +86,7 @@ class EventGenerator():
 
         return attritional_loss_events
 
-    def generate_risk_events(self, sim_args, brokers, risks):
+    def generate_risk_events(self, sim_args, brokers, broker_risks):
         """
         Generate a set of AddRiskEvent for an insurance market.
 
@@ -99,8 +103,8 @@ class EventGenerator():
         for i in range(len(brokers)):
             num_risk = 0
             for time in range(sim_args.get("max_time")+2):
-                for k in range(len(risks)):
-                    risk = risks[k]
+                for k in range(len(broker_risks)):
+                    risk = broker_risks[k]
                     add_risk_event = AddRiskEvent(num_risk, brokers[i].broker_id, time, time+1, risk["risk_factor"], risk["risk_category"], risk["risk_value"])
                     add_risk_events.append(add_risk_event)
                     num_risk += 1
