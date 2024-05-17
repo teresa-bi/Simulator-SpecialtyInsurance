@@ -25,7 +25,7 @@ class Broker:
         # Claims not being paid
         self.not_paid_claims = []
 
-    def add_contract(self, risks, lead_syndicated_id, lead_line_size, follow_syndicates_id, follow_line_sizes, premium):
+    def add_contract(self, risks, lead_syndicate_id, lead_line_size, lead_syndicate_premium, follow_syndicates_id, follow_line_sizes, follow_syndicates_premium, premium):
         """
         Add new contract to the current underwritten_contracts list
         """
@@ -35,10 +35,12 @@ class Broker:
                                     "risk_factor": risks.get("risk_factor"),
                                     "risk_category": risks.get("risk_category"),
                                     "risk_value": risks.get("risk_value"),
-                                    "lead_syndicate_id": lead_syndicated_id,
+                                    "lead_syndicate_id": lead_syndicate_id,
                                     "follow_syndicates_id": follow_syndicates_id,
                                     "lead_line_size": lead_line_size,
                                     "follow_line_sizes": follow_line_sizes,
+                                    "lead_syndicate_premium": lead_syndicate_premium,
+                                    "follow_syndicates_premium": follow_syndicates_premium,
                                     "premium": premium,
                                     "risk_end_time": risks.get("risk_end_time"),
                                     "claim": False})
@@ -90,9 +92,11 @@ class Broker:
         premium = contract.get("premium")
         lead_syndicate_id = contract.get("lead_syndicate_id")
         follow_syndicates_id = contract.get("follow_syndicates_id")
+        lead_syndicate_premium = contract.get("lead_syndicate_premium") 
+        follow_syndicates_premium = contract.get("follow_syndicates_premium")
         risk_category = contract.get("risk_category")
         
-        return premium, lead_syndicate_id, follow_syndicates_id, risk_category
+        return premium, lead_syndicate_premium, follow_syndicates_premium, lead_syndicate_id, follow_syndicates_id, risk_category
 
     def ask_claim(self, contract):
         """
@@ -128,10 +132,9 @@ class Broker:
         risk_category = contract.get("risk_category")
         lead_claim_value = float(contract.get("lead_line_size")) * claim_value
         follow_line_sizes = contract.get("follow_line_sizes")
-        follow_claim_values = [None for i in range(len(follow_line_sizes))]
-        for i in range(len(follow_line_sizes)):
-            if follow_line_sizes[i] != None:
-                follow_claim_values[i] = float(follow_line_sizes[i]) * claim_value
+        follow_claim_values = [None for i in range(len(follow_syndicates_id))]
+        for i in range(len(follow_syndicates_id)):
+            follow_claim_values[i] = follow_line_sizes * claim_value
 
         return claim_value, lead_syndicate_id, follow_syndicates_id, risk_category, lead_claim_value, follow_claim_values
 

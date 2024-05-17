@@ -136,6 +136,33 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
             info_dict[self.mm.market.syndicates[sy].syndicate_id] = None
 
         return self.state_encoder_dict, info_dict
+    
+    def adjust_market_premium(self, capital):
+        """Adjust_market_premium Method.
+               Accepts arguments
+                   capital: Type float. The total capital (cash) available in the insurance market (insurance only).
+               No return value.
+           This method adjusts the premium charged by insurance firms for the risks covered. The premium reduces linearly
+           with the capital available in the insurance market and viceversa. The premium reduces until it reaches a minimum
+           below which no insurer is willing to reduce further the price. """
+        self.market_premium = self.fair_market_premium * (self.syndicate_args["upper_premium_limit"] 
+                                                   - self.syndicate_args["premium_sensitivity"] 
+                                                   * capital / (self.syndicate_args["initial_capital"] 
+                                                   * self.risk_model_configs[0]["damage_distribution"].mean() * self.risk_args["num_risks"]))
+        if self.market_premium < self.fair_market_premium * self.syndicate_args["lower_premium_limit"]:
+            self.market_premium = self.fair_market_premium * self.syndicate_args["lower_premium_limit"]
+    
+    def get_actions(self):
+        # Syndicates compete for the ledership, they will all cover 0.5
+        sum_capital = sum([self.mm.market.syndicates[i].current_capital for i in range(len(self.mm.market.syndicates))]) 
+        self.adjust_market_premium(capital=sum_capital)
+        action_dict = {}
+        for i in range(len(self.mm.market.syndicates)):
+            action_dict.update({self.mm.market.syndicates[i].syndicate_id: self.market_premium})
+
+        #{'0': array([0.9], dtype=float32), '1': array([0.67964387], dtype=float32), '2': array([0.77142656], dtype=float32)}
+
+        return action_dict
         
     def step(self, action_dict):
 

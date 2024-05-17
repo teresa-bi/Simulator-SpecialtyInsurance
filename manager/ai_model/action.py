@@ -9,7 +9,7 @@ class Action:
     Actions taken by syndicates.
     """
 
-    def __init__(self, syndicate: int, line_size: float, risk: int, broker: int):
+    def __init__(self, syndicate: int, premium: float, risk: int, broker: int):
         """
         Construct a new instance.
 
@@ -17,20 +17,20 @@ class Action:
         ----------
         syndicate: int
             The Syndicate identifier
-        broker: int
-            The Broker identifier.
+        premium: float
+            The premium offered by the syndicate
         risk: int
             The risk identifier brought by the broker into the insurance market
-        value: float
-            The line size covered by the syndicate
+        broker: int
+            The Broker identifier.
 
         Examples
         --------
-        >>> action = Action(0, 0.9, 1, 1) Syndicate 0 will cover 0.9 line size of the risk 1 brought by Broker 1
+        >>> action = Action(0, 10000, 1, 1) Syndicate 0 will offer 10000 premium of the risk 1 brought by Broker 1
         """
 
         self.syndicate = syndicate
-        self.line_size = line_size
+        self.premium = premium
         self.risk = risk
         self.broker = broker
 
@@ -50,18 +50,18 @@ class Action:
 
         Examples
         ----------
-        >>> Action.from_str("0 0.9 1 1")
+        >>> Action.from_str("0 10000 1 1")
         """
 
         s.strip()
 
         s = s.split()
         syndicate = s[0]
-        line_size = s[1]
+        premium = s[1]
         risk = s[2]
         broker = s[3]
 
-        return Action(syndicate, line_size, risk, broker)
+        return Action(syndicate, premium, risk, broker)
 
     def __str__(self) -> str:
         """
@@ -70,7 +70,7 @@ class Action:
         Returns
         ----------
         str
-            A string representation of Action (e.g., "Syndicate 0 covers 0.9 line size 0f risk 1 brought by broker 1")
+            A string representation of Action (e.g., "Syndicate 0 will offer 10000 premium 0f risk 1 brought by broker 1")
         """
 
-        return f"{self.syndicate} {self.line_size} {self.risk} {self.broker}"
+        return f"{self.syndicate} {self.premium} {self.risk} {self.broker}"
