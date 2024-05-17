@@ -100,7 +100,7 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
         # Initiate event handler
         self.event_handler = EventHandler(self.maxstep, self.catastrophe_events, self.attritional_loss_events, self.broker_risk_events, self.broker_premium_events, self.broker_claim_events)
         # Initiate market manager
-        self.mm = MarketManager(self.maxstep, self.manager_args, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.catastrophes, 
+        self.mm = MarketManager(self.maxstep, self.manager_args, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.catastrophes, self.fair_market_premium,
                                 self.risk_model_configs, self.with_reinsurance, self.num_risk_models, self.catastrophe_events, self.attritional_loss_events, 
                                 self.broker_risk_events, self.broker_premium_events, self.broker_claim_events, self.event_handler)
         self.mm.evolve(self.dt)
@@ -139,6 +139,23 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
         self.step_track = 0
 
         return self.state_encoder_dict, info_dict
+    
+    def adjust_market_premium(self, capital):
+        """Adjust_market_premium Method.
+               Accepts arguments
+                   capital: Type float. The total capital (cash) available in the insurance market (insurance only).
+               No return value.
+           This method adjusts the premium charged by insurance firms for the risks covered. The premium reduces linearly
+           with the capital available in the insurance market and viceversa. The premium reduces until it reaches a minimum
+           below which no insurer is willing to reduce further the price. """
+        self.market_premium = self.norm_premium * (self.simulation_parameters["upper_price_limit"] - self.simulation_parameters["premium_sensitivity"] * capital / (self.simulation_parameters["initial_agent_cash"] * self.damage_distribution.mean() * self.simulation_parameters["no_risks"]))
+        if self.market_premium < self.norm_premium * self.simulation_parameters["lower_price_limit"]:
+            self.market_premium = self.norm_premium * self.simulation_parameters["lower_price_limit"]
+    
+    def get_actions():
+        sum_capital = sum([agent.get_cash() for agent in self.insurancefirms]) 
+            self.adjust_market_premium(capital=sum_capital)
+        {'0': array([0.9], dtype=float32), '1': array([0.67964387], dtype=float32), '2': array([0.77142656], dtype=float32)}
 
     def step(self, action_dict):
 

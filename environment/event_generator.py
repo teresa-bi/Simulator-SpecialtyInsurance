@@ -58,14 +58,11 @@ class EventGenerator():
         List[AddCatastropheEvent]
             A list of AddCatastropheEvent
         """
-        non_truncated = scipy.stats.pareto(b=2, loc=0, scale=0.25)    #It is assumed that the damages of the catastrophes are drawn from a truncated Pareto distribution.
-        damage_distribution = TruncatedDistWrapper(lower_bound=0.25, upper_bound=1., dist=self.non_truncated)
-        cat_separation_distribution = scipy.stats.expon(0, self.simulation_parameters["event_time_mean_separation"])  #It is assumed that the time between catastrophes is exponentially distributed.
-
+        
         catastrophe_events = []
         for i in range(len(catastrophes)):
             add_catastrophe_event = AddCatastropheEvent(catastrophes[i].get("catastrophe_id"), catastrophes[i].get("catastrophe_start_time"),
-                                                catastrophes[i].get("catastrophe_category"), risks[i].get("catastrophe_value"))
+                                                catastrophes[i].get("catastrophe_category"), catastrophes[i].get("catastrophe_value"))
             catastrophe_events.append(add_catastrophe_event)
 
         return catastrophe_events
@@ -102,12 +99,11 @@ class EventGenerator():
         add_risk_events = []
         for i in range(len(brokers)):
             num_risk = 0
-            for time in range(sim_args.get("max_time")+2):
-                for k in range(len(broker_risks)):
-                    risk = broker_risks[k]
-                    add_risk_event = AddRiskEvent(num_risk, brokers[i].broker_id, time, time+1, risk["risk_factor"], risk["risk_category"], risk["risk_value"])
-                    add_risk_events.append(add_risk_event)
-                    num_risk += 1
+            for k in range(len(broker_risks)):
+                risk = broker_risks[k]
+                add_risk_event = AddRiskEvent(num_risk, brokers[i].broker_id, risk.get("risk_start_time"), risk.get("risk_start_time")+1, risk.get("risk_factor"), risk.get("risk_category"), risk.get("risk_value"))
+                add_risk_events.append(add_risk_event)
+                num_risk += 1
 
         return add_risk_events
 

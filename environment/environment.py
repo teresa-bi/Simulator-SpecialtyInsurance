@@ -108,9 +108,9 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
         # Catastrophe event 
         self.catastrophe_events = EventGenerator(self.risk_model_configs).generate_catastrophe_events(self.catastrophes)
         # Attritioal loss event daily
-        self.attritional_loss_events = EventGenerator(self.risk_model_configs).generate_attritional_loss_events(self.sim_args, self.catastrophes)
+        self.attritional_loss_events = EventGenerator(self.risk_model_configs).generate_attritional_loss_events(self.sim_args, self.broker_risks)
         # Broker risk event daily: TODO: broker generate risk according to poisson distribution
-        self.broker_risk_events = EventGenerator(self.risk_model_configs).generate_risk_events(self.sim_args, self.brokers, self.catastrophes)
+        self.broker_risk_events = EventGenerator(self.risk_model_configs).generate_risk_events(self.sim_args, self.brokers, self.broker_risks)
         # Broker pay premium according to underwritten contracts
         self.broker_premium_events = EventGenerator(self.risk_model_configs).generate_premium_events(self.sim_args)
         # Broker ask for claim if the contract reaches the end time
@@ -118,7 +118,7 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
         # Initiate event handler
         self.event_handler = EventHandler(self.maxstep, self.catastrophe_events, self.attritional_loss_events, self.broker_risk_events, self.broker_premium_events, self.broker_claim_events)
         # Initiate market manager
-        self.mm = MarketManager(self.maxstep, self.manager_args, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.catastrophes, self.risk_model_configs, self.with_reinsurance, self.num_risk_models, 
+        self.mm = MarketManager(self.maxstep, self.manager_args, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.catastrophes, self.fair_market_premium, self.risk_model_configs, self.with_reinsurance, self.num_risk_models, 
                                self.catastrophe_events, self.attritional_loss_events, self.broker_risk_events, self.broker_premium_events, self.broker_claim_events, self.event_handler)
         #self.mm.evolve(self.dt)
         

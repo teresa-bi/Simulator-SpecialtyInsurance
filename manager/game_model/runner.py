@@ -121,7 +121,7 @@ class GameRunner:
         while not terminated_dict["__all__"]:
             if total_steps % 20 == 0: print(".", end="")
         
-            action_dict = self.trainer.compute_actions(obs_dict)  
+            action_dict = env.get_actions(obs_dict)  
             print(action_dict)
             total_steps += 1
         

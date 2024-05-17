@@ -131,13 +131,11 @@ class RiskGenerator:
                                 } for i in range(self.num_riskmodels)]
 
         # Generate risks brought by brokers
-        risks_starttime = np.random.randint(0, self.sim_time_span, size = self.num_risks)
         risks_categories = np.random.randint(0, self.num_categories, size = self.num_risks)
         risks_factors = self.risk_factor_distribution.rvs(size = self.num_risks)
         risks_values = self.risk_value_distribution.rvs(size = self.num_risks)
-        for i in range
         self.broker_risks = [{"risk_id": i,
-                      "risk_start_time": risks_starttime[i],
+                      "risk_start_time": i,
                       "risk_factor": risks_factors[i],
                       "risk_category": risks_categories[i],
                       "risk_value": risks_values[i],

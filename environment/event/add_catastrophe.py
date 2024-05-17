@@ -28,7 +28,7 @@ class AddCatastropheEvent(Event):
         self.catastrophe_category = catastrophe_category
         self.catastrophe_value = catastrophe_value
         
-    def run(self, market):
+    def run(self, market, step_time):
         """
         Add catastrophe to the insruance market
 

@@ -78,7 +78,7 @@ def get_arguments():
     shareholder_args = {"num_shareholders": 1 # Number of shareholders in simulation
         }
 
-    risk_args = {"num_risks": 1, # Number of risks
+    risk_args = {"num_risks": 31, # Number of risks
         "num_categories": 4, # Number of peril regions for the catastrophe
         "risk_limit": 10000000, # The maximum value of the risk
         "inaccuracy_riskmodels": 2,
