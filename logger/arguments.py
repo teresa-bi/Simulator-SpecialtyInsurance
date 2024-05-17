@@ -23,7 +23,7 @@ def get_arguments():
         "decuctible": 0.2 # Percentage of risk value 
         }
 
-    syndicate_args = {"num_syndicates": 3, # Number of syndicates in simulation
+    syndicate_args = {"num_syndicates": 10, # Number of syndicates in simulation
         "initial_capital": 10000000, # Initial capital of each syndicate
         "lead_line_size": 0.5, # Default lead quote line size
         "follow_line_size": 0.1, # Default follow quote line size

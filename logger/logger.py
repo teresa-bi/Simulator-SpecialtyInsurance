@@ -16,7 +16,7 @@ LOG_DEFAULT = ('total_cash total_excess_capital total_profitslosses total_contra
                 ).split('')
 """
 LOG_DEFAULT = ('total_cash total_excess_capital total_profitslosses total_contracts'
-               'market_reinpremium cumulative_bankruptcies cumulative_market_exits cumulative_unrecovered_claims'
+               'total_operational market_premium cumulative_bankruptcies cumulative_market_exits cumulative_unrecovered_claims'
                'cumulative_claims insurance_firms_cash'
                'rc_event_schedule_initial rc_event_damage_initial number_riskmodels'
                 ).split(" ")
