@@ -17,7 +17,7 @@ class GameRunner:
     """
     Game model 
     """
-    def __init__(self, sim_args, manager_args, broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args, seed, brokers, syndicates, reinsurancefirms, shareholders, risks, risk_model_configs, with_reinsurance, num_risk_models):
+    def __init__(self, sim_args, manager_args, broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args, seed, brokers, syndicates, reinsurancefirms, shareholders, catastrophes, broker_risks, fair_market_premium, risk_model_configs, with_reinsurance, num_risk_models):
         self.sim_args = sim_args
         self.manager_args = manager_args
         self.broker_args = broker_args
@@ -30,7 +30,9 @@ class GameRunner:
         self.syndicates = syndicates
         self.reinsurancefirms = reinsurancefirms
         self.shareholders = shareholders
-        self.risks = risks
+        self.catastrophes = catastrophes
+        self.broker_risks = broker_risks
+        self.fair_market_premium = fair_market_premium
         self.risk_model_configs = risk_model_configs
         self.with_reinsurance = with_reinsurance
         self.num_risk_models = num_risk_models
@@ -102,7 +104,9 @@ class GameRunner:
                 "syndicates": self.syndicates,
                 "reinsurancefirms": self.reinsurancefirms,
                 "shareholders": self.shareholders,
-                "catastrophes": self.risks,
+                "catastrophes": self.catastrophes,
+                "broker_risks": self.broker_risks,
+                "fair_market_premium": self.fair_market_premium,
                 "risk_model_configs": self.risk_model_configs,
                 "with_reinsurance": self.with_reinsurance,
                 "num_risk_models": self.num_risk_models}

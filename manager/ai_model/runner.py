@@ -14,14 +14,16 @@ class AIRunner:
     """
     AI model training and testing steps
     """
-    def __init__(self, sim_args, manager_args, brokers, syndicates, reinsurancefirms, shareholders, risks, risk_model_configs, with_reinsurance, num_risk_models):
+    def __init__(self, sim_args, manager_args, brokers, syndicates, reinsurancefirms, shareholders, catastrophes, broker_risks, fair_market_premium, risk_model_configs, with_reinsurance, num_risk_models):
         self.sim_args = sim_args
         self.manager_args = manager_args
         self.brokers = brokers
         self.syndicates = syndicates
         self.reinsurancefirms = reinsurancefirms
         self.shareholders = shareholders
-        self.risks = risks
+        self.catastrophes = catastrophes
+        self.broker_risks = broker_risks
+        self.fair_market_premium = fair_market_premium
         self.risk_model_configs = risk_model_configs
         self.with_reinsurance = with_reinsurance
         self.num_risk_models = num_risk_models
@@ -142,7 +144,7 @@ class AIRunner:
                 "syndicates": self.syndicates,
                 "reinsurancefirms": self.reinsurancefirms,
                 "shareholders": self.shareholders,
-                "catastrophes": self.risks,
+                "catastrophes": self.catastrophes,
                 "risk_model_configs": self.risk_model_configs,
                 "with_reinsurance": self.with_reinsurance,
                 "num_risk_models": self.num_risk_models}
@@ -191,7 +193,7 @@ class AIRunner:
                         "syndicates": self.syndicates,
                         "reinsurancefirms": self.reinsurancefirms,
                         "shareholders": self.shareholders,
-                        "catastrophes": self.risks,
+                        "catastrophes": self.catastrophes,
                         "risk_model_configs": self.risk_model_configs,
                         "with_reinsurance": self.with_reinsurance,
                         "num_risk_models": self.num_risk_models}

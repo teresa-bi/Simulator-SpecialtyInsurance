@@ -1,6 +1,7 @@
 from __future__ import annotations
 import json
 import scipy
+import math
 import numpy as np
 import random
 from environment.event import TruncatedDistWrapper
@@ -9,7 +10,7 @@ class RiskGenerator:
     """
     Generate all the risks for the simulation in the form of RiskModel
     """
-    def __init__(self, num_risk_models, sim_args, risk_args):
+    def __init__(self, num_risk_models, sim_args, risk_args, seed):
         """
         Instance of risks for a simulation
 
@@ -18,6 +19,7 @@ class RiskGenerator:
         num_risk_models: int 
         sim_args: dict
         risk_args: dict
+        seed: int
         """
         # Get inputs
         self.num_riskmodels = num_risk_models
@@ -49,7 +51,9 @@ class RiskGenerator:
         self.risk_factor_lower_bound = risk_args["risk_factor_lower_bound"]
         self.risk_factor_upper_bound = risk_args["risk_factor_upper_bound"]
         # Init list of risks
-        self.risks = {}
+        self.catastrophes = []
+        self.broker_risks = []
+        self.seed  = seed
 
     def get_all_riskmodel_combinations(self, n, rm_factor):
         riskmodels = []
@@ -58,19 +62,37 @@ class RiskGenerator:
             riskmodel_combination[i] = 1/rm_factor
             riskmodels.append(riskmodel_combination.tolist())
         return riskmodels
-
+    
     def generate_risks(self):
         """
-        Generate risks including catestrophe and attritional loss(add later)
+        Generate catestrophes
 
         Returns
         ----------
         dict: risks and risk_model_configs
         """
 
-        # Compute remaining parameters
+        # Generate Catastrophes
         non_truncated = scipy.stats.pareto(b=2, loc=0, scale=0.25)
         self.damage_distribution = TruncatedDistWrapper(lower_bound=0.25, upper_bound=1., dist=non_truncated)
+        self.catastrophe_separation_distribution = scipy.stats.expon(0, self.catastrophe_time_mean_separation)
+        i = 0
+        for j in range(self.num_categories):
+            total = 0
+            while (total < self.sim_time_span):
+                separation_time = self.catastrophe_separation_distribution.rvs()
+                total += int(math.ceil(separation_time))
+                if total < self.sim_time_span:
+                    risk_start_time = total
+                    damage_value = self.damage_distribution.rvs()
+                    self.catastrophes.append({"catastrophe_id": i,
+                      "catastrophe_start_time": risk_start_time,
+                      "catastrophe_category": j,
+                      "catastrophe_value": damage_value,
+                      })
+                    i += 1
+
+        # Compute remaining parameters
         self.risk_factor_spread = self.risk_factor_upper_bound - self.risk_factor_lower_bound
         self.risk_factor_distribution = scipy.stats.uniform(loc=self.risk_factor_lower_bound, scale=self.risk_factor_spread)
         self.risk_value_distribution = scipy.stats.uniform(loc=1000, scale=0)
@@ -79,7 +101,6 @@ class RiskGenerator:
         if np.isnan(risk_factor_mean):
             risk_factor_mean = self.risk_factor_distribution.rvs()
 
-        self.catastrophe_separation_distribution = scipy.stats.expon(0, self.catastrophe_time_mean_separation)
         if self.expire_immediately:
             assert self.catastrophe_separation_distribution.dist.name == 'expon'
             expected_damage_frequency = 1 - scipy.stats.poisson(1 / self.catastrophe_time_mean_separation * self.mean_contract_runtime).pmf(0)
@@ -109,19 +130,20 @@ class RiskGenerator:
                                 "inaccuracy_by_categ": self.inaccuracy[i]
                                 } for i in range(self.num_riskmodels)]
 
-        # Set up risks including risk_id, start_time, risk_factor, category, risk_value, riskmodel_configurations
-        risks_starttime = np.random.randint(0, self.sim_time_span, size = self.num_risks) # How to set as lambda distribution
-        risks_factors = self.risk_factor_distribution.rvs(size = self.num_risks)
+        # Generate risks brought by brokers
+        risks_starttime = np.random.randint(0, self.sim_time_span, size = self.num_risks)
         risks_categories = np.random.randint(0, self.num_categories, size = self.num_risks)
+        risks_factors = self.risk_factor_distribution.rvs(size = self.num_risks)
         risks_values = self.risk_value_distribution.rvs(size = self.num_risks)
-        self.risks = [{"risk_id": i,
+        for i in range
+        self.broker_risks = [{"risk_id": i,
                       "risk_start_time": risks_starttime[i],
                       "risk_factor": risks_factors[i],
                       "risk_category": risks_categories[i],
                       "risk_value": risks_values[i],
                       } for i in range(self.num_risks)]
 
-        return self.risks, risk_model_configs
+        return self.catastrophes, self.broker_risks, self.market_premium, risk_model_configs
 
     def data(self):
         """
@@ -133,11 +155,11 @@ class RiskGenerator:
         """
         
         return [{
-            "id": self.risks[i].get("risk_id"),
-            "time": self.risks[i].get("risk_start_time"),
-            "risk_factor": self.risks[i].get("risk_factor"),
-            "risk_category": self.risks[i].get("risk_category"),
-            "risk_value": self.risks[i].get("risk_value")}
+            "id": self.catastrophes[i].get("risk_id"),
+            "time": self.catastrophes[i].get("risk_start_time"),
+            "risk_factor": self.catastrophes[i].get("risk_factor"),
+            "risk_category": self.catastrophes[i].get("risk_category"),
+            "risk_value": self.catastrophes[i].get("risk_value")}
         for i in range(self.num_risks)] 
 
     def to_json(self):
