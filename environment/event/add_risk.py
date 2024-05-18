@@ -9,7 +9,7 @@ class AddRiskEvent(Event):
     Add risk event brought by the broker to the market
     """
 
-    def __init__(self, risk_id, broker_id, risk_start_time, risk_end_time, risk_factor, risk_category, risk_value):
+    def __init__(self, risk_id, broker_id, risk_start_time, risk_end_time, risk_factor, risk_category, risk_value, risk_VaR):
         """
         Construct a new insurable risk instance brought by the broker to the market
 
@@ -38,6 +38,7 @@ class AddRiskEvent(Event):
         self.risk_factor = risk_factor
         self.risk_category = risk_category
         self.risk_value = risk_value
+        self.risk_VaR = risk_VaR
 
     def run(self, market, step_time):
         """

@@ -7,6 +7,9 @@ import scipy.stats
 import copy
 from environment.risk_model import RiskModel
 
+def get_mean(x):
+    return sum(x) / len(x)
+
 class Syndicate:
     """
     Instance for syndicate
@@ -27,10 +30,13 @@ class Syndicate:
         self.capacity_target_increment_factor = syndicate_args["capacity_target_increment_factor"]
         self.interest_rate = syndicate_args['interest_rate']
         self.dividend_share_of_profits = syndicate_args["dividend_share_of_profits"]
+        self.insurance_permanency_contracts_limit = syndicate_args["insurance_permanency_contracts_limit"]
+        self.insurance_permanency_ratio_limit = syndicate_args["insurance_permanency_ratio_limit"]
 
         self.contract_runtime_dist = scipy.stats.randint(sim_args["mean_contract_runtime"] - sim_args["contract_runtime_halfspread"], sim_args["mean_contract_runtime"] + sim_args["contract_runtime_halfspread"]+1)
         self.default_contract_payment_period = sim_args["default_contract_payment_period"]
         self.simulation_reinsurance_type = sim_args["simulation_reinsurance_type"]
+        self.market_permanency_off = sim_args["market_permanency_off"]
         self.capacity_target = self.current_capital * 0.9
         self.capacity_target_decrement_threshold = self.capacity_target_decrement_threshold
         self.capacity_target_increment_threshold = self.capacity_target_increment_threshold
@@ -96,7 +102,6 @@ class Syndicate:
             self.np_reinsurance_premium_share = syndicate_args["default_non-proportional_reinsurance_premium_share"]
 
         self.obligations = []
-        self.underwritten_contracts = []
         self.profits_losses = 0
 
         # Set up risk value estimate variables
@@ -157,6 +162,7 @@ class Syndicate:
                                     "syndicate_id": self.syndicate_id,
                                     "premium": premium,
                                     "risk_end_time": risks.get("risk_end_time"),
+                                    "initial_VaR": risks.get("risk_VaR"),
                                     "pay": None})
         for i in range(len(self.current_capital_category)):
             if i == int(risks.get("risk_category")):
@@ -193,11 +199,11 @@ class Syndicate:
         self.var_counter_per_risk = 0
         self.var_sum = 0
         
-        if self.operational:
+        if self.status:
 
-            for contract in self.underwritten_contracts:
-                self.counter_category[contract.category] = self.counter_category[contract.category] + 1
-                self.var_category[contract.category] = self.var_category[contract.category] + contract.initial_VaR
+            for contract in self.current_hold_contracts:
+                self.counter_category[contract.risk_category] = self.counter_category[contract.risk_category] + 1
+                self.var_category[contract.risk_category] = self.var_category[contract.risk_category] + contract.initial_VaR
 
             for category in range(len(self.counter_category)):
                 self.var_counter = self.var_counter + self.counter_category[category] * self.riskmodel.inaccuracy[category]
@@ -249,20 +255,19 @@ class Syndicate:
         _cached_rvs = self.contract_runtime_dist.rvs()
         for iter in range(max(number_risks_categ)):
             for categ_id in range(len(acceptable_by_category)):    #Here we take only one risk per category at a time to achieve risk[C1], risk[C2], risk[C3], risk[C4], risk[C1], risk[C2], ... if possible.
-                if iter < number_risks_categ[categ_id] and acceptable_by_category[categ_id] > 0 and \
-                                risks_per_categ[categ_id][iter] is not None:
+                if iter < number_risks_categ[categ_id] and acceptable_by_category[categ_id] > 0 and risks_per_categ[categ_id][iter] is not None:
                     risk_to_insure = risks_per_categ[categ_id][iter]
                     if risk_to_insure.get("contract") is not None and risk_to_insure[
                         "contract"].expiration > time:  # risk_to_insure["contract"]: # required to rule out contracts that have exploded in the meantime
                         [condition, capital_left_by_categ] = self.balanced_portfolio(risk_to_insure, capital_left_by_categ, None)   #Here it is check whether the portfolio is balanced or not if the reinrisk (risk_to_insure) is underwritten. Return True if it is balanced. False otherwise.
                         if condition:
-                            contract = ReinsuranceContract(self, risk_to_insure, time, \
+                            contract = ReinsuranceContract(self, risk_to_insure, time, 
                                                            self.simulation.get_reinsurance_market_premium(),
-                                                           risk_to_insure["expiration"] - time, \
-                                                           self.default_contract_payment_period, \
+                                                           risk_to_insure["expiration"] - time, 
+                                                           self.default_contract_payment_period, 
                                                            expire_immediately=self.simulation_parameters[
                                                                "expire_immediately"], )
-                            self.underwritten_contracts.append(contract)
+                            self.current_hold_contracts.append(contract)
                             self.capital_left_by_categ = capital_left_by_categ
                             risks_per_categ[categ_id][iter] = None
                             # TODO: move this to insurancecontract (ca. line 14) -> DONE
@@ -271,13 +276,13 @@ class Syndicate:
                         [condition, capital_left_by_categ] = self.balanced_portfolio(risk_to_insure, capital_left_by_categ,
                                                                                   var_per_risk_per_categ) #Here it is check whether the portfolio is balanced or not if the risk (risk_to_insure) is underwritten. Return True if it is balanced. False otherwise.
                         if condition:
-                            contract = InsuranceContract(self, risk_to_insure, time, self.simulation.get_market_premium(), \
-                                                         _cached_rvs, \
-                                                         self.default_contract_payment_period, \
+                            contract = InsuranceContract(self, risk_to_insure, time, self.simulation.get_market_premium(), 
+                                                         _cached_rvs, 
+                                                         self.default_contract_payment_period, 
                                                          expire_immediately=self.simulation_parameters[
-                                                             "expire_immediately"], \
+                                                             "expire_immediately"], 
                                                          initial_VaR=var_per_risk_per_categ[categ_id])
-                            self.underwritten_contracts.append(contract)
+                            self.current_hold_contracts.append(contract)
                             self.capital_left_by_categ = capital_left_by_categ
                             risks_per_categ[categ_id][iter] = None
                     acceptable_by_category[categ_id] -= 1  # TODO: allow different values per risk (i.e. sum over value (and reinsurance_share) or exposure instead of counting)
@@ -290,39 +295,39 @@ class Syndicate:
 
         return risks_per_categ, not_accepted_risks
     
-    def market_permanency(self, time):     #This method determines whether an insurer or reinsurer stays in the market. If it has very few risks underwritten or too much cash left for TOO LONG it eventually leaves the market.
+    def market_permanency(self, time):     #This method determines whether an insurer stays in the market. If it has very few risks underwritten or too much cash left for TOO LONG it eventually leaves the market.
                                                       # If it has very few risks underwritten it cannot balance the portfolio so it makes sense to leave the market.
-        if not self.simulation_parameters["market_permanency_off"]:
+        if not self.market_permanency_off:
 
             capital_left_by_categ = np.asarray(self.capital_left_by_categ)
 
             avg_capital_left = get_mean(capital_left_by_categ)
 
-            if self.current_capital < self.simulation_parameters["capital_permanency_limit"]:         #If their level of cash is so low that they cannot underwrite anything they also leave the market.
-                self.market_exit(time)
+            if self.current_capital < self.capital_permanency_limit:         #If their level of cash is so low that they cannot underwrite anything they also leave the market.
+                self.current_hold_contracts = []
+                self.risks_kept = []
+                self.reinrisks_kept = []
+                #obligation = {"amount": self.cash, "recipient": self.simulation, "due_time": time, "purpose": "Dissolution"}
+                #self.pay(obligation)                    #This MUST be the last obligation before the dissolution of the firm.
+                self.excess_capital = 0                 
+                self.profits_losses = 0                 
+                self.status = False
             else:
-                if self.is_insurer:
+                if len(self.current_hold_contracts) < self.insurance_permanency_contracts_limit or avg_capital_left / self.current_capital > self.insurance_permanency_ratio_limit:
+                    #Insurers leave the market if they have contracts under the limit or an excess capital over the limit for too long.
+                    self.market_permanency_counter += 1
+                else:
+                    self.market_permanency_counter = 0                                    #All these limits maybe should be parameters in isleconfig.py
 
-                    if len(self.underwritten_contracts) < self.simulation_parameters["insurance_permanency_contracts_limit"] or avg_capital_left / self.current_capital > self.simulation_parameters["insurance_permanency_ratio_limit"]:
-                        #Insurers leave the market if they have contracts under the limit or an excess capital over the limit for too long.
-                        self.market_permanency_counter += 1
-                    else:
-                        self.market_permanency_counter = 0                                    #All these limits maybe should be parameters in isleconfig.py
-
-                    if self.market_permanency_counter >= self.simulation_parameters["insurance_permanency_time_constraint"]:    # Here we determine how much is too long.
-                        self.market_exit(time)
-
-                if self.is_reinsurer:
-
-                    if len(self.underwritten_contracts) < self.simulation_parameters["reinsurance_permanency_contracts_limit"] or avg_capital_left / self.current_capital > self.simulation_parameters["reinsurance_permanency_ratio_limit"]:
-                        #Reinsurers leave the market if they have contracts under the limit or an excess capital over the limit for too long.
-
-                        self.market_permanency_counter += 1                                       #Insurers and reinsurers potentially have different reasons to leave the market. That's why the code is duplicated here.
-                    else:
-                        self.market_permanency_counter = 0
-
-                    if self.market_permanency_counter >= self.simulation_parameters["reinsurance_permanency_time_constraint"]:  # Here we determine how much is too long.
-                        self.market_exit(time)
+                if self.market_permanency_counter >= self.exit_time_limit:    # Here we determine how much is too long.
+                    self.current_hold_contracts = []
+                    self.risks_kept = []
+                    self.reinrisks_kept = []
+                    #obligation = {"amount": self.cash, "recipient": self.simulation, "due_time": time, "purpose": "Dissolution"}
+                    #self.pay(obligation)                    #This MUST be the last obligation before the dissolution of the firm.
+                    self.excess_capital = 0                 
+                    self.profits_losses = 0                 
+                    self.status = False
 
     def reset_pl(self):
         """Reset_pl Method.
@@ -330,38 +335,6 @@ class Syndicate:
                No return value.
            Reset the profits and losses variable of each firm at the beginning of every iteration. It has to be run in insurancesimulation.py at the beginning of the iterate method"""
         self.profits_losses = 0
-
-    def roll_over(self,time):
-        """Roll_over Method.
-               Accepts arguments
-                   time: Type integer. The current time.               No return value.
-               No return value.
-            This method tries to roll over the insurance and reinsurance contracts expiring in the next iteration. In
-            the case of insurance contracts it assumes that it can only retain a fraction of contracts inferior to the
-            retention rate. The contracts that cannot be retained are sent back to insurancesimulation.py. The rest are
-            kept and evaluated the next iteration. For reinsurancecontracts is exactly the same with the difference that
-            there is no need to return the contracts not rolled over to insurancesimulation.py, since reinsurance risks
-            are created and destroyed every iteration. The main reason to implemented this method is to avoid a lack of
-            coverage that appears, if contracts are allowed to mature and are evaluated again the next iteration."""
-
-        maturing_next = [contract for contract in self.underwritten_contracts if contract.expiration == time + 1]
-
-        if self.is_insurer is True:
-            for contract in maturing_next:
-                contract.roll_over_flag = 1
-                if np.random.uniform(0,1,1) > self.simulation_parameters["insurance_retention"]:
-                    self.simulation.return_risks([contract.risk_data])   # TODO: This is not a retention, so the roll_over_flag might be confusing in this case
-                else:
-                    self.risks_kept.append(contract.risk_data)
-
-        if self.is_reinsurer is True:
-            for reincontract in maturing_next:
-                if reincontract.property_holder.operational:
-                    reincontract.roll_over_flag = 1
-                    reinrisk = reincontract.property_holder.create_reinrisk(time, reincontract.category)
-                    if np.random.uniform(0,1,1) < self.simulation_parameters["reinsurance_retention"]:
-                        if reinrisk is not None:
-                            self.reinrisks_kept.append(reinrisk)
 
     def data(self):
         """

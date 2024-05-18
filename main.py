@@ -44,7 +44,7 @@ if __name__ == '__main__':
 
         # Create scenario
         with_reinsurance = False
-        num_risk_models = 1
+        num_risk_models = 4
         catastrophes, broker_risks, fair_market_premium, risk_model_configs = RiskGenerator(num_risk_models, sim_args, risk_args, seed).generate_risks()
         brokers, syndicates, reinsurancefirms, shareholders = MarketGenerator(with_reinsurance, num_risk_models, sim_args, broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_model_configs).generate_agents()
 

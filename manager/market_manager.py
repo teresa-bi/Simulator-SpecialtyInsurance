@@ -71,7 +71,8 @@ class MarketManager:
                 "risk_end_time": starting_broker_risk.risk_end_time,
                 "risk_factor": starting_broker_risk.risk_factor,
                 "risk_category": starting_broker_risk.risk_category,
-                "risk_value": starting_broker_risk.risk_value}
+                "risk_value": starting_broker_risk.risk_value,
+                "risk_VaR": starting_broker_risk.risk_VaR}
         if len(self.actions_to_apply) > 0:
             lead_syndicate_id = self.actions_to_apply[0].syndicate
             lead_line_size = 0.5
@@ -106,6 +107,7 @@ class MarketManager:
         for i in range(len(self.market.syndicates)):
             self.market.syndicates[i].current_capital -= starting_attritional_loss.risk_value * 0.001
             self.market.syndicates[i].profits_losses -= starting_attritional_loss.risk_value * 0.001
+            self.market.syndicates[i].market_permanency(starting_attritional_loss.risk_start_time)
 
     def run_broker_premium(self, starting_broker_premium):
         """
@@ -386,10 +388,12 @@ class MarketManager:
         syndicate_list = []
         # Find the leader
         lead_line_size = 0.5
-        min_premium = actions[0].premium
-        syndicate_id = 0
+        for i in range(len(actions)):
+            if actions[i].premium != 0:
+                min_premium = actions[i].premium
+                syndicate_id = i
         for sy in range(len(self.market.syndicates)):
-            if actions[sy].premium < min_premium:
+            if (actions[sy].premium != 0) and (actions[sy].premium < min_premium):
                 min_premium = actions[sy].premium
                 syndicate_id = sy
         syndicate_list.append(syndicate_id)
@@ -407,7 +411,7 @@ class MarketManager:
         for p in range(len(premium_sort)):
             for sy in range(len(self.market.syndicates)):
                 if sy not in syndicate_list:
-                    if actions[sy].premium == premium_sort[p]:
+                    if (actions[sy].premium == premium_sort[p]) and (premium_sort[p] != 0):
                         rest_line_size -= follow_line_size
                         accept_actions.append(actions[sy])
                         syndicate_list.append(sy)

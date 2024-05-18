@@ -119,16 +119,13 @@ class GameRunner:
         obs_dict, info_dict = env.reset()
 
         while not terminated_dict["__all__"]:
-            if total_steps % 20 == 0: print(".", end="")
         
-            action_dict = env.get_actions(obs_dict)  
-            print(action_dict)
+            action_dict = env.get_actions(obs_dict, total_steps)  
             total_steps += 1
         
             obs_dict, reward_dict, terminated_dict, flag_dict, info_dict = env.step(action_dict)
 
-            # Save data for every 10 steps
-            if total_steps % 10 == 0: 
-                env.save_data()
-
-        return self.logger.obtain_log()
+            # Save data for every step
+            env.save_data()
+        log = env.obtain_log()
+        return log

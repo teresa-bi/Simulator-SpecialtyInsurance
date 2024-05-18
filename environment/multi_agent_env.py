@@ -5,6 +5,7 @@ from environment.event_generator import EventGenerator
 from manager.ai_model.action import Action
 from manager import EventHandler, MarketManager
 from logger import logger
+from environment.risk_model import RiskModel
 
 class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
 
@@ -73,6 +74,18 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
                                                    num_risk_models = self.num_risk_models,
                                                    dt = 1)
         
+        self.riskmodel = RiskModel(self.risk_model_configs[0]["damage_distribution"], 
+                                   self.risk_model_configs[0]["expire_immediately"],
+                                   self.risk_model_configs[0]["catastrophe_separation_distribution"],
+                                   self.risk_model_configs[0]["norm_premium"],
+                                   self.risk_model_configs[0]["num_categories"],
+                                   self.risk_model_configs[0]["risk_value_mean"],
+                                   self.risk_model_configs[0]["risk_factor_mean"],
+                                   self.risk_model_configs[0]["norm_profit_markup"],
+                                   self.risk_model_configs[0]["margin_of_safety"],
+                                   self.risk_model_configs[0]["var_tail_prob"],
+                                   self.risk_model_configs[0]["inaccuracy_by_categ"])
+
         # Log data
         self.cumulative_bankruptcies = 0
         self.cumulative_market_exits = 0
@@ -126,13 +139,15 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
             self.mm.market.syndicates[i].current_hold_contracts = []
             self.mm.market.syndicates[i].current_capital = self.syndicate_args["initial_capital"]
             self.mm.market.syndicates[i].current_capital_category = [self.syndicate_args["initial_capital"]/self.risk_args["num_categories"] for i in range(self.risk_args["num_categories"])]
-        
+        # Reset broker and syndicates variables
+        for i in range(len(self.mm.market.syndicates)):
+            self.mm.market.syndicates[i].reset_pl()
         # Log data
         self.cumulative_bankruptcies = 0
         self.cumulative_market_exits = 0
         self.cumulative_unrecovered_claims = 0.0
         self.cumulative_claims = 0.0
-        self.logger = logger.Logger(self.num_risk_models, self.catastrophes, self.brokers, self.syndicates)
+        self.logger = logger.Logger(self.num_risk_models, self.catastrophes, self.mm.market.brokers, self.mm.market.syndicates)
 
         # Initiate time step
         self.timestep = -1
@@ -155,13 +170,22 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
         if self.market_premium < self.fair_market_premium * self.syndicate_args["lower_premium_limit"]:
             self.market_premium = self.fair_market_premium * self.syndicate_args["lower_premium_limit"]
     
-    def get_actions(self):
-        # Syndicates compete for the ledership, they will all cover 0.5
-        sum_capital = sum([self.mm.market.syndicates[i].current_capital for i in range(len(self.mm.market.syndicates))]) 
-        self.adjust_market_premium(capital=sum_capital)
+    def get_actions(self, obs_dict, time):
         action_dict = {}
         for i in range(len(self.mm.market.syndicates)):
-            action_dict.update({self.mm.market.syndicates[i].syndicate_id: self.market_premium})
+            if len(self.mm.market.syndicates[i].current_hold_contracts) == 0: 
+                # Syndicates compete for the ledership, they will all cover 0.5
+                sum_capital = sum([self.mm.market.syndicates[i].current_capital for i in range(len(self.mm.market.syndicates))]) 
+                self.adjust_market_premium(capital=sum_capital)
+                action_dict.update({self.mm.market.syndicates[i].syndicate_id: self.market_premium})
+            else: 
+                accept, cash_left_by_categ, var_this_risk, self.excess_capital  = self.riskmodel.evaluate(self.mm.market.syndicates[i].current_hold_contracts, self.mm.market.syndicates[i].current_capital)
+                if accept:
+                    sum_capital = sum([self.mm.market.syndicates[i].current_capital for i in range(len(self.mm.market.syndicates))]) 
+                    self.adjust_market_premium(capital=sum_capital)
+                    action_dict.update({self.mm.market.syndicates[i].syndicate_id: self.market_premium})
+                else:
+                    action_dict.update({self.mm.market.syndicates[i].syndicate_id: 0})
 
         #{'0': array([0.9], dtype=float32), '1': array([0.67964387], dtype=float32), '2': array([0.77142656], dtype=float32)}
 
@@ -326,7 +350,7 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
         current_log = {}
         current_log['total_cash'] = total_cash
         current_log['total_excess_capital'] = total_excess_capital
-        current_log['total_profitslosses'] = total_profitslosses
+        current_log['total_profits_losses'] = total_profitslosses
         current_log['total_contracts'] = total_contracts
         current_log['total_operational'] = operational_syndicates
         #current_log['total_catbondsoperational'] = catbondsoperational_no
@@ -346,5 +370,9 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
 
         # Call to Logger object
         self.logger.record_data(current_log)
+
+    def obtain_log(self, requested_logs=None):
+        #This function allows to return in a list all the data generated by the model. There is no other way to transfer it back from the cloud.
+        return self.logger.obtain_log(requested_logs)
 
         

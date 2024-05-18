@@ -4,17 +4,18 @@ Contains all the simulation parameters
 
 def get_arguments():
 
-    sim_args = {"max_time": 30, # Simualtion time step daily
+    sim_args = {"max_time": 1000, # Simualtion time step daily
         "num_run_per_setting": 400, # Number of replication runs per simulation settings
         "mean_contract_runtime": 12,
         "contract_runtime_halfspread": 2,
         "default_contract_payment_period": 3,
         "simulation_reinsurance_type": 'non-proportional',
-        "margin_increase": 0
+        "margin_increase": 0,
+        "market_permanency_off": False
         }
 
-    manager_args = {"lead_top_k": 2, # The number of lead syndicates a broker reaches out to
-        "follow_top_k": 2, # The number of follow syndicates a broker reaches out to
+    manager_args = {"lead_top_k": 10, # The number of lead syndicates a broker reaches out to
+        "follow_top_k": 10, # The number of follow syndicates a broker reaches out to
         "topology_broker_syndicate": 10 #####TODO Consider how to set the network topology
         }
 
@@ -23,7 +24,7 @@ def get_arguments():
         "decuctible": 0.2 # Percentage of risk value 
         }
 
-    syndicate_args = {"num_syndicates": 10, # Number of syndicates in simulation
+    syndicate_args = {"num_syndicates": 100, # Number of syndicates in simulation
         "initial_capital": 10000000, # Initial capital of each syndicate
         "lead_line_size": 0.5, # Default lead quote line size
         "follow_line_size": 0.1, # Default follow quote line size
@@ -55,6 +56,8 @@ def get_arguments():
         "default_non-proportional_reinsurance_premium_share": 0.3,
         "insurers_balance_ratio": 0.1, # This ratio represents how low we want to keep the standard deviation of the cash reserved below the mean for insurers. Lower means more balanced
         "insurers_recursion_limit": 50, # Intensity of the recursion algorithm to balance the portfolio of risks for insurers
+        "insurance_permanency_contracts_limit": 4,
+        "insurance_permanency_ratio_limit": 0.6
         }
 
     reinsurancefirm_args = {"num_reinsurancefirms": 4, # Number of reinsurance firms in simulation
@@ -78,7 +81,7 @@ def get_arguments():
     shareholder_args = {"num_shareholders": 1 # Number of shareholders in simulation
         }
 
-    risk_args = {"num_risks": 31, # Number of risks
+    risk_args = {"num_risks": 10001, # Number of risks
         "num_categories": 4, # Number of peril regions for the catastrophe
         "risk_limit": 10000000, # The maximum value of the risk
         "inaccuracy_riskmodels": 2,

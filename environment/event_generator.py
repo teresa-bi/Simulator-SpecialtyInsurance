@@ -101,7 +101,7 @@ class EventGenerator():
             num_risk = 0
             for k in range(len(broker_risks)):
                 risk = broker_risks[k]
-                add_risk_event = AddRiskEvent(num_risk, brokers[i].broker_id, risk.get("risk_start_time"), risk.get("risk_start_time")+1, risk.get("risk_factor"), risk.get("risk_category"), risk.get("risk_value"))
+                add_risk_event = AddRiskEvent(num_risk, brokers[i].broker_id, risk.get("risk_start_time"), risk.get("risk_start_time")+1, risk.get("risk_factor"), risk.get("risk_category"), risk.get("risk_value"), risk.get("risk_VaR"))
                 add_risk_events.append(add_risk_event)
                 num_risk += 1
 
