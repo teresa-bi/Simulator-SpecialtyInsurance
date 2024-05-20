@@ -1,18 +1,18 @@
 import gym
 import numpy as np
-from environment.environment import SpecialtyInsuranceMarketEnv
+import scipy
 from environment.event_generator import EventGenerator
 from manager.ai_model.action import Action
 from manager import EventHandler, MarketManager
 from logger import logger
 from environment.risk_model import RiskModel
+from environment.environment import SpecialtyInsuranceMarketEnv
 
 class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
 
     def __init__(self, sim_args, manager_args, broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args, 
                  brokers, syndicates, reinsurancefirms, shareholders, catastrophes, broker_risks, fair_market_premium,
                  risk_model_configs, with_reinsurance, num_risk_models, dt = 1):
-
         self.sim_args = sim_args
         self.maxstep = self.sim_args["max_time"]
         self.manager_args = manager_args
@@ -54,14 +54,19 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
         self.dones = set()
         self._spaces_in_preferred_format = True
         self.observation_space = gym.spaces.Dict({
-            self.syndicates[i].syndicate_id: gym.spaces.Box(low=np.array([-10000000,-10000000,-30000000,-30000000,-30000000,-30000000]), 
-                                                     high=np.array([10000000,10000000,30000000,30000000,30000000,30000000]), dtype = np.float32) for i in range(self.n)
+            self.syndicates[i].syndicate_id: gym.spaces.Box(low=np.array([-10000000,-10000000,-10000000,-30000000,-30000000,-30000000,-30000000]), 
+                                                     high=np.array([10000000,10000000,10000000,30000000,30000000,30000000,30000000]), dtype = np.float32) for i in range(self.n)
         })
         self.action_space = gym.spaces.Dict({
             self.syndicates[i].syndicate_id: gym.spaces.Box(0.5, 0.9, dtype = np.float32) for i in range(self.n)})
 
         super(MultiAgentBasedModel, self).__init__(sim_args = self.sim_args, 
-                                                   manager_args = self.manager_args , 
+                                                   manager_args = self.manager_args,
+                                                   broker_args = self.broker_args, 
+                                                   syndicate_args = self.syndicate_args, 
+                                                   reinsurancefirm_args = self.reinsurancefirm_args, 
+                                                   shareholder_args = self.shareholder_args, 
+                                                   risk_args = self.risk_args, 
                                                    brokers = self.brokers, 
                                                    syndicates = self.syndicates, 
                                                    reinsurancefirms = self.reinsurancefirms, 
@@ -91,6 +96,11 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
         self.cumulative_market_exits = 0
         self.cumulative_unrecovered_claims = 0.0
         self.cumulative_claims = 0.0
+        self.total_cash = 0.0
+        self.total_excess_capital = 0.0
+        self.total_profitslosses =  0.0
+        self.total_contracts = 0.0
+        self.operational_syndicates = 0.0
         self.logger = logger.Logger(self.num_risk_models, self.catastrophes, self.brokers, self.syndicates)
 
         # Reset the environmnet
@@ -169,6 +179,61 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
                                                    * self.risk_model_configs[0]["damage_distribution"].mean() * self.risk_args["num_risks"]))
         if self.market_premium < self.fair_market_premium * self.syndicate_args["lower_premium_limit"]:
             self.market_premium = self.fair_market_premium * self.syndicate_args["lower_premium_limit"]
+
+    def get_mean(self,x):
+        return sum(x) / len(x)
+    
+    def get_mean_std(self, x):
+        m = self.get_mean(x)
+        variance = sum((val - m) ** 2 for val in x)
+        return m, np.sqrt(variance / len(x))
+
+    def balanced_portfolio(self, risk_categ, risk_value, risk_factor, syndicate_id, cash_left_by_categ, var_per_risk): #This method decides whether the portfolio is balanced enough to accept a new risk or not. If it is balanced enough return True otherwise False.
+                                                                          #This method also returns the cash available per category independently the risk is accepted or not.
+        cash_reserved_by_categ = self.mm.market.syndicates[syndicate_id].current_capital - cash_left_by_categ     #Here it is computed the cash already reserved by category
+
+        _, std_pre = self.get_mean_std(cash_reserved_by_categ)
+
+        cash_reserved_by_categ_store = np.copy(cash_reserved_by_categ)
+        
+        percentage_value_at_risk = self.riskmodel.getPPF(risk_categ, tailSize=self.riskmodel.var_tail_prob)
+        expected_damage = percentage_value_at_risk * risk_value * risk_factor * self.riskmodel.inaccuracy[risk_categ]
+        expected_claim = min(expected_damage, risk_value * 1.0) - risk_value * 0.3
+
+        # record liquidity requirement and apply margin of safety for liquidity requirement
+
+        cash_reserved_by_categ_store[risk_categ] += expected_claim * self.riskmodel.margin_of_safety  #Here it is computed how the cash reserved by category would change if the new reinsurance risk was accepted
+
+        mean, std_post = self.get_mean_std(cash_reserved_by_categ_store)     #Here it is computed the mean, std of the cash reserved by category after the new risk of reinrisk is accepted
+
+        total_cash_reserved_by_categ_post = sum(cash_reserved_by_categ_store)
+
+        if (std_post * total_cash_reserved_by_categ_post/self.mm.market.syndicates[syndicate_id].current_capital) <= (self.syndicate_args["insurers_balance_ratio"] * mean) or std_post < std_pre:      
+            for i in range(len(cash_left_by_categ)):                                                                           #The balance condition is not taken into account if the cash reserve is far away from the limit. (total_cash_employed_by_categ_post/self.cash <<< 1)
+                cash_left_by_categ[i] = self.mm.market.syndicates[syndicate_id].current_capital - cash_reserved_by_categ_store[i]
+
+            return True, cash_left_by_categ
+        else:
+            for i in range(len(cash_left_by_categ)):
+                cash_left_by_categ[i] = self.mm.market.syndicates[syndicate_id].current_capital - cash_reserved_by_categ[i]
+
+            return False, cash_left_by_categ
+
+    def process_newrisks_insurer(self, risk_categ, risk_value, risk_factor, syndicate_id, acceptable_by_category, var_per_risk_per_categ, cash_left_by_categ, time): 
+        contract_runtime_dist = scipy.stats.randint(self.sim_args["mean_contract_runtime"] - self.sim_args["contract_runtime_halfspread"], self.sim_args["mean_contract_runtime"] + self.sim_args["contract_runtime_halfspread"] + 1)
+        _cached_rvs = contract_runtime_dist.rvs()
+        if acceptable_by_category[risk_categ] > 0:
+            [condition, cash_left_by_categ] = self.balanced_portfolio(risk_categ, risk_value, risk_factor, syndicate_id, cash_left_by_categ, None)   #Here it is check whether the portfolio is balanced or not if the reinrisk (risk_to_insure) is underwritten. Return True if it is balanced. False otherwise.
+            if not condition:
+                [condition, cash_left_by_categ] = self.balanced_portfolio(risk_categ, risk_value, risk_factor, syndicate_id, cash_left_by_categ, var_per_risk_per_categ) #Here it is check whether the portfolio is balanced or not if the risk (risk_to_insure) is underwritten. Return True if it is balanced. False otherwise.
+                if condition:
+                    accept = True
+                    self.cash_left_by_categ = cash_left_by_categ
+                    acceptable_by_category[risk_categ] -= 1  # TODO: allow different values per risk (i.e. sum over value (and reinsurance_share) or exposure instead of counting)
+                    return accept
+                else:
+                    accept = False
+                    return accept
     
     def get_actions(self, obs_dict, time):
         action_dict = {}
@@ -179,7 +244,11 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
                 self.adjust_market_premium(capital=sum_capital)
                 action_dict.update({self.mm.market.syndicates[i].syndicate_id: self.market_premium})
             else: 
-                accept, cash_left_by_categ, var_this_risk, self.excess_capital  = self.riskmodel.evaluate(self.mm.market.syndicates[i].current_hold_contracts, self.mm.market.syndicates[i].current_capital)
+                expected_profits, acceptable_by_category, cash_left_by_categ, var_per_risk_per_categ, self.excess_capital  = self.riskmodel.evaluate(self.mm.market.syndicates[i].current_hold_contracts, self.mm.market.syndicates[i].current_capital)
+                risk_categ = obs_dict[self.mm.market.syndicates[i].syndicate_id][0]
+                risk_value = obs_dict[self.mm.market.syndicates[i].syndicate_id][1]
+                risk_factor = obs_dict[self.mm.market.syndicates[i].syndicate_id][2]
+                accept = self.process_newrisks_insurer(risk_categ, risk_value, risk_factor, i, acceptable_by_category, var_per_risk_per_categ, cash_left_by_categ, time)
                 if accept:
                     sum_capital = sum([self.mm.market.syndicates[i].current_capital for i in range(len(self.mm.market.syndicates))]) 
                     self.adjust_market_premium(capital=sum_capital)
@@ -188,9 +257,8 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
                     action_dict.update({self.mm.market.syndicates[i].syndicate_id: 0})
 
         #{'0': array([0.9], dtype=float32), '1': array([0.67964387], dtype=float32), '2': array([0.77142656], dtype=float32)}
-
         return action_dict
-
+        
     def step(self, action_dict):
 
         obs_dict, reward_dict, terminated_dict, info_dict = {}, {}, {}, {}
@@ -301,6 +369,7 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
                 # Catastrophe risk category and risk value
                 obs.append(self.broker_risk_events[risk].risk_category)
                 obs.append(self.broker_risk_events[risk].risk_value)
+                obs.append(self.broker_risk_events[risk].risk_factor)
         
         # Syndicates status current capital in 
         market = self.mm.market
@@ -322,11 +391,11 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
         """Method to collect statistics about the current state of the simulation. Will pass these to the 
            Logger object (self.logger) to be recorded."""
         # Collect data
-        total_cash = sum([self.mm.market.syndicates[i].current_capital for i in range(len(self.mm.market.syndicates))])
-        total_excess_capital = sum([self.mm.market.syndicates[i].excess_capital for i in range(len(self.mm.market.syndicates))])
-        total_profitslosses =  sum([self.mm.market.syndicates[i].profits_losses for i in range(len(self.mm.market.syndicates))])
-        total_contracts = sum([len(self.mm.market.syndicates[i].current_hold_contracts) for i in range(len(self.mm.market.syndicates))])
-        operational_syndicates = sum([self.mm.market.syndicates[i].status for i in range(len(self.mm.market.syndicates))])
+        self.total_cash = sum([self.mm.market.syndicates[i].current_capital for i in range(len(self.mm.market.syndicates))])
+        self.total_excess_capital = sum([self.mm.market.syndicates[i].excess_capital for i in range(len(self.mm.market.syndicates))])
+        self.total_profitslosses =  sum([self.mm.market.syndicates[i].profits_losses for i in range(len(self.mm.market.syndicates))])
+        self.total_contracts = sum([len(self.mm.market.syndicates[i].current_hold_contracts) for i in range(len(self.mm.market.syndicates))])
+        self.operational_syndicates = sum([self.mm.market.syndicates[i].status for i in range(len(self.mm.market.syndicates))])
         #operational_catbonds = sum([catbond.operational for catbond in self.catbonds])
         
         # Collect agent-level data
@@ -348,11 +417,11 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
         
         # Prepare dict
         current_log = {}
-        current_log['total_cash'] = total_cash
-        current_log['total_excess_capital'] = total_excess_capital
-        current_log['total_profits_losses'] = total_profitslosses
-        current_log['total_contracts'] = total_contracts
-        current_log['total_operational'] = operational_syndicates
+        current_log['total_cash'] = self.total_cash
+        current_log['total_excess_capital'] = self.total_excess_capital
+        current_log['total_profits_losses'] = self.total_profitslosses
+        current_log['total_contracts'] = self.total_contracts
+        current_log['total_operational'] = self.operational_syndicates
         #current_log['total_catbondsoperational'] = catbondsoperational_no
         current_log['market_premium'] = self.market_premium  # Oxford Picing has a fair premium and adjust TODO:  
         current_log['cumulative_bankruptcies'] = self.cumulative_bankruptcies

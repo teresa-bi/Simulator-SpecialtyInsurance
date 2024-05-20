@@ -62,13 +62,13 @@ class GameRunner:
             "multi_agent": {"policies":{
                 # The Policy we are actually learning.
                 "main0": PolicySpec(
-                    observation_space=gym.spaces.Box(low=np.array([-1000000,-1000000,-1000000,-1000000,-1000000,-1000000]), 
-                                                     high=np.array([1000000,1000000,3000000,3000000,3000000,3000000]), dtype = np.float32),
+                    observation_space=gym.spaces.Box(low=np.array([-1000000,-1000000,-1000000,-1000000,-1000000,-1000000,-1000000]), 
+                                                     high=np.array([1000000,1000000,1000000,3000000,3000000,3000000,3000000]), dtype = np.float32),
                     action_space=gym.spaces.Box(0.5, 0.9, dtype = np.float32)
                 ),
                 "main1": PolicySpec(
-                    observation_space=gym.spaces.Box(low=np.array([-1000000,-1000000,-1000000,-1000000,-1000000,-1000000]), 
-                                                     high=np.array([1000000,1000000,3000000,3000000,3000000,3000000]), dtype = np.float32),
+                    observation_space=gym.spaces.Box(low=np.array([-1000000,-1000000,-1000000,-1000000,-1000000,-1000000,-1000000]), 
+                                                     high=np.array([1000000,1000000,1000000,3000000,3000000,3000000,3000000]), dtype = np.float32),
                     action_space=gym.spaces.Box(0.5, 0.9, dtype = np.float32)
                 ),
                 "random": PolicySpec(policy_class=RandomPolicy),
@@ -76,8 +76,8 @@ class GameRunner:
                         "policy_mapping_fn": self.policy_mapping_fn,
                         "policies_to_train":["main0"],
             },
-            "observation_space": gym.spaces.Box(low=np.array([-1000000,-1000000,-1000000,-1000000,-1000000,-1000000]), 
-                                            high=np.array([1000000,1000000,3000000,3000000,3000000,3000000]), dtype = np.float32),
+            "observation_space": gym.spaces.Box(low=np.array([-1000000,-1000000,-1000000,-1000000,-1000000,-1000000,-1000000]), 
+                                            high=np.array([1000000,1000000,1000000,3000000,3000000,3000000,3000000]), dtype = np.float32),
             "action_space": gym.spaces.Box(0.5, 0.9, dtype = np.float32),
             "env_config": insurance_args,
             "evaluation_interval": 2,

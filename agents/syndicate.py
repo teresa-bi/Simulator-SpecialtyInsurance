@@ -159,14 +159,14 @@ class Syndicate:
                                     "risk_factor": risks.get("risk_factor"),
                                     "risk_category": risks.get("risk_category"),
                                     "risk_value": risks.get("risk_value"),
-                                    "syndicate_id": self.syndicate_id,
+                                    "syndicate_id": self.syndicate_id, 
                                     "premium": premium,
                                     "risk_end_time": risks.get("risk_end_time"),
                                     "initial_VaR": risks.get("risk_VaR"),
                                     "pay": None})
         for i in range(len(self.current_capital_category)):
             if i == int(risks.get("risk_category")):
-                self.current_capital_category[i] -= risks.get("risk_value")   
+                self.current_capital_category[i] -= premium
 
     def rereceived_risk(self, risk_id, broker_id, risk_start_time):
         pass
@@ -312,6 +312,7 @@ class Syndicate:
                 self.excess_capital = 0                 
                 self.profits_losses = 0                 
                 self.status = False
+            """
             else:
                 if len(self.current_hold_contracts) < self.insurance_permanency_contracts_limit or avg_capital_left / self.current_capital > self.insurance_permanency_ratio_limit:
                     #Insurers leave the market if they have contracts under the limit or an excess capital over the limit for too long.
@@ -327,7 +328,7 @@ class Syndicate:
                     #self.pay(obligation)                    #This MUST be the last obligation before the dissolution of the firm.
                     self.excess_capital = 0                 
                     self.profits_losses = 0                 
-                    self.status = False
+                    self.status = True"""
 
     def reset_pl(self):
         """Reset_pl Method.

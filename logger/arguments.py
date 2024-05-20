@@ -25,7 +25,7 @@ def get_arguments():
         }
 
     syndicate_args = {"num_syndicates": 100, # Number of syndicates in simulation
-        "initial_capital": 10000000, # Initial capital of each syndicate
+        "initial_capital": 10000, # Initial capital of each syndicate
         "lead_line_size": 0.5, # Default lead quote line size
         "follow_line_size": 0.1, # Default follow quote line size
         "actuarial_pricing_internal_weight": 0.5,  # Whether acturial pricing based on syndicate history or industry histor
@@ -81,7 +81,7 @@ def get_arguments():
     shareholder_args = {"num_shareholders": 1 # Number of shareholders in simulation
         }
 
-    risk_args = {"num_risks": 10001, # Number of risks
+    risk_args = {"num_risks": 10000, # Number of risks
         "num_categories": 4, # Number of peril regions for the catastrophe
         "risk_limit": 10000000, # The maximum value of the risk
         "inaccuracy_riskmodels": 2,

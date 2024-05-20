@@ -11,7 +11,7 @@ class RiskGenerator:
     """
     Generate all the risks for the simulation in the form of RiskModel
     """
-    def __init__(self, num_risk_models, sim_args, risk_args, seed):
+    def __init__(self, num_risk_models, sim_args, broker_args, risk_args, seed):
         """
         Instance of risks for a simulation
 
@@ -25,6 +25,7 @@ class RiskGenerator:
         # Get inputs
         self.num_riskmodels = num_risk_models
         self.sim_args = sim_args
+        self.broker_args = broker_args
         self.risk_args = risk_args
         self.sim_time_span = sim_args["max_time"]
         self.num_risks = risk_args["num_risks"]
@@ -148,6 +149,21 @@ class RiskGenerator:
         risks_categories = np.random.randint(0, self.num_categories, size = self.num_risks)
         risks_factors = self.risk_factor_distribution.rvs(size = self.num_risks)
         risks_values = self.risk_value_distribution.rvs(size = self.num_risks)
+        """
+        time = []
+        for i in range(self.sim_time_span):
+            # For each day generate risks according to poisson distribution
+            np.random.seed(self.seed + i)
+            s = np.random.poisson(self.broker_args["lambda_risks_daily"], int(self.num_risks / self.sim_time_span))
+            for num in range(int(self.num_risks / self.sim_time_span)):
+                if s[num] == 1:
+                    time.append(i+num/(self.num_risks / self.sim_time_span))
+        self.broker_risks = [{"risk_id": i,
+                      "risk_start_time": time[i],
+                      "risk_factor": risks_factors[i],
+                      "risk_category": risks_categories[i],
+                      "risk_value": risks_values[i]
+                      } for i in range(len(time))]"""
         self.broker_risks = [{"risk_id": i,
                       "risk_start_time": i,
                       "risk_factor": risks_factors[i],
