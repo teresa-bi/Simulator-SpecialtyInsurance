@@ -14,12 +14,12 @@ def get_arguments():
         "market_permanency_off": False
         }
 
-    manager_args = {"lead_top_k": 10, # The number of lead syndicates a broker reaches out to
-        "follow_top_k": 10, # The number of follow syndicates a broker reaches out to
+    manager_args = {"lead_top_k": 2, # The number of lead syndicates a broker reaches out to
+        "follow_top_k": 5, # The number of follow syndicates a broker reaches out to
         "topology_broker_syndicate": 10 #####TODO Consider how to set the network topology
         }
 
-    broker_args = {"num_brokers": 1, # Number of brokers in simulation
+    broker_args = {"num_brokers": 100, # Number of brokers in simulation, 5 times of num syndicates
         "lambda_risks_daily": 0.06,  # Lambda value for the Poisson distribution used by the broker process to generate new risks
         "decuctible": 0.2 # Percentage of risk value 
         }

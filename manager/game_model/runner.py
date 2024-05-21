@@ -17,7 +17,9 @@ class GameRunner:
     """
     Game model 
     """
-    def __init__(self, sim_args, manager_args, broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args, seed, brokers, syndicates, reinsurancefirms, shareholders, catastrophes, broker_risks, fair_market_premium, risk_model_configs, with_reinsurance, num_risk_models):
+    def __init__(self, sim_args, manager_args, broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args, 
+                 seed, brokers, syndicates, reinsurancefirms, shareholders, catastrophes, broker_risks, fair_market_premium, 
+                 risk_model_configs, with_reinsurance, num_risk_models, logger):
         self.sim_args = sim_args
         self.manager_args = manager_args
         self.broker_args = broker_args
@@ -41,6 +43,7 @@ class GameRunner:
             self.scenario = str("noreinsurance")
         else:
             self.scenario = str("reinsurance")
+        self.logger = logger
         
     def env_creator(self, env_config):
         """
@@ -109,7 +112,8 @@ class GameRunner:
                 "fair_market_premium": self.fair_market_premium,
                 "risk_model_configs": self.risk_model_configs,
                 "with_reinsurance": self.with_reinsurance,
-                "num_risk_models": self.num_risk_models}
+                "num_risk_models": self.num_risk_models,
+                "logger": self.logger}
         self.ppo_trainer_creator(insurance_args)
         env = MultiAgentBasedModel(**insurance_args)
     

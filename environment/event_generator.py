@@ -67,7 +67,7 @@ class EventGenerator():
 
         return catastrophe_events
 
-    def generate_attritional_loss_events(self, sim_args, risks):
+    def generate_attritional_loss_events(self, sim_args, broker_risks):
         """
         Generate a set of AttritionalLossEvent for an insurance market.
 
@@ -77,13 +77,14 @@ class EventGenerator():
             A list of AddAttritionalLossEvent
         """
         attritional_loss_events = []
+        risk = broker_risks[0]
         for time in range(sim_args.get("max_time")):
-            add_attritional_loss_event = AddAttritionalLossEvent(time, time, risks[0].get("risk_factor"), risks[0].get("risk_category"), risks[0].get("risk_value"))
+            add_attritional_loss_event = AddAttritionalLossEvent(time, time, risk.get("risk_factor"), risk.get("risk_category"), risk.get("risk_value"))
             attritional_loss_events.append(add_attritional_loss_event)
 
         return attritional_loss_events
 
-    def generate_risk_events(self, sim_args, brokers, broker_risks):
+    def generate_risk_events(self, sim_args, broker_risks):
         """
         Generate a set of AddRiskEvent for an insurance market.
 
@@ -97,13 +98,10 @@ class EventGenerator():
             A list of AddRiskEvent
         """
         add_risk_events = []
-        for i in range(len(brokers)):
-            num_risk = 0
-            for k in range(len(broker_risks)):
-                risk = broker_risks[k]
-                add_risk_event = AddRiskEvent(num_risk, brokers[i].broker_id, risk.get("risk_start_time"), risk.get("risk_start_time")+1, risk.get("risk_factor"), risk.get("risk_category"), risk.get("risk_value"))
-                add_risk_events.append(add_risk_event)
-                num_risk += 1
+        for k in range(len(broker_risks)):
+            risk = broker_risks[k]
+            add_risk_event = AddRiskEvent(risk.get("risk_id"), risk.get("broker_id"), risk.get("risk_start_time"), risk.get("risk_start_time")+1, risk.get("risk_factor"), risk.get("risk_category"), risk.get("risk_value"))
+            add_risk_events.append(add_risk_event)
 
         return add_risk_events
 

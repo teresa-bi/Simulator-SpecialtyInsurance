@@ -103,7 +103,7 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
         # Attritioal loss event daily
         self.attritional_loss_events = EventGenerator(self.risk_model_configs).generate_attritional_loss_events(self.sim_args, self.broker_risks)
         # Broker risk event daily: TODO: broker generate risk according to poisson distribution
-        self.broker_risk_events = EventGenerator(self.risk_model_configs).generate_risk_events(self.sim_args, self.brokers, self.broker_risks)
+        self.broker_risk_events = EventGenerator(self.risk_model_configs).generate_risk_events(self.sim_args, self.broker_risks)
         # Broker pay premium according to underwritten contracts
         self.broker_premium_events = EventGenerator(self.risk_model_configs).generate_premium_events(self.sim_args)
         # Broker ask for claim if the contract reaches the end time

@@ -136,30 +136,33 @@ class RiskGenerator:
                                 } for i in range(self.num_riskmodels)]
 
         # Generate risks brought by brokers
-        risks_categories = np.random.randint(0, self.num_categories, size = self.num_risks)
-        risks_factors = self.risk_factor_distribution.rvs(size = self.num_risks)
-        risks_values = self.risk_value_distribution.rvs(size = self.num_risks)
-        """
-        time = []
-        for i in range(self.sim_time_span):
+        risks_schedule = [[] for x in range(self.broker_args["num_brokers"])]
+        risks_categories = [[] for x in range(self.broker_args["num_brokers"])]
+        risks_factors = [[] for x in range(self.broker_args["num_brokers"])]
+        risks_values = [[] for x in range(self.broker_args["num_brokers"])]
+        for i in range(self.broker_args["num_brokers"]):
+            risks_schedule[i] = [] # Record the time for broker risks start time
+            np.random.seed(self.seed + i)
+            risks_categories[i] = np.random.randint(0, self.num_categories, size = self.sim_time_span)
+            risks_factors[i] = self.risk_factor_distribution.rvs(size = self.sim_time_span)
+            risks_values[i] = self.risk_value_distribution.rvs(size = self.sim_time_span)
             # For each day generate risks according to poisson distribution
             np.random.seed(self.seed + i)
-            s = np.random.poisson(self.broker_args["lambda_risks_daily"], int(self.num_risks / self.sim_time_span))
-            for num in range(int(self.num_risks / self.sim_time_span)):
-                if s[num] == 1:
-                    time.append(i+num/(self.num_risks / self.sim_time_span))
-        self.broker_risks = [{"risk_id": i,
-                      "risk_start_time": time[i],
-                      "risk_factor": risks_factors[i],
-                      "risk_category": risks_categories[i],
-                      "risk_value": risks_values[i]
-                      } for i in range(len(time))]"""
-        self.broker_risks = [{"risk_id": i,
-                      "risk_start_time": i,
-                      "risk_factor": risks_factors[i],
-                      "risk_category": risks_categories[i],
-                      "risk_value": risks_values[i]
-                      } for i in range(self.num_risks)]
+            s = np.random.poisson(self.broker_args["lambda_risks_daily"], self.sim_time_span)
+            for k in range(len(s)):
+                risks_schedule[i].append(s[k])
+        risk_num = 0
+        for i in range(self.broker_args["num_brokers"]):
+            for j in range(self.sim_time_span):
+                if risks_schedule[i][j] > 0:
+                    self.broker_risks.append({"risk_id": risk_num,
+                                            "broker_id": i,
+                                            "risk_start_time": j,
+                                            "risk_factor": risks_factors[i][j],
+                                            "risk_category": risks_categories[i][j],
+                                            "risk_value": risks_values[i][j]
+                                            })
+                    risk_num += 1
 
         return self.catastrophes, self.catastrophe_damage, self.broker_risks, self.market_premium, risk_model_configs
 

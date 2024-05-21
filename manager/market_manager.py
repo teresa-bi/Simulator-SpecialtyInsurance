@@ -281,7 +281,7 @@ class MarketManager:
             # Get all the events starting at this time
             starting_broker_risk = None
             for i in range(len(self.broker_risk_events)):
-                if self.broker_risk_events[i].risk_start_time - start_time < 1:
+                if self.broker_risk_events[i].risk_start_time == start_time:
                     starting_broker_risk = self.broker_risk_events[i]
 
             # Move along the corresponding syndicates
