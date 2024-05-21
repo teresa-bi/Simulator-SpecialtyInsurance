@@ -38,7 +38,7 @@ class RiskGenerator:
         self.mean_contract_runtime = sim_args["mean_contract_runtime"]
         self.norm_profit_markup = risk_args["norm_profit_markup"]
         self.money_supply = risk_args["money_supply"]
-        self.inaccuracy_riskmodels = risk_args["inaccuracy_riskmodels"]
+        self.inaccuracy_riskmodels = risk_args["riskmodel_inaccuracy"]
         self.norm_profit_markup = risk_args["norm_profit_markup"]
         self.value_at_risk_tail_probability = risk_args["value_at_risk_tail_probability"]
         self.risk_limit = risk_args["risk_limit"]
@@ -54,9 +54,9 @@ class RiskGenerator:
         self.risk_factor_upper_bound = risk_args["risk_factor_upper_bound"]
         # Init list of risks
         self.catastrophes = []
+        self.catastrophe_damage = [] 
         self.broker_risks = []
         self.seed  = seed
-        self.riskmodel = None
 
     def get_all_riskmodel_combinations(self, n, rm_factor):
         riskmodels = []
@@ -93,7 +93,9 @@ class RiskGenerator:
                       "catastrophe_category": j,
                       "catastrophe_value": damage_value,
                       })
+                    self.catastrophe_damage.append(damage_value)
                     i += 1
+                    
 
         # Compute remaining parameters
         self.risk_factor_spread = self.risk_factor_upper_bound - self.risk_factor_lower_bound
@@ -132,18 +134,6 @@ class RiskGenerator:
                                 "var_tail_prob": self.value_at_risk_tail_probability,
                                 "inaccuracy_by_categ": self.inaccuracy[i]
                                 } for i in range(self.num_riskmodels)]
-        
-        self.riskmodel = RiskModel(risk_model_configs[0]["damage_distribution"], 
-                                   risk_model_configs[0]["expire_immediately"],
-                                   risk_model_configs[0]["catastrophe_separation_distribution"],
-                                   risk_model_configs[0]["norm_premium"],
-                                   risk_model_configs[0]["num_categories"],
-                                   risk_model_configs[0]["risk_value_mean"],
-                                   risk_model_configs[0]["risk_factor_mean"],
-                                   risk_model_configs[0]["norm_profit_markup"],
-                                   risk_model_configs[0]["margin_of_safety"],
-                                   risk_model_configs[0]["var_tail_prob"],
-                                   risk_model_configs[0]["inaccuracy_by_categ"])
 
         # Generate risks brought by brokers
         risks_categories = np.random.randint(0, self.num_categories, size = self.num_risks)
@@ -170,11 +160,8 @@ class RiskGenerator:
                       "risk_category": risks_categories[i],
                       "risk_value": risks_values[i]
                       } for i in range(self.num_risks)]
-        for i in range(len(self.broker_risks)):
-            risks_VaR = self.riskmodel.calculate_VaR(self.broker_risks[i])
-            self.broker_risks[i].update({"risk_VaR": risks_VaR})
 
-        return self.catastrophes, self.broker_risks, self.market_premium, risk_model_configs
+        return self.catastrophes, self.catastrophe_damage, self.broker_risks, self.market_premium, risk_model_configs
 
     def data(self):
         """

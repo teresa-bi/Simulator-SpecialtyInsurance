@@ -12,7 +12,7 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
 
     def __init__(self, sim_args, manager_args, broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args, 
                  brokers, syndicates, reinsurancefirms, shareholders, catastrophes, broker_risks, fair_market_premium,
-                 risk_model_configs, with_reinsurance, num_risk_models, dt = 1):
+                 risk_model_configs, with_reinsurance, num_risk_models, logger, dt = 1):
         self.sim_args = sim_args
         self.maxstep = self.sim_args["max_time"]
         self.manager_args = manager_args
@@ -32,6 +32,7 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
         self.risk_model_configs = risk_model_configs
         self.with_reinsurance = with_reinsurance
         self.num_risk_models = num_risk_models
+        self.logger = logger
         self.dt = dt
         self.mm = None
         self.event_handler = None
@@ -77,19 +78,8 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
                                                    risk_model_configs = self.risk_model_configs, 
                                                    with_reinsurance = self.with_reinsurance, 
                                                    num_risk_models = self.num_risk_models,
+                                                   logger = self.logger,
                                                    dt = 1)
-        
-        self.riskmodel = RiskModel(self.risk_model_configs[0]["damage_distribution"], 
-                                   self.risk_model_configs[0]["expire_immediately"],
-                                   self.risk_model_configs[0]["catastrophe_separation_distribution"],
-                                   self.risk_model_configs[0]["norm_premium"],
-                                   self.risk_model_configs[0]["num_categories"],
-                                   self.risk_model_configs[0]["risk_value_mean"],
-                                   self.risk_model_configs[0]["risk_factor_mean"],
-                                   self.risk_model_configs[0]["norm_profit_markup"],
-                                   self.risk_model_configs[0]["margin_of_safety"],
-                                   self.risk_model_configs[0]["var_tail_prob"],
-                                   self.risk_model_configs[0]["inaccuracy_by_categ"])
 
         # Log data
         self.cumulative_bankruptcies = 0
@@ -101,8 +91,6 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
         self.total_profitslosses =  0.0
         self.total_contracts = 0.0
         self.operational_syndicates = 0.0
-        self.logger = logger.Logger(self.num_risk_models, self.catastrophes, self.brokers, self.syndicates)
-
         # Reset the environmnet
         self.reset()
 
@@ -157,8 +145,7 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
         self.cumulative_market_exits = 0
         self.cumulative_unrecovered_claims = 0.0
         self.cumulative_claims = 0.0
-        self.logger = logger.Logger(self.num_risk_models, self.catastrophes, self.mm.market.brokers, self.mm.market.syndicates)
-
+        
         # Initiate time step
         self.timestep = -1
         self.step_track = 0
@@ -196,13 +183,13 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
 
         cash_reserved_by_categ_store = np.copy(cash_reserved_by_categ)
         
-        percentage_value_at_risk = self.riskmodel.getPPF(risk_categ, tailSize=self.riskmodel.var_tail_prob)
-        expected_damage = percentage_value_at_risk * risk_value * risk_factor * self.riskmodel.inaccuracy[risk_categ]
+        percentage_value_at_risk = self.mm.market.syndicates[syndicate_id].riskmodel.getPPF(risk_categ, tailSize=self.mm.market.syndicates[syndicate_id].riskmodel.var_tail_prob)
+        expected_damage = percentage_value_at_risk * risk_value * risk_factor * self.mm.market.syndicates[syndicate_id].riskmodel.inaccuracy[risk_categ]
         expected_claim = min(expected_damage, risk_value * 1.0) - risk_value * 0.3
 
         # record liquidity requirement and apply margin of safety for liquidity requirement
 
-        cash_reserved_by_categ_store[risk_categ] += expected_claim * self.riskmodel.margin_of_safety  #Here it is computed how the cash reserved by category would change if the new reinsurance risk was accepted
+        cash_reserved_by_categ_store[risk_categ] += expected_claim * self.mm.market.syndicates[syndicate_id].riskmodel.margin_of_safety  #Here it is computed how the cash reserved by category would change if the new reinsurance risk was accepted
 
         mean, std_post = self.get_mean_std(cash_reserved_by_categ_store)     #Here it is computed the mean, std of the cash reserved by category after the new risk of reinrisk is accepted
 
@@ -244,7 +231,7 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
                 self.adjust_market_premium(capital=sum_capital)
                 action_dict.update({self.mm.market.syndicates[i].syndicate_id: self.market_premium})
             else: 
-                expected_profits, acceptable_by_category, cash_left_by_categ, var_per_risk_per_categ, self.excess_capital  = self.riskmodel.evaluate(self.mm.market.syndicates[i].current_hold_contracts, self.mm.market.syndicates[i].current_capital)
+                expected_profits, acceptable_by_category, cash_left_by_categ, var_per_risk_per_categ, self.excess_capital  = self.mm.market.syndicates[i].riskmodel.evaluate(self.mm.market.syndicates[i].current_hold_contracts, self.mm.market.syndicates[i].current_capital)
                 risk_categ = obs_dict[self.mm.market.syndicates[i].syndicate_id][0]
                 risk_value = obs_dict[self.mm.market.syndicates[i].syndicate_id][1]
                 risk_factor = obs_dict[self.mm.market.syndicates[i].syndicate_id][2]

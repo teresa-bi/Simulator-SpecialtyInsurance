@@ -71,8 +71,7 @@ class MarketManager:
                 "risk_end_time": starting_broker_risk.risk_end_time,
                 "risk_factor": starting_broker_risk.risk_factor,
                 "risk_category": starting_broker_risk.risk_category,
-                "risk_value": starting_broker_risk.risk_value,
-                "risk_VaR": starting_broker_risk.risk_VaR}
+                "risk_value": starting_broker_risk.risk_value}
         if len(self.actions_to_apply) > 0:
             lead_syndicate_id = self.actions_to_apply[0].syndicate
             lead_line_size = 0.5

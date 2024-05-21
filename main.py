@@ -44,20 +44,20 @@ if __name__ == '__main__':
 
         # Create scenario
         with_reinsurance = False
-        num_risk_models = 4
-        catastrophes, broker_risks, fair_market_premium, risk_model_configs = RiskGenerator(num_risk_models, sim_args, broker_args, risk_args, seed).generate_risks()
+        num_risk_models = risk_args["num_riskmodels"]
+        catastrophes, catastrophe_damage, broker_risks, fair_market_premium, risk_model_configs = RiskGenerator(num_risk_models, sim_args, broker_args, risk_args, seed).generate_risks()
         brokers, syndicates, reinsurancefirms, shareholders = MarketGenerator(with_reinsurance, num_risk_models, sim_args, broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_model_configs).generate_agents()
+        log = logger.Logger(risk_args["num_riskmodels"], catastrophes, catastrophe_damage, brokers, syndicates)
 
         # Run the simulation
         model = 1
         if model == 0: 
-            runner = AIRunner(sim_args, manager_args, broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args, seed, brokers, syndicates, reinsurancefirms, shareholders, catastrophes, broker_risks, fair_market_premium, risk_model_configs, with_reinsurance, num_risk_models)
+            runner = AIRunner(sim_args, manager_args, broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args, seed, brokers, syndicates, reinsurancefirms, shareholders, catastrophes, broker_risks, fair_market_premium, risk_model_configs, with_reinsurance, num_risk_models, log)
         elif model == 1:
-            runner = GameRunner(sim_args, manager_args, broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args, seed, brokers, syndicates, reinsurancefirms, shareholders, catastrophes, broker_risks, fair_market_premium, risk_model_configs, with_reinsurance, num_risk_models)
+            runner = GameRunner(sim_args, manager_args, broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args, seed, brokers, syndicates, reinsurancefirms, shareholders, catastrophes, broker_risks, fair_market_premium, risk_model_configs, with_reinsurance, num_risk_models, log)
         logs = runner.run()
 
         # Restore the log
-        L = logger.Logger()
-        L.restore_logger_object(list(logs))
-        L.save_log()
+        log.restore_logger_object(list(logs))
+        log.save_log()
 

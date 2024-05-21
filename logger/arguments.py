@@ -24,8 +24,8 @@ def get_arguments():
         "decuctible": 0.2 # Percentage of risk value 
         }
 
-    syndicate_args = {"num_syndicates": 100, # Number of syndicates in simulation
-        "initial_capital": 10000, # Initial capital of each syndicate
+    syndicate_args = {"num_syndicates": 20, # Number of syndicates in simulation
+        "initial_capital": 20000000, # Initial capital of each syndicate
         "lead_line_size": 0.5, # Default lead quote line size
         "follow_line_size": 0.1, # Default follow quote line size
         "actuarial_pricing_internal_weight": 0.5,  # Whether acturial pricing based on syndicate history or industry histor
@@ -40,7 +40,7 @@ def get_arguments():
         "market_entry_probability": 0.3, # Default probability of entering the market
         "interest_rate": 0.001, # Interest rate for the capital monthly
         "exit_capital_threshold": 0.6, # Capital employment threshold for insurance firm exit
-        "cash_permanency_limit": 100,
+        "cash_permanency_limit": 100, # This parameter enforces the limit under which the firms leave the market because they cannot underwrite anything
         "exit_time_limit": 24, # Time limit for insurance firm exit
         "premium_sensitivity": 5, # Syndicate premium sensitivity parameter 1.29e-9?
         "initial_acceptance_threshold": 0.5,
@@ -57,7 +57,11 @@ def get_arguments():
         "insurers_balance_ratio": 0.1, # This ratio represents how low we want to keep the standard deviation of the cash reserved below the mean for insurers. Lower means more balanced
         "insurers_recursion_limit": 50, # Intensity of the recursion algorithm to balance the portfolio of risks for insurers
         "insurance_permanency_contracts_limit": 4,
-        "insurance_permanency_ratio_limit": 0.6
+        "insurance_permanency_ratio_limit": 0.6,
+        "insurance_permanency_time_constraint": 24, # Defines the period that the insurers wait if they have few capital or few contract before leaving the market
+        "insurance_retention": 0.85,
+        "premium_sensitivity": 5, # This parameter represents how sensitive is the variation of the insurance premium with respect of the capital of the market
+        "insurers_recursion_limit": 50 # Intensity of the recursion algorithm to balance the portfolio of risks for insurers 
         }
 
     reinsurancefirm_args = {"num_reinsurancefirms": 4, # Number of reinsurance firms in simulation
@@ -81,13 +85,16 @@ def get_arguments():
     shareholder_args = {"num_shareholders": 1 # Number of shareholders in simulation
         }
 
-    risk_args = {"num_risks": 10000, # Number of risks
+    risk_args = {"num_risks": 20000, # Number of risks
         "num_categories": 4, # Number of peril regions for the catastrophe
+        "num_riskmodels": 4, # Number of risk models
         "risk_limit": 10000000, # The maximum value of the risk
-        "inaccuracy_riskmodels": 2,
+        "riskmodel_inaccuracy": 2,
         "riskmodel_margin_of_safety": 2,
+        "margin_increase": 0, # This parameter modifies the margin of safety depending on the number of risk models available in the market, when is 0 all risk models have the same margin of safety
         "value_at_risk_tail_probability": 0.005,
         "norm_profit_markup": 0.15,
+        "dividend_share_of_profits": 0.4,
         "catastrophe_time_mean_separation": 100/3.,
         "lambda_attritional_loss": 0.1, # Lambda value for the Poisson distribution for the number of attritional claims generated per year
         "cov_attritional_loss": 1, # Coefficient of variation for the gamma distribution which generates the severity of attritional claim event
@@ -100,9 +107,7 @@ def get_arguments():
         "risk_factor_lower_bound": 0.4,
         "risk_factor_upper_bound": 0.6,
         "expire_immediately": False,
-        "money_supply": 2000000000,
-        "value_at_risk_tail_probability": 0.005
-
+        "money_supply": 2000000000
         }
     
     seed = 234234

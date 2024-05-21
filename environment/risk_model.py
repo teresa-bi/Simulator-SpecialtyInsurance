@@ -149,8 +149,3 @@ class RiskModel:
         expected_profits_proportional, remaining_acceptable_by_categ, cash_left_by_categ, var_per_risk_per_categ = self.evaluate_proportional(risks, cash_left_by_categ)
             
         return expected_profits_proportional, remaining_acceptable_by_categ, cash_left_by_categ, var_per_risk_per_categ, min(cash_left_by_categ)
-
-    def calculate_VaR(self, offered_risk):
-        # Prepare variables       
-        var_per_risk = self.getPPF(categ_id=offered_risk.get("risk_category"), tailSize=self.var_tail_prob) * self.init_average_risk_factor * self.init_average_exposure * self.margin_of_safety
-        return var_per_risk[0]

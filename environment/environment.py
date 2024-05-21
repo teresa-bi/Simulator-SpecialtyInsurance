@@ -39,7 +39,7 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
 
     """
 
-    def __init__(self, sim_args, manager_args, broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args, brokers, syndicates, reinsurancefirms, shareholders, catastrophes, broker_risks, fair_market_premium, risk_model_configs, with_reinsurance, num_risk_models, dt = 1):
+    def __init__(self, sim_args, manager_args, broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args, brokers, syndicates, reinsurancefirms, shareholders, catastrophes, broker_risks, fair_market_premium, risk_model_configs, with_reinsurance, num_risk_models, logger, dt = 1):
 
         self.sim_args = sim_args
         self.maxstep = self.sim_args["max_time"]
@@ -64,9 +64,12 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
         self.risk_model_configs = risk_model_configs
         self.with_reinsurance = with_reinsurance
         self.num_risk_models = num_risk_models
+        self.logger = logger
         self.dt = dt
         self.mm = None
         self.event_handler = None
+
+        super(MultiAgentEnv, self).__init__()
 
         # Active syndicate list
         self.syndicate_active_list = []

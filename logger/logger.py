@@ -15,11 +15,11 @@ LOG_DEFAULT = ('total_cash total_excess_capital total_profits_losses total_contr
                'rc_event_schedule_initial rc_event_damage_initial number_riskmodels'
                 ).split('')
 """
-LOG_DEFAULT = ('total_cash total_excess_capital total_profits_losses total_contracts total_operational market_premium cumulative_bankruptcies cumulative_market_exits cumulative_unrecovered_claims cumulative_claims insurance_firms_cash rc_event_schedule_initial number_riskmodels'
+LOG_DEFAULT = ('total_cash total_excess_capital total_profits_losses total_contracts total_operational market_premium cumulative_bankruptcies cumulative_market_exits cumulative_unrecovered_claims cumulative_claims insurance_firms_cash risk_event_schedule_initial risk_event_damage_initial number_riskmodels'
                 ).split(" ")
 
 class Logger():
-    def __init__(self, no_riskmodels=None, risk_event_scehdule_initial=None, initial_broker=None, initial_syndicate=None):
+    def __init__(self, no_riskmodels=None, risk_event_scehdule_initial=None, risk_event_damage_initial=None, initial_broker=None, initial_syndicate=None):
         """
         Record initial event schedule of simulation run
         Prepare history_logs attribute as dict for the logs
@@ -38,7 +38,8 @@ class Logger():
         self.number_riskmodels = no_riskmodels
 
         # Record initial event schedule
-        self.rc_event_schedule_initial = risk_event_scehdule_initial
+        self.risk_event_schedule_initial = risk_event_scehdule_initial
+        self.risk_event_damage_initial = risk_event_damage_initial
 
         # Record agent information
         self.broker = initial_broker
@@ -63,7 +64,8 @@ class Logger():
         self.history_logs['cumulative_unrecovered_claims'] = []
         self.history_logs['cumulative_claims'] = []
         self.history_logs["number_riskmodels"] = []
-        self.history_logs["rc_event_schedule_initial"] = []
+        self.history_logs["risk_event_schedule_initial"] = []
+        self.history_logs["risk_event_damage_initial"] = []
 
     def record_data(self, data_dict):
         """
@@ -121,7 +123,8 @@ class Logger():
         Transfer the log in the cloud
         """
         self.history_logs["number_riskmodels"] = self.number_riskmodels
-        self.history_logs["rc_event_schedule_initial"] = self.rc_event_schedule_initial
+        self.history_logs["risk_event_schedule_initial"] = self.risk_event_schedule_initial
+        self.history_logs["risk_event_damage_initial"] = self.risk_event_damage_initial
 
         if requested_logs == None:
             requested_logs = LOG_DEFAULT
@@ -140,9 +143,10 @@ class Logger():
         log = self.delistify(log)
 
         # Extract environment variables
-        self.rc_event_schedule_initial = log["rc_event_schedule_initial"]
+        self.risk_event_schedule_initial = log["risk_event_schedule_initial"]
+        self.risk_event_damage_initial = log["risk_event_damage_initial"]
         self.number_riskmodels = log["number_riskmodels"]
-        del log["rc_event_schedule_initial"], log["number_riskmodels"]
+        del log["risk_event_schedule_initial"], log["risk_event_damage_initial"], log["number_riskmodels"]
 
         # Restore history log
         self.history_logs = log
