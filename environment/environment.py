@@ -90,8 +90,8 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
         self._spaces_in_preferred_format = True
         gym.logger.set_level(40)
         self.observation_space = gym.spaces.Dict({
-            self.syndicates[i].syndicate_id: gym.spaces.Box(low=np.array([-1000000,-1000000,-1000000,-1000000,-1000000,-1000000]), 
-                                                     high=np.array([1000000,1000000,1000000,1000000,1000000,1000000]), dtype = np.float32) for i in range(self.n)
+            self.syndicates[i].syndicate_id: gym.spaces.Box(low=np.array([-1000000,-1000000,-1000000,-1000000]), 
+                                                     high=np.array([1000000,1000000,1000000,1000000]), dtype = np.float32) for i in range(self.n)
         })
         # TODO: line size can be chosen from 0.0 to <1.0
         self.action_space = gym.spaces.Dict({
@@ -139,7 +139,7 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
         # Create action map and state list
         info_dict = {}
         for sy in range(len(self.mm.market.syndicates)):
-            self.action_map_dict[self.mm.market.syndicates[sy].syndicate_id] = self.action_map_creator(self.mm.market.syndicates[sy], 0)
+            self.action_map_dict[self.mm.market.syndicates[sy].syndicate_id] = self.action_map_creator(self.mm.market.syndicates[sy], 0, self.broker_risk_events[0])
             self.state_encoder_dict[self.mm.market.syndicates[sy].syndicate_id] = self.state_encoder(self.mm.market.syndicates[sy].syndicate_id)
             info_dict[self.mm.market.syndicates[sy].syndicate_id] = None
 
@@ -284,12 +284,12 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
 
         ### Observation Space:             
         obs = []
-        for risk in range(len(self.broker_risk_events)):
-            if self.broker_risk_events[risk].risk_start_time == self.timestep+1:
-                print(self.timestep+1)
-                # Catastrophe risk category and risk value
-                obs.append(self.broker_risk_events[risk].risk_category)
-                obs.append(self.broker_risk_events[risk].risk_value)
+        #for risk in range(len(self.broker_risk_events)):
+         #   if self.broker_risk_events[risk].risk_start_time == self.timestep+1:
+          #      print(self.timestep+1)
+           #     # Catastrophe risk category and risk value
+            #    obs.append(self.broker_risk_events[risk].risk_category)
+             #   obs.append(self.broker_risk_events[risk].risk_value)
         
         # Syndicates status current capital in 
         for num in range(len(self.syndicates[int(syndicate_id)].current_capital_category)):
@@ -297,7 +297,7 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
             
         return obs
 
-    def action_map_creator(self, syndicate, line_size):
+    def action_map_creator(self, syndicate, line_size, num_in_total_action):
 
         action_map = None
         for risk in range(len(broker_risk_events)):

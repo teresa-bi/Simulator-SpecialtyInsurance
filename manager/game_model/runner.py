@@ -65,13 +65,13 @@ class GameRunner:
             "multi_agent": {"policies":{
                 # The Policy we are actually learning.
                 "main0": PolicySpec(
-                    observation_space=gym.spaces.Box(low=np.array([-1000000,-1000000,-1000000,-1000000,-1000000,-1000000,-1000000]), 
-                                                     high=np.array([1000000,1000000,1000000,3000000,3000000,3000000,3000000]), dtype = np.float32),
+                    observation_space=gym.spaces.Box(low=np.array([-1000000,-1000000,-1000000,-1000000]), 
+                                                     high=np.array([3000000,3000000,3000000,3000000]), dtype = np.float32),
                     action_space=gym.spaces.Box(0.5, 0.9, dtype = np.float32)
                 ),
                 "main1": PolicySpec(
-                    observation_space=gym.spaces.Box(low=np.array([-1000000,-1000000,-1000000,-1000000,-1000000,-1000000,-1000000]), 
-                                                     high=np.array([1000000,1000000,1000000,3000000,3000000,3000000,3000000]), dtype = np.float32),
+                    observation_space=gym.spaces.Box(low=np.array([-1000000,-1000000,-1000000,-1000000]), 
+                                                     high=np.array([3000000,3000000,3000000,3000000]), dtype = np.float32),
                     action_space=gym.spaces.Box(0.5, 0.9, dtype = np.float32)
                 ),
                 "random": PolicySpec(policy_class=RandomPolicy),
@@ -79,8 +79,8 @@ class GameRunner:
                         "policy_mapping_fn": self.policy_mapping_fn,
                         "policies_to_train":["main0"],
             },
-            "observation_space": gym.spaces.Box(low=np.array([-1000000,-1000000,-1000000,-1000000,-1000000,-1000000,-1000000]), 
-                                            high=np.array([1000000,1000000,1000000,3000000,3000000,3000000,3000000]), dtype = np.float32),
+            "observation_space": gym.spaces.Box(low=np.array([-1000000,-1000000,-1000000,-1000000]), 
+                                            high=np.array([3000000,3000000,3000000,3000000]), dtype = np.float32),
             "action_space": gym.spaces.Box(0.5, 0.9, dtype = np.float32),
             "env_config": insurance_args,
             "evaluation_interval": 2,
@@ -124,7 +124,7 @@ class GameRunner:
 
         while not terminated_dict["__all__"]:
         
-            action_dict = env.get_actions(obs_dict, total_steps)  
+            action_dict = env.get_actions(total_steps)  
             total_steps += 1
         
             obs_dict, reward_dict, terminated_dict, flag_dict, info_dict = env.step(action_dict)
