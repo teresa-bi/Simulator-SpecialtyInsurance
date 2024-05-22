@@ -14,9 +14,10 @@ class MarketManager:
     Manage and evolve the market.
     """
 
-    def __init__(self, maxstep, manager_args, brokers, syndicates, reinsurancefirms, shareholders, catastrophes, fair_market_premium, risk_model_configs, with_reinsurance, num_risk_models, 
+    def __init__(self, maxstep, sim_args, manager_args, brokers, syndicates, reinsurancefirms, shareholders, catastrophes, fair_market_premium, risk_model_configs, with_reinsurance, num_risk_models, 
                  catastrophe_events, attritional_loss_events, broker_risk_events, broker_premium_events, broker_claim_events, event_handler, logger = None, time = 0):
         self.maxstep = maxstep
+        self.sim_args = sim_args
         self.manager_args = manager_args
         self.brokers = brokers
         self.syndicates = syndicates
@@ -69,7 +70,7 @@ class MarketManager:
             broker_id = starting_broker_risk[num].broker_id
             risks = {"risk_id": starting_broker_risk[num].risk_id,
                 "risk_start_time": starting_broker_risk[num].risk_start_time,
-                "risk_end_time": starting_broker_risk[num].risk_end_time,
+                "risk_end_time": starting_broker_risk[num].risk_end_time+self.sim_args["mean_contract_runtime"],
                 "risk_factor": starting_broker_risk[num].risk_factor,
                 "risk_category": starting_broker_risk[num].risk_category,
                 "risk_value": starting_broker_risk[num].risk_value}
@@ -125,10 +126,10 @@ class MarketManager:
                     affected_contract.append(self.market.brokers[broker_id].underwritten_contracts[num])
             for num in range(len(affected_contract)):
                 premium, lead_syndicate_premium, follow_syndicates_premium, lead_syndicate_id, follow_syndicates_id, risk_category = self.market.brokers[broker_id].pay_premium(affected_contract[num])
-                self.market.syndicates[int(lead_syndicate_id)].receive_premium(lead_syndicate_premium, risk_category)
+                self.market.syndicates[int(lead_syndicate_id)].receive_premium(lead_syndicate_premium*1000, risk_category)
                 for follow_id in range(len(follow_syndicates_id)):
                     if follow_syndicates_id[follow_id] != None:
-                        self.market.syndicates[int(follow_syndicates_id[follow_id])].receive_premium(follow_syndicates_premium[follow_id], risk_category)
+                        self.market.syndicates[int(follow_syndicates_id[follow_id])].receive_premium(follow_syndicates_premium[follow_id]*1000, risk_category)
     
     def run_broker_claim(self, starting_broker_claim):
         """

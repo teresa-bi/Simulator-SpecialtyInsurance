@@ -126,7 +126,7 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
         # Initiate event handler
         self.event_handler = EventHandler(self.maxstep, self.catastrophe_events, self.attritional_loss_events, self.broker_risk_events, self.broker_premium_events, self.broker_claim_events)
         # Initiate market manager
-        self.mm = MarketManager(self.maxstep, self.manager_args, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.catastrophes, self.fair_market_premium, self.risk_model_configs, self.with_reinsurance, self.num_risk_models, 
+        self.mm = MarketManager(self.maxstep, self.sim_args, self.manager_args, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.catastrophes, self.fair_market_premium, self.risk_model_configs, self.with_reinsurance, self.num_risk_models, 
                                self.catastrophe_events, self.attritional_loss_events, self.broker_risk_events, self.broker_premium_events, self.broker_claim_events, self.event_handler)
         #self.mm.evolve(self.dt)
         
