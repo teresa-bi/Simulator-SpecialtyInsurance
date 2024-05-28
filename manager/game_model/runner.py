@@ -18,7 +18,7 @@ class GameRunner:
     Game model 
     """
     def __init__(self, sim_args, manager_args, broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args, 
-                 seed, brokers, syndicates, reinsurancefirms, shareholders, catastrophes, broker_risks, fair_market_premium, 
+                 seed, brokers, syndicates, reinsurancefirms, shareholders, catastrophes, catastrophe_time, catastrophe_damage, broker_risks, fair_market_premium, 
                  risk_model_configs, with_reinsurance, num_risk_models, logger):
         self.sim_args = sim_args
         self.manager_args = manager_args
@@ -33,6 +33,8 @@ class GameRunner:
         self.reinsurancefirms = reinsurancefirms
         self.shareholders = shareholders
         self.catastrophes = catastrophes
+        self.catastrophe_time = catastrophe_time
+        self.catastrophe_damage = catastrophe_damage
         self.broker_risks = broker_risks
         self.fair_market_premium = fair_market_premium
         self.risk_model_configs = risk_model_configs
@@ -108,6 +110,8 @@ class GameRunner:
                 "reinsurancefirms": self.reinsurancefirms,
                 "shareholders": self.shareholders,
                 "catastrophes": self.catastrophes,
+                "catastrophe_time": self.catastrophe_time,
+                "catastrophe_damage": self.catastrophe_damage,
                 "broker_risks": self.broker_risks,
                 "fair_market_premium": self.fair_market_premium,
                 "risk_model_configs": self.risk_model_configs,
@@ -130,6 +134,6 @@ class GameRunner:
             obs_dict, reward_dict, terminated_dict, flag_dict, info_dict = env.step(action_dict)
 
             # Save data for every step
-            env.save_data()
+            env.save_data(total_steps)
         log = env.obtain_log()
         return log

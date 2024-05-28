@@ -15,9 +15,9 @@ bankruptcies = data[0]['cumulative_bankruptcies']
 market_exits = data[0]['cumulative_market_exits']
 unrecovered_claims = data[0]['cumulative_unrecovered_claims']
 claims = data[0]['cumulative_claims']
+catastrophe_events = data[0]['catastrophe_time']
+catastrophe_events_damage = data[0]['catastrophe_damage']
 insurance_firms_cash = data[0]['insurance_firms_cash']
-#catastrophe_events = data[0]['rc_event_schedule_initial']
-#catastrophe_events_damage = data[0]['rc_event_damage_initial']
 #risk_models = data[0]['number_riskmodels']
 
 rfile.close()
@@ -29,34 +29,40 @@ hs = cash
 ps = premium
 ucl = unrecovered_claims
 
-#cse = catastrophe_events
-#csd = catastrophe_events_damage
+cse = catastrophe_events
+csd = catastrophe_events_damage
 
 fig1 = plt.figure()
-ax0 = fig1.add_subplot(611)
+ax0 = fig1.add_subplot(811)
 ax0.get_xaxis().set_visible(False)
 ax0.plot(range(len(cs)), cs,"b")
 ax0.set_ylabel("Contracts")
-ax1 = fig1.add_subplot(612)
+ax1 = fig1.add_subplot(812)
 ax1.get_xaxis().set_visible(False)
 ax1.plot(range(len(os)), os,"b")
 ax1.set_ylabel("Active firms")
-ax2 = fig1.add_subplot(613)
+ax2 = fig1.add_subplot(813)
 ax2.get_xaxis().set_visible(False)
 ax2.plot(range(len(hs)), hs,"b")
 ax2.set_ylabel("Cash")
-ax3 = fig1.add_subplot(614)
+ax3 = fig1.add_subplot(814)
 ax3.get_xaxis().set_visible(False)
 ax3.plot(range(len(pls)), pls,"b")
 ax3.set_ylabel("Profits, Losses")
-ax4 = fig1.add_subplot(615)
+ax4 = fig1.add_subplot(815)
 ax4.get_xaxis().set_visible(False)
 ax4.plot(range(len(ps)), ps,"k")
 ax4.set_ylabel("Premium")
-ax5 = fig1.add_subplot(616)
+ax5 = fig1.add_subplot(816)
 ax5.plot(range(len(ucl)), ucl,"k")
 ax5.set_ylabel("Uncovered Claims")
-ax5.set_xlabel("Time")
+ax6 = fig1.add_subplot(817)
+ax6.plot(range(len(cse)), cse,"b")
+ax6.set_ylabel("Cata Time")
+ax7 = fig1.add_subplot(818)
+ax7.plot(range(len(csd)), csd,"b")
+ax7.set_ylabel("Cata Value")
+ax7.set_xlabel("Time")
 
 plt.savefig("data/single_replication_pt1.pdf")
 

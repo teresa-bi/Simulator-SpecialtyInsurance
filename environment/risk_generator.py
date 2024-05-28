@@ -54,6 +54,7 @@ class RiskGenerator:
         self.risk_factor_upper_bound = risk_args["risk_factor_upper_bound"]
         # Init list of risks
         self.catastrophes = []
+        self.catastrophe_time = []
         self.catastrophe_damage = [] 
         self.broker_risks = []
         self.seed  = seed
@@ -91,11 +92,16 @@ class RiskGenerator:
                     self.catastrophes.append({"catastrophe_id": i,
                       "catastrophe_start_time": risk_start_time,
                       "catastrophe_category": j,
-                      "catastrophe_value": damage_value,
+                      "catastrophe_value": damage_value[0],
                       })
-                    self.catastrophe_damage.append(damage_value)
                     i += 1
-                    
+        self.catastrophe_time = [0 for x in range(self.sim_time_span)]
+        self.catastrophe_damage = [0 for x in range(self.sim_time_span)]
+        for i in range(self.sim_time_span):
+            for k in range(len(self.catastrophes)):
+                if self.catastrophes[k]["catastrophe_start_time"] == i:
+                    self.catastrophe_time[i] = 1
+                    self.catastrophe_damage[i] = self.catastrophes[k]["catastrophe_value"]
 
         # Compute remaining parameters
         self.risk_factor_spread = self.risk_factor_upper_bound - self.risk_factor_lower_bound
@@ -164,7 +170,7 @@ class RiskGenerator:
                                             })
                     risk_num += 1
 
-        return self.catastrophes, self.catastrophe_damage, self.broker_risks, self.market_premium, risk_model_configs
+        return self.catastrophes, self.catastrophe_time, self.catastrophe_damage, self.broker_risks, self.market_premium, risk_model_configs
 
     def data(self):
         """

@@ -25,8 +25,8 @@ def get_arguments():
         }
 
     syndicate_args = {"num_syndicates": 20, # Number of syndicates in simulation
-        "initial_capital": 20000000, # Initial capital of each syndicate
-        "lead_line_size": 0.5, # Default lead quote line size
+        "initial_capital": 80000, # Initial capital of each syndicate
+        "lead_line_size": 0.9, # Default lead quote line size
         "follow_line_size": 0.1, # Default follow quote line size
         "actuarial_pricing_internal_weight": 0.5,  # Whether acturial pricing based on syndicate history or industry histor
         "loss_experiency_weight": 0.2, # Whether actuarial pricing weighs the past losses more than recent losses 

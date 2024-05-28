@@ -39,7 +39,8 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
 
     """
 
-    def __init__(self, sim_args, manager_args, broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args, brokers, syndicates, reinsurancefirms, shareholders, catastrophes, broker_risks, fair_market_premium, risk_model_configs, with_reinsurance, num_risk_models, logger, dt = 1):
+    def __init__(self, sim_args, manager_args, broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args, brokers, syndicates, reinsurancefirms, shareholders, 
+                 catastrophes, catastrophe_time, catastrophe_damage, broker_risks, fair_market_premium, risk_model_configs, with_reinsurance, num_risk_models, logger, dt = 1):
 
         self.sim_args = sim_args
         self.maxstep = self.sim_args["max_time"]
@@ -58,6 +59,8 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
         self.shareholders = shareholders
         self.initial_shareholders = shareholders
         self.catastrophes = catastrophes
+        self.catastrophe_time = catastrophe_time
+        self.catastrophe_damage = catastrophe_damage
         self.initial_catastrophes = catastrophes
         self.broker_risks = broker_risks
         self.fair_market_premium = fair_market_premium
@@ -126,7 +129,7 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
         # Initiate event handler
         self.event_handler = EventHandler(self.maxstep, self.catastrophe_events, self.attritional_loss_events, self.broker_risk_events, self.broker_premium_events, self.broker_claim_events)
         # Initiate market manager
-        self.mm = MarketManager(self.maxstep, self.sim_args, self.manager_args, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.catastrophes, self.fair_market_premium, self.risk_model_configs, self.with_reinsurance, self.num_risk_models, 
+        self.mm = MarketManager(self.maxstep, self.sim_args, self.manager_args, self.syndicate_args, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.catastrophes, self.fair_market_premium, self.risk_model_configs, self.with_reinsurance, self.num_risk_models, 
                                self.catastrophe_events, self.attritional_loss_events, self.broker_risk_events, self.broker_premium_events, self.broker_claim_events, self.event_handler)
         #self.mm.evolve(self.dt)
         
