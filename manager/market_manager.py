@@ -55,7 +55,7 @@ class MarketManager:
                 self.market.time, self.market.brokers, self.market.syndicates, self.market.reinsurancefirms, self.market.shareholders, self.event_handler
             )
 
-    def evolve_action_market(self, starting_broker_risk):
+    def evolve_action_market(self, starting_broker_risk, time):
         """
         Evolve the syndicate, broker, risk in the market for step_time [day].
 
@@ -96,6 +96,28 @@ class MarketManager:
                         self.market.syndicates[int(follow_syndicates_id[sy])].add_contract(risks, broker_id, self.actions_to_apply[num][1+sy].premium)
                     else:
                         self.market.brokers[int(broker_id)].not_underwritten_risk(risks)
+        # Update syndicates' status and contracts
+        for i in range(len(self.market.syndicates)):
+            self.market.syndicates[i].market_permanency(time)
+        for broker_id in range(len(self.market.brokers)):
+            for num in range(len(self.market.brokers[broker_id].underwritten_contracts)):
+                if self.market.brokers[broker_id].underwritten_contracts[num]["risk_end_time"] < time:
+                    lead_syndicate_id = self.market.brokers[broker_id].underwritten_contracts[num]["lead_syndicate_id"]
+                    follow_syndicates_id = self.market.brokers[broker_id].underwritten_contracts[num]["follow_syndicates_id"]
+                    i = 0
+                    while i < len(self.market.syndicates[int(lead_syndicate_id)].current_hold_contracts):
+                        if (self.market.syndicates[int(lead_syndicate_id)].current_hold_contracts[i]["broker_id"] == broker_id) and (self.market.syndicates[int(lead_syndicate_id)].current_hold_contracts[i]["risk_end_time"] < time):
+                            del self.market.syndicates[int(lead_syndicate_id)].current_hold_contracts[i]
+                        else:
+                            i += 1
+                    for j in range(len(follow_syndicates_id)):
+                        if follow_syndicates_id[j] != None:
+                            k = 0
+                            while k < len(self.market.syndicates[int(follow_syndicates_id[j])].current_hold_contracts):
+                                if (self.market.syndicates[int(follow_syndicates_id[j])].current_hold_contracts[k]["broker_id"] == broker_id) and (self.market.syndicates[int(follow_syndicates_id[j])].current_hold_contracts[k]["risk_end_time"] < time):
+                                    del self.market.syndicates[int(follow_syndicates_id[j])].current_hold_contracts[k]
+                                else:
+                                    k += 1
 
     def run_attritional_loss(self, starting_attritional_loss):
         """
@@ -109,7 +131,6 @@ class MarketManager:
         for i in range(len(self.market.syndicates)):
             self.market.syndicates[i].current_capital -= starting_attritional_loss.risk_value * 0.000001
             self.market.syndicates[i].profits_losses -= starting_attritional_loss.risk_value * 0.000001
-            self.market.syndicates[i].market_permanency(starting_attritional_loss.risk_start_time)
 
     def run_broker_premium(self, starting_broker_premium):
         """
@@ -125,24 +146,6 @@ class MarketManager:
             for num in range(len(self.market.brokers[broker_id].underwritten_contracts)):
                 if self.market.brokers[broker_id].underwritten_contracts[num]["risk_end_time"] >= starting_broker_premium.risk_start_time:
                     affected_contract.append(self.market.brokers[broker_id].underwritten_contracts[num])
-            for num in range(len(self.market.brokers[broker_id].underwritten_contracts)):
-                if self.market.brokers[broker_id].underwritten_contracts[num]["risk_end_time"] < starting_broker_premium.risk_start_time:
-                    lead_syndicate_id = self.market.brokers[broker_id].underwritten_contracts[num]["lead_syndicate_id"]
-                    follow_syndicates_id = self.market.brokers[broker_id].underwritten_contracts[num]["follow_syndicates_id"]
-                    i = 0
-                    while i < len(self.market.syndicates[int(lead_syndicate_id)].current_hold_contracts):
-                        if (self.market.syndicates[int(lead_syndicate_id)].current_hold_contracts[i]["broker_id"] == broker_id) and (self.market.syndicates[int(lead_syndicate_id)].current_hold_contracts[i]["risk_end_time"] < starting_broker_premium.risk_start_time):
-                            del self.market.syndicates[int(lead_syndicate_id)].current_hold_contracts[i]
-                        else:
-                            i += 1
-                    for j in range(len(follow_syndicates_id)):
-                        if follow_syndicates_id[j] != None:
-                            k = 0
-                            while k < len(self.market.syndicates[int(follow_syndicates_id[j])].current_hold_contracts):
-                                if (self.market.syndicates[int(follow_syndicates_id[j])].current_hold_contracts[k]["broker_id"] == broker_id) and (self.market.syndicates[int(follow_syndicates_id[j])].current_hold_contracts[k]["risk_end_time"] < starting_broker_premium.risk_start_time):
-                                    del self.market.syndicates[int(follow_syndicates_id[j])].current_hold_contracts[k]
-                                else:
-                                    k += 1
             for num in range(len(affected_contract)):
                 premium, lead_syndicate_premium, follow_syndicates_premium, lead_syndicate_id, follow_syndicates_id, risk_category = self.market.brokers[broker_id].pay_premium(affected_contract[num])
                 self.market.syndicates[int(lead_syndicate_id)].receive_premium(lead_syndicate_premium, risk_category)
@@ -295,7 +298,7 @@ class MarketManager:
                     starting_broker_risk.append(self.broker_risk_events[i])
 
             # Move along the corresponding syndicates
-            self.evolve_action_market(starting_broker_risk)
+            self.evolve_action_market(starting_broker_risk, self.market.time)
 
             # Empty all the actions to apply to syndicates
             self.actions_to_apply = []

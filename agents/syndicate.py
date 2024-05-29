@@ -115,7 +115,7 @@ class Syndicate:
         self.reinrisks_kept = []
         self.balance_ratio = syndicate_args['insurers_balance_ratio']
         self.recursion_limit = syndicate_args["insurers_recursion_limit"]
-        self.capital_left_by_categ = [self.current_capital for i in range(self.num_risk_categories)]
+        self.capital_left_by_categ = self.current_capital_category
         self.market_permanency_counter = 0
         self.received_risk_list = []
 
@@ -226,12 +226,9 @@ class Syndicate:
                 self.current_hold_contracts = []
                 self.risks_kept = []
                 self.reinrisks_kept = []
-                #obligation = {"amount": self.cash, "recipient": self.simulation, "due_time": time, "purpose": "Dissolution"}
-                #self.pay(obligation)                    #This MUST be the last obligation before the dissolution of the firm.
                 self.excess_capital = 0                 
                 self.profits_losses = 0                 
                 self.status = False
-            """
             else:
                 if len(self.current_hold_contracts) < self.insurance_permanency_contracts_limit or avg_capital_left / self.current_capital > self.insurance_permanency_ratio_limit:
                     #Insurers leave the market if they have contracts under the limit or an excess capital over the limit for too long.
@@ -243,11 +240,9 @@ class Syndicate:
                     self.current_hold_contracts = []
                     self.risks_kept = []
                     self.reinrisks_kept = []
-                    #obligation = {"amount": self.cash, "recipient": self.simulation, "due_time": time, "purpose": "Dissolution"}
-                    #self.pay(obligation)                    #This MUST be the last obligation before the dissolution of the firm.
                     self.excess_capital = 0                 
                     self.profits_losses = 0                 
-                    self.status = True"""
+                    self.status = True
 
     def reset_pl(self):
         """Reset_pl Method.
