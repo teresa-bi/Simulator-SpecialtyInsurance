@@ -100,7 +100,8 @@ class MarketManager:
         for i in range(len(self.market.syndicates)):
             self.market.syndicates[i].market_permanency(time)
         for broker_id in range(len(self.market.brokers)):
-            for num in range(len(self.market.brokers[broker_id].underwritten_contracts)):
+            num = 0
+            while num < len(self.market.brokers[broker_id].underwritten_contracts):
                 if self.market.brokers[broker_id].underwritten_contracts[num]["risk_end_time"] < time:
                     lead_syndicate_id = self.market.brokers[broker_id].underwritten_contracts[num]["lead_syndicate_id"]
                     follow_syndicates_id = self.market.brokers[broker_id].underwritten_contracts[num]["follow_syndicates_id"]
@@ -118,6 +119,9 @@ class MarketManager:
                                     del self.market.syndicates[int(follow_syndicates_id[j])].current_hold_contracts[k]
                                 else:
                                     k += 1
+                    del self.market.brokers[broker_id].underwritten_contracts[num]
+                else:
+                    num += 1
 
     def run_attritional_loss(self, starting_attritional_loss):
         """
