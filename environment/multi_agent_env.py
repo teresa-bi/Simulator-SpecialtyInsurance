@@ -92,6 +92,9 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
         self.total_profitslosses =  0.0
         self.total_contracts = 0.0
         self.operational_syndicates = 0.0
+        self.insurance_models_counter = np.zeros(self.risk_args["num_categories"])
+        self.inaccuracy = []
+
         # Reset the environmnet
         self.reset()
 
@@ -146,12 +149,25 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
         self.cumulative_market_exits = 0
         self.cumulative_unrecovered_claims = 0.0
         self.cumulative_claims = 0.0
+
+        # Risk model settings
+        self.inaccuracy = []
+        self.insurance_models_counter = np.zeros(self.risk_args["num_categories"])
+        for i in range(len(self.risk_model_configs)):
+            self.inaccuracy.append(self.risk_model_configs[i]["inaccuracy_by_categ"])
+        for i in range(len(self.mm.market.syndicates)):
+            for j in range(len(self.inaccuracy)):
+                if self.mm.market.syndicates[i].riskmodel.inaccuracy == self.inaccuracy[j]:
+                        self.insurance_models_counter[j] += 1
         
         # Initiate time step
         self.timestep = -1
         self.step_track = 0
 
         return self.state_encoder_dict, info_dict
+    
+    def insurance_entry_index(self):
+        return self.insurance_models_counter[0:self.risk_args["num_riskmodels"]].argmin()
     
     def adjust_market_premium(self, capital):
         """Adjust_market_premium Method.
@@ -164,7 +180,7 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
         self.market_premium = self.fair_market_premium * (self.syndicate_args["upper_premium_limit"] 
                                                    - self.syndicate_args["premium_sensitivity"] 
                                                    * capital / (self.syndicate_args["initial_capital"] 
-                                                   * self.risk_model_configs[0]["damage_distribution"].mean() * self.risk_args["num_risks"]))
+                                                   * self.risk_model_configs[0]["damage_distribution"].mean() * self.broker_args["num_brokers"] * self.broker_args["lambda_risks_daily"]))
         if self.market_premium < self.fair_market_premium * self.syndicate_args["lower_premium_limit"]:
             self.market_premium = self.fair_market_premium * self.syndicate_args["lower_premium_limit"]
         return self.market_premium 
@@ -380,7 +396,7 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
         self.total_cash = sum([self.mm.market.syndicates[i].current_capital for i in range(len(self.mm.market.syndicates))])
         self.total_excess_capital = sum([self.mm.market.syndicates[i].excess_capital for i in range(len(self.mm.market.syndicates))])
         self.total_profitslosses =  sum([self.mm.market.syndicates[i].profits_losses for i in range(len(self.mm.market.syndicates))])
-        self.total_contracts = sum([len(self.mm.market.syndicates[i].current_hold_contracts) for i in range(len(self.mm.market.syndicates))])
+        self.total_contracts = sum([len(self.mm.market.brokers[i].underwritten_contracts) for i in range(len(self.mm.market.brokers))])
         self.operational_syndicates = sum([self.mm.market.syndicates[i].status for i in range(len(self.mm.market.syndicates))])
         #operational_catbonds = sum([catbond.operational for catbond in self.catbonds])
         

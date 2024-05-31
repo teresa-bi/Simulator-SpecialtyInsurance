@@ -141,7 +141,7 @@ class RiskGenerator:
                                 "inaccuracy_by_categ": self.inaccuracy[i]
                                 } for i in range(self.num_riskmodels)]
 
-        # Generate risks brought by brokers
+        # Generate risks brought by brokers by poisson distribution
         risks_schedule = [[] for x in range(self.broker_args["num_brokers"])]
         risks_categories = [[] for x in range(self.broker_args["num_brokers"])]
         risks_factors = [[] for x in range(self.broker_args["num_brokers"])]

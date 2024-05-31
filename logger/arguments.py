@@ -20,7 +20,7 @@ def get_arguments():
         }
 
     broker_args = {"num_brokers": 100, # Number of brokers in simulation, 5 times of num syndicates
-        "lambda_risks_daily": 0.4,  # 0.06Lambda value for the Poisson distribution used by the broker process to generate new risks
+        "lambda_risks_daily": 2,  # 0.06Lambda value for the Poisson distribution used by the broker process to generate new risks
         "decuctible": 0.2 # Percentage of risk value 
         }
 
