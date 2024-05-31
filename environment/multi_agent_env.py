@@ -11,7 +11,7 @@ from environment.environment import SpecialtyInsuranceMarketEnv
 class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
 
     def __init__(self, sim_args, manager_args, broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args, 
-                 brokers, syndicates, reinsurancefirms, shareholders, catastrophes, catastrophe_time, catastrophe_damage, broker_risks, fair_market_premium,
+                 brokers, syndicates, reinsurancefirms, shareholders, catastrophes, broker_risks, fair_market_premium,
                  risk_model_configs, with_reinsurance, num_risk_models, logger, dt = 1):
         self.sim_args = sim_args
         self.maxstep = self.sim_args["max_time"]
@@ -26,10 +26,9 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
         self.reinsurancefirms = reinsurancefirms
         self.shareholders = shareholders
         self.catastrophes = catastrophes
-        self.catastrophe_time = catastrophe_time
-        self.catastrophe_damage = catastrophe_damage
         self.broker_risks = broker_risks
-        self.fair_market_premium =fair_market_premium
+        self.fair_market_premium = fair_market_premium
+        self.market_premium = fair_market_premium
         self.initial_catastrophes = catastrophes
         self.risk_model_configs = risk_model_configs
         self.with_reinsurance = with_reinsurance
@@ -75,8 +74,6 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
                                                    reinsurancefirms = self.reinsurancefirms, 
                                                    shareholders = self.shareholders, 
                                                    catastrophes = self.catastrophes, 
-                                                   catastrophe_time = self.catastrophe_time,
-                                                   catastrophe_damage = self.catastrophe_damage,
                                                    broker_risks = self.broker_risks,
                                                    fair_market_premium = self.fair_market_premium,
                                                    risk_model_configs = self.risk_model_configs, 
@@ -113,9 +110,9 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
         # Broker ask for claim if the contract reaches the end time
         self.broker_claim_events = EventGenerator(self.risk_model_configs).generate_claim_events(self.sim_args)
         # Initiate event handler
-        self.event_handler = EventHandler(self.maxstep, self.catastrophe_events, self.attritional_loss_events, self.broker_risk_events, self.broker_premium_events, self.broker_claim_events)
+        self.event_handler = EventHandler(self.sim_args["max_time"], self.catastrophe_events, self.attritional_loss_events, self.broker_risk_events, self.broker_premium_events, self.broker_claim_events)
         # Initiate market manager
-        self.mm = MarketManager(self.maxstep, self.sim_args, self.manager_args, self.syndicate_args, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.catastrophes, self.fair_market_premium,
+        self.mm = MarketManager(self.sim_args["max_time"], self.sim_args, self.manager_args, self.syndicate_args, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.catastrophes, self.fair_market_premium,
                                 self.risk_model_configs, self.with_reinsurance, self.num_risk_models, self.catastrophe_events, self.attritional_loss_events, 
                                 self.broker_risk_events, self.broker_premium_events, self.broker_claim_events, self.event_handler)
         self.mm.evolve(self.dt)
@@ -240,7 +237,7 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
                     action_dict[num].update({self.mm.market.syndicates[i].syndicate_id: 0})
         return action_dict
         
-    def step(self, action_dict):
+    def step(self, action_dict, new_syndicate):
 
         obs_dict, reward_dict, terminated_dict, info_dict = {}, {}, {}, {}
         flag_dict = {}
@@ -248,7 +245,7 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
         # Update environemnt after actions
         new_risk = []
         for risk in range(len(self.broker_risk_events)):
-            if self.broker_risk_events[risk].risk_start_time == self.timestep+1:
+            if self.broker_risk_events[risk].risk_start_time == (self.timestep+1):
                 new_risk.append(self.broker_risk_events[risk])
         parsed_actions = [[] for x in range(len(new_risk))]  
         for l in range(len(new_risk)):
@@ -279,25 +276,29 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
         self.draw2file(self.mm.market)
 
         # All done termination check
-        all_terminated = True
-        for _, syndicate_terminated in terminated_dict.items():
-            if syndicate_terminated is False:
-                all_terminated = False
-                break
+        #all_terminated = True
+        #for _, syndicate_terminated in terminated_dict.items():
+            #if syndicate_terminated is False:
+                #all_terminated = False
+                #break
+
+        if self.timestep >= self.sim_args["max_time"]-1:
+            all_terminated = True
+        else:
+            all_terminated = False
         
         terminated_dict["__all__"] = all_terminated
         flag_dict["__all__"] = all_terminated
+
+        if new_syndicate != None:
+            self.mm.market.syndicates.append(new_syndicate)
 
         return obs_dict, reward_dict, terminated_dict, flag_dict, info_dict
 
     def check_termination(self, syndicate_id):
 
-        # Update per syndicate status, True-active in market, False-exit market becuase of no contract or bankruptcy
-        market = self.mm.market
-        sy = market.syndicates[int(syndicate_id)] 
-
         # The simulation is done when syndicates exit or bankrupt or reach the maximum time step
-        if self.timestep >= self.maxstep-1:
+        if self.timestep >= self.sim_args["max_time"]-1:
             terminated = True
         else:
             terminated = False
@@ -311,7 +312,7 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
         r = [0.0] * 4
 
         # For each insurable risk being accepted +1 or refused -1
-        if(self.timestep <= self.maxstep):
+        if(self.timestep <= self.sim_args["max_time"]):
             for broker_id in range(len(market.brokers)):
                 for risk in range(len(market.brokers[broker_id].risks)):
                     for contract in range(len(market.brokers[broker_id].underwritten_contracts)):
@@ -321,7 +322,7 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
                             r[0] -= 1
 
         # For each claim being paied +1 or refused -1
-        if(self.timestep <= self.maxstep):
+        if(self.timestep <= self.sim_args["max_time"]):
             for claim in range(len(market.syndicates[int(syndicate_id)].paid_claim)):
                 if market.syndicate[syndicate_id].paid_claim[claim]["status"] == True:
                     r[1] += 1
@@ -329,7 +330,7 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
                     r[1] -= 1
 
         # Profit and Bankruptcy       
-        if(self.timestep <= self.maxstep):
+        if(self.timestep <= self.sim_args["max_time"]):
             initial_capital = market.syndicates[int(syndicate_id)].initial_capital
             current_capital = market.syndicates[int(syndicate_id)].current_capital
             r[2] += current_capital - initial_capital
@@ -372,7 +373,7 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
        
         return action_map
     
-    def save_data(self, time):
+    def save_data(self):
         """Method to collect statistics about the current state of the simulation. Will pass these to the 
            Logger object (self.logger) to be recorded."""
         # Collect data
@@ -411,11 +412,7 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
         current_log['cumulative_bankruptcies'] = self.cumulative_bankruptcies
         current_log['cumulative_market_exits'] = self.cumulative_market_exits
         current_log['cumulative_unrecovered_claims'] = self.cumulative_unrecovered_claims
-        current_log['cumulative_claims'] = self.cumulative_claims    #Log the cumulative claims received so far.
-        current_log['catastrophe_time'] = self.catastrophe_time[time]     #Log the catastrophe event distribution.
-        current_log['catastrophe_damage'] = self.catastrophe_damage[time]
-        current_log['risk_event_schedule_initial'] = self.catastrophe_time[time]    #Log the catastrophe event distribution.
-        current_log['risk_event_damage_initial'] = self.catastrophe_damage[time]   
+        current_log['cumulative_claims'] = self.cumulative_claims    #Log the cumulative claims received so far. 
         
         # Add agent-level data to dict
         current_log['insurance_firms_cash'] = syndicates_data

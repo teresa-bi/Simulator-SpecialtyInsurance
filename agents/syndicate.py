@@ -214,7 +214,7 @@ class Syndicate:
             else:
                 self.var_counter_per_risk = 0
     
-    def market_permanency(self, time):     #This method determines whether an insurer stays in the market. If it has very few risks underwritten or too much cash left for TOO LONG it eventually leaves the market.
+    def market_permanency(self):     #This method determines whether an insurer stays in the market. If it has very few risks underwritten or too much cash left for TOO LONG it eventually leaves the market.
                                                       # If it has very few risks underwritten it cannot balance the portfolio so it makes sense to leave the market.
         if not self.market_permanency_off:
 

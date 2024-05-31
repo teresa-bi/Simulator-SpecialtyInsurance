@@ -15,7 +15,7 @@ LOG_DEFAULT = ('total_cash total_excess_capital total_profits_losses total_contr
                'rc_event_schedule_initial rc_event_damage_initial number_riskmodels'
                 ).split('')
 """
-LOG_DEFAULT = ('total_cash total_excess_capital total_profits_losses total_contracts total_operational market_premium cumulative_bankruptcies cumulative_market_exits cumulative_unrecovered_claims cumulative_claims catastrophe_time catastrophe_damage insurance_firms_cash risk_event_schedule_initial risk_event_damage_initial number_riskmodels'
+LOG_DEFAULT = ('total_cash total_excess_capital total_profits_losses total_contracts total_operational market_premium cumulative_bankruptcies cumulative_market_exits cumulative_unrecovered_claims cumulative_claims insurance_firms_cash risk_event_schedule_initial risk_event_damage_initial number_riskmodels'
                 ).split(" ")
 
 class Logger():
@@ -63,8 +63,6 @@ class Logger():
         self.history_logs['cumulative_market_exits'] = []
         self.history_logs['cumulative_unrecovered_claims'] = []
         self.history_logs['cumulative_claims'] = []
-        self.history_logs["catastrophe_time"] = []
-        self.history_logs["catastrophe_damage"] = []
         self.history_logs["number_riskmodels"] = []
         self.history_logs["risk_event_schedule_initial"] = []
         self.history_logs["risk_event_damage_initial"] = []

@@ -4,9 +4,9 @@ Contains all the simulation parameters
 
 def get_arguments():
 
-    sim_args = {"max_time": 1000, # Simualtion time step daily
+    sim_args = {"max_time": 1000, # Simualtion time step daily, 50 years 50*360
         "num_run_per_setting": 400, # Number of replication runs per simulation settings
-        "mean_contract_runtime": 12,
+        "mean_contract_runtime": 100,
         "contract_runtime_halfspread": 2,
         "default_contract_payment_period": 3,
         "simulation_reinsurance_type": 'non-proportional',
@@ -20,14 +20,14 @@ def get_arguments():
         }
 
     broker_args = {"num_brokers": 100, # Number of brokers in simulation, 5 times of num syndicates
-        "lambda_risks_daily": 0.06,  # Lambda value for the Poisson distribution used by the broker process to generate new risks
+        "lambda_risks_daily": 0.4,  # 0.06Lambda value for the Poisson distribution used by the broker process to generate new risks
         "decuctible": 0.2 # Percentage of risk value 
         }
 
     syndicate_args = {"num_syndicates": 20, # Number of syndicates in simulation
         "initial_capital": 80000, # Initial capital of each syndicate
-        "lead_line_size": 0.9, # Default lead quote line size
-        "follow_line_size": 0.1, # Default follow quote line size
+        "lead_line_size": 1.0, # Default lead quote line size
+        "follow_line_size": 0, # Default follow quote line size
         "actuarial_pricing_internal_weight": 0.5,  # Whether acturial pricing based on syndicate history or industry histor
         "loss_experiency_weight": 0.2, # Whether actuarial pricing weighs the past losses more than recent losses 
         "volatility_weight": 0, # How much actuarial pricing considers the standard deviation of losses

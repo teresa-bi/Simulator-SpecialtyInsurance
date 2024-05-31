@@ -40,7 +40,7 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
     """
 
     def __init__(self, sim_args, manager_args, broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args, brokers, syndicates, reinsurancefirms, shareholders, 
-                 catastrophes, catastrophe_time, catastrophe_damage, broker_risks, fair_market_premium, risk_model_configs, with_reinsurance, num_risk_models, logger, dt = 1):
+                 catastrophes, broker_risks, fair_market_premium, risk_model_configs, with_reinsurance, num_risk_models, logger, dt = 1):
 
         self.sim_args = sim_args
         self.maxstep = self.sim_args["max_time"]
@@ -59,8 +59,6 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
         self.shareholders = shareholders
         self.initial_shareholders = shareholders
         self.catastrophes = catastrophes
-        self.catastrophe_time = catastrophe_time
-        self.catastrophe_damage = catastrophe_damage
         self.initial_catastrophes = catastrophes
         self.broker_risks = broker_risks
         self.fair_market_premium = fair_market_premium

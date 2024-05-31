@@ -170,7 +170,7 @@ class RiskGenerator:
                                             })
                     risk_num += 1
 
-        return self.catastrophes, self.catastrophe_time, self.catastrophe_damage, self.broker_risks, self.market_premium, risk_model_configs
+        return self.catastrophes, self.broker_risks, self.market_premium, risk_model_configs
 
     def data(self):
         """

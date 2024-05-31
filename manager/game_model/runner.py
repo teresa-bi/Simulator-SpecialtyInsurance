@@ -7,6 +7,7 @@ import ray
 from ray.tune.registry import register_env
 from ray.rllib.algorithms.ppo import PPO
 from environment.multi_agent_env import MultiAgentBasedModel
+from agents import Syndicate
 from ray.rllib.policy.policy import PolicySpec
 import numpy as np
 import gymnasium as gym
@@ -18,7 +19,7 @@ class GameRunner:
     Game model 
     """
     def __init__(self, sim_args, manager_args, broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args, 
-                 seed, brokers, syndicates, reinsurancefirms, shareholders, catastrophes, catastrophe_time, catastrophe_damage, broker_risks, fair_market_premium, 
+                 seed, brokers, syndicates, reinsurancefirms, shareholders, catastrophes, broker_risks, fair_market_premium, 
                  risk_model_configs, with_reinsurance, num_risk_models, logger):
         self.sim_args = sim_args
         self.manager_args = manager_args
@@ -33,8 +34,6 @@ class GameRunner:
         self.reinsurancefirms = reinsurancefirms
         self.shareholders = shareholders
         self.catastrophes = catastrophes
-        self.catastrophe_time = catastrophe_time
-        self.catastrophe_damage = catastrophe_damage
         self.broker_risks = broker_risks
         self.fair_market_premium = fair_market_premium
         self.risk_model_configs = risk_model_configs
@@ -110,8 +109,6 @@ class GameRunner:
                 "reinsurancefirms": self.reinsurancefirms,
                 "shareholders": self.shareholders,
                 "catastrophes": self.catastrophes,
-                "catastrophe_time": self.catastrophe_time,
-                "catastrophe_damage": self.catastrophe_damage,
                 "broker_risks": self.broker_risks,
                 "fair_market_premium": self.fair_market_premium,
                 "risk_model_configs": self.risk_model_configs,
@@ -130,10 +127,19 @@ class GameRunner:
         
             action_dict = env.get_actions(total_steps)  
             total_steps += 1
-        
-            obs_dict, reward_dict, terminated_dict, flag_dict, info_dict = env.step(action_dict)
+            print(total_steps)
+            # Add new syndicates with market entry probability
+            num_syndicates = len(self.syndicates)
+            new_syndicate = None
+            prob = self.syndicate_args["market_entry_probability"]
+            np.random.seed(self.seed+total_steps)
+            if np.random.random() < prob:
+                new_syndicate = Syndicate(str(num_syndicates), self.syndicate_args, self.num_risk_models, self.sim_args, self.risk_model_configs)
+                num_syndicates += 1
+
+            obs_dict, reward_dict, terminated_dict, flag_dict, info_dict = env.step(action_dict, new_syndicate)
 
             # Save data for every step
-            env.save_data(total_steps)
+            env.save_data()
         log = env.obtain_log()
         return log
