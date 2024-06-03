@@ -44,6 +44,7 @@ class Syndicate:
         self.capacity_target_increment_factor = self.capacity_target_increment_factor
 
         self.riskmodel_config = risk_model_configs[int(syndicate_id) % len(risk_model_configs)]
+        self.ambiguity_level = syndicate_args['ambiguity_level']
         self.premium = self.riskmodel_config["norm_premium"]
         self.profit_target = self.riskmodel_config["norm_profit_markup"]
         self.excess_capital = self.current_capital

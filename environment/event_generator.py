@@ -79,8 +79,9 @@ class EventGenerator():
         attritional_loss_events = []
         risk = broker_risks[0]
         for time in range(sim_args.get("max_time")):
-            add_attritional_loss_event = AddAttritionalLossEvent(time, time, risk.get("risk_factor"), risk.get("risk_category"), risk.get("risk_value"))
-            attritional_loss_events.append(add_attritional_loss_event)
+            if time % 12 == 0:
+                add_attritional_loss_event = AddAttritionalLossEvent(time, time, risk.get("risk_factor"), risk.get("risk_category"), risk.get("risk_value"))
+                attritional_loss_events.append(add_attritional_loss_event)
 
         return attritional_loss_events
 

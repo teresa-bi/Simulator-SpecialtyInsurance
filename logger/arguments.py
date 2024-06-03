@@ -4,9 +4,9 @@ Contains all the simulation parameters
 
 def get_arguments():
 
-    sim_args = {"max_time": 1000, # Simualtion time step daily, 50 years 50*360
+    sim_args = {"max_time": 600, # Simualtion time step daily, 80 years 80*12
         "num_run_per_setting": 400, # Number of replication runs per simulation settings
-        "mean_contract_runtime": 100,
+        "mean_contract_runtime": 60, # Time scale five yeears
         "contract_runtime_halfspread": 2,
         "default_contract_payment_period": 3,
         "simulation_reinsurance_type": 'non-proportional',
@@ -20,7 +20,7 @@ def get_arguments():
         }
 
     broker_args = {"num_brokers": 100, # Number of brokers in simulation, 5 times of num syndicates
-        "lambda_risks_daily": 2,  # 0.06Lambda value for the Poisson distribution used by the broker process to generate new risks
+        "lambda_risks_daily": 3,  # 0.06Lambda value for the Poisson distribution used by the broker process to generate new risks
         "decuctible": 0.2 # Percentage of risk value 
         }
 
@@ -28,6 +28,7 @@ def get_arguments():
         "initial_capital": 80000, # Initial capital of each syndicate
         "lead_line_size": 1.0, # Default lead quote line size
         "follow_line_size": 0, # Default follow quote line size
+        "ambiguity_level": 0.5, # From 0 to 1
         "actuarial_pricing_internal_weight": 0.5,  # Whether acturial pricing based on syndicate history or industry histor
         "loss_experiency_weight": 0.2, # Whether actuarial pricing weighs the past losses more than recent losses 
         "volatility_weight": 0, # How much actuarial pricing considers the standard deviation of losses
@@ -85,7 +86,7 @@ def get_arguments():
     shareholder_args = {"num_shareholders": 1 # Number of shareholders in simulation
         }
 
-    risk_args = {"num_risks": 20000, # Number of risks
+    risk_args = {"num_risks": 10000, # Number of risks
         "num_categories": 4, # Number of peril regions for the catastrophe
         "num_riskmodels": 4, # Number of risk models
         "risk_limit": 10000000, # The maximum value of the risk
