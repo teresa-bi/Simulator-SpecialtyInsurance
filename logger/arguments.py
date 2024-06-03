@@ -26,8 +26,10 @@ def get_arguments():
 
     syndicate_args = {"num_syndicates": 20, # Number of syndicates in simulation
         "initial_capital": 80000, # Initial capital of each syndicate
-        "lead_line_size": 1.0, # Default lead quote line size
-        "follow_line_size": 0, # Default follow quote line size
+        "lead_line_size": 0.8, # Default lead quote line size
+        "follow_line_size": 0.2, # Default follow quote line size
+        "ambiguity_level": 0.5, # From 0 to 1
+        "cost_of_capital": 0.1, # Cost of capital 
         "ambiguity_level": 0.5, # From 0 to 1
         "actuarial_pricing_internal_weight": 0.5,  # Whether acturial pricing based on syndicate history or industry histor
         "loss_experiency_weight": 0.2, # Whether actuarial pricing weighs the past losses more than recent losses 
@@ -89,6 +91,8 @@ def get_arguments():
     risk_args = {"num_risks": 10000, # Number of risks
         "num_categories": 4, # Number of peril regions for the catastrophe
         "num_riskmodels": 4, # Number of risk models
+        "min_cat_prob_distortion": 0.1, # Assume the difference between the closet loss probability model to the actual distribution 
+        "max_cat_prob_distortion": 0.5, # Assume the difference between the farest loss probability model to the actual distribution 
         "risk_limit": 10000000, # The maximum value of the risk
         "riskmodel_inaccuracy": 2,
         "riskmodel_margin_of_safety": 2,

@@ -30,6 +30,8 @@ class RiskGenerator:
         self.sim_time_span = sim_args["max_time"]
         self.num_risks = risk_args["num_risks"]
         self.num_categories = risk_args["num_categories"]
+        self.min_cat_prob_distortion= risk_args["min_cat_prob_distortion"]
+        self.max_cat_prob_distortion= risk_args["max_cat_prob_distortion"]
         self.riskmodel_margin_of_safety = risk_args["riskmodel_margin_of_safety"]
         self.risk_factor_lower_bound = risk_args["risk_factor_lower_bound"]
         self.risk_factor_upper_bound = risk_args["risk_factor_upper_bound"]
@@ -138,7 +140,9 @@ class RiskGenerator:
                                 "norm_profit_markup": self.norm_profit_markup,
                                 "margin_of_safety": self.riskmodel_margin_of_safety,
                                 "var_tail_prob": self.value_at_risk_tail_probability,
-                                "inaccuracy_by_categ": self.inaccuracy[i]
+                                "inaccuracy_by_categ": self.inaccuracy[i],
+                                "min_cat_prob_distortion": self.min_cat_prob_distortion,
+                                "max_cat_prob_distortion": self.max_cat_prob_distortion,
                                 } for i in range(self.num_riskmodels)]
 
         """# Generate risks brought by brokers by poisson distribution

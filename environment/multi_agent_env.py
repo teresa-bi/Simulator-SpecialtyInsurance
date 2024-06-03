@@ -241,13 +241,14 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
             if self.broker_risk_events[risk].risk_start_time == time:
                 new_risks.append(self.broker_risk_events[risk])
         action_dict = [{} for x in range(len(new_risks))]
+        premium_list = [[] for x in range(len(new_risks))]
+        min_premium = [0 for x in range(len(new_risks))]
         for i in range(len(self.mm.market.syndicates)):
             expected_profits, acceptable_by_category, cash_left_by_categ, var_per_risk_per_categ, self.excess_capital  = self.mm.market.syndicates[i].riskmodel.evaluate(self.mm.market.syndicates[i].current_hold_contracts, self.mm.market.syndicates[i].current_capital)
             accept = self.process_newrisks_insurer(new_risks, i, acceptable_by_category, var_per_risk_per_categ, cash_left_by_categ, time)
             for num in range(len(new_risks)):
                 if accept[num]:
-                    sum_capital = sum([self.mm.market.syndicates[k].current_capital for k in range(len(self.mm.market.syndicates))]) 
-                    market_premium = self.adjust_market_premium(capital=sum_capital)
+                    market_premium = self.mm.market.syndicates[i].offer_premium(new_risks[num])
                     action_dict[num].update({self.mm.market.syndicates[i].syndicate_id: market_premium})
                 else:
                     action_dict[num].update({self.mm.market.syndicates[i].syndicate_id: 0})

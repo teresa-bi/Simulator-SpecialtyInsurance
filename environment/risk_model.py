@@ -58,7 +58,7 @@ class RiskModel:
         for risk in categ_risks:
             exposures.append(risk["risk_value"]-0.06)
             risk_factors.append(risk["risk_factor"])
-            runtimes.append(365)
+            runtimes.append(60)
 
         average_exposure = np.mean(exposures)
         average_risk_factor = self.inaccuracy[categ_id] * np.mean(risk_factors)
@@ -70,6 +70,17 @@ class RiskModel:
             incr_expected_profits = -1
 
         return average_risk_factor, average_exposure, incr_expected_profits
+    
+    def get_var(self, risk):
+        # compute var of the new risk
+        for categ_id in range(self.category_number):
+            # compute number of acceptable risks of this category 
+            if risk.risk_category == categ_id:
+                exposure = risk.risk_value-0.06
+                risk_factor = risk.risk_factor * self.inaccuracy[categ_id]
+                # compute value at risk
+                var_per_risk = self.getPPF(categ_id=categ_id, tailSize=self.var_tail_prob) * risk_factor * exposure * self.margin_of_safety
+                return var_per_risk
     
     def evaluate_proportional(self, risks, cash):
         # prepare variables

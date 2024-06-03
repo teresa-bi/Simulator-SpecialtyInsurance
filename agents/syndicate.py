@@ -37,6 +37,7 @@ class Syndicate:
         self.default_contract_payment_period = sim_args["default_contract_payment_period"]
         self.simulation_reinsurance_type = sim_args["simulation_reinsurance_type"]
         self.market_permanency_off = sim_args["market_permanency_off"]
+        self.mean_contract_runtime = sim_args["mean_contract_runtime"]
         self.capacity_target = self.current_capital * 0.9
         self.capacity_target_decrement_threshold = self.capacity_target_decrement_threshold
         self.capacity_target_increment_threshold = self.capacity_target_increment_threshold
@@ -44,7 +45,6 @@ class Syndicate:
         self.capacity_target_increment_factor = self.capacity_target_increment_factor
 
         self.riskmodel_config = risk_model_configs[int(syndicate_id) % len(risk_model_configs)]
-        self.ambiguity_level = syndicate_args['ambiguity_level']
         self.premium = self.riskmodel_config["norm_premium"]
         self.profit_target = self.riskmodel_config["norm_profit_markup"]
         self.excess_capital = self.current_capital
@@ -70,6 +70,11 @@ class Syndicate:
         self.exit_capital_threshold = syndicate_args['exit_capital_threshold']
         self.exit_time_limit = syndicate_args['exit_time_limit']
         self.premium_sensitivity = syndicate_args['premium_sensitivity']
+
+        self.ambiguity_level = syndicate_args['ambiguity_level']
+        self.cost_of_capital = syndicate_args['cost_of_capital']
+        self.min_cat_prob_distortion = self.riskmodel_config["min_cat_prob_distortion"]
+        self.max_cat_prob_distortion = self.riskmodel_config["max_cat_prob_distortion"]
 
         self.status = True   # status True means active, status False means exit (no contract or bankruptcy, at the begining the status is 0 because no syndicate joining the market
 
@@ -244,6 +249,37 @@ class Syndicate:
                     self.excess_capital = 0                 
                     self.profits_losses = 0                 
                     self.status = True
+
+    def adjust_market_premium(self, norm_premium):
+        """Adjust_market_premium Method.
+               Accepts arguments
+                   capital: Type float. The total capital (cash) available in the insurance market (insurance only).
+               No return value.
+           This method adjusts the premium charged by insurance firms for the risks covered. The premium reduces linearly
+           with the capital available in the insurance market and viceversa. The premium reduces until it reaches a minimum
+           below which no insurer is willing to reduce further the price. """
+        self.market_premium = norm_premium * (self.upper_premium_limit
+                                                   - self.premium_sensitivity
+                                                   * self.current_capital / (self.initial_capital
+                                                   * self.riskmodel_config["damage_distribution"].mean() * self.num_brokers * self.lambda_risks_daily / self.num_syndicates))
+        if self.market_premium < norm_premium * self.lower_premium_limit:
+            self.market_premium = norm_premium * self.lower_premium_limit
+        return self.market_premium 
+    
+    def reserve_capital(self, risk):
+        var = self.riskmodel.get_var(risk)
+        self.ambiguity_level * self.max_cat_prob_distortion * var + (1-self.ambiguity_level) * self.min_cat_prob_distortion * var
+        return var
+
+    def offer_premium(self, risk):
+        """
+        Offer premium based on the syndicate's loss probability model, current capital, ambiguity level
+        """
+        expected_damage_frequency = self.mean_contract_runtime / self.riskmodel_config["catastrophe_separation_distribution"].mean() 
+        expected_damage_loss = expected_damage_frequency * risk.risk_value
+        #self.norm_premium = expected_damage_frequency * self.riskmodel_config["damage_distribution"].mean() * self.riskmodel_config["risk_factor_mean"] * (1 + self.riskmodel_config["norm_profit_markup"])
+        norm_premium = expected_damage_loss + self.cost_of_capital * self.reserve_capital(risk) * (1 + self.riskmodel_config["norm_profit_markup"])
+        return norm_premium[0]
 
     def reset_pl(self):
         """Reset_pl Method.
