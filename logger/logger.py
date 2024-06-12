@@ -15,7 +15,7 @@ LOG_DEFAULT = ('total_cash total_excess_capital total_profits_losses total_contr
                'rc_event_schedule_initial rc_event_damage_initial number_riskmodels'
                 ).split('')
 """
-LOG_DEFAULT = ('total_cash total_excess_capital total_profits_losses total_contracts total_operational market_premium cumulative_bankruptcies cumulative_market_exits cumulative_unrecovered_claims cumulative_claims insurance_firms_cash risk_event_schedule_initial risk_event_damage_initial number_riskmodels'
+LOG_DEFAULT = ('total_cash syndicateA_cash syndicateB_cash syndicateC_cash syndicateD_cash syndicateE_cash syndicateF_cash total_excess_capital total_profits_losses total_contracts syndicateA_contracts syndicateB_contracts syndicateC_contracts syndicateD_contracts syndicateE_contracts syndicateF_contracts uncovered_risks total_operational market_premium cumulative_bankruptcies cumulative_market_exits cumulative_uncovered_claims cumulative_claims insurance_firms_cash risk_event_schedule_initial risk_event_damage_initial number_riskmodels'
                 ).split(" ")
 
 class Logger():
@@ -54,14 +54,27 @@ class Logger():
 
         # Variables pertaining to premiums
         self.history_logs['total_cash'] = []
+        self.history_logs['syndicateA_cash'] = []
+        self.history_logs['syndicateB_cash'] = []
+        self.history_logs['syndicateC_cash'] = []
+        self.history_logs['syndicateD_cash'] = []
+        self.history_logs['syndicateE_cash'] = []
+        self.history_logs['syndicateF_cash'] = []
         self.history_logs['total_excess_capital'] = []
         self.history_logs['total_profits_losses'] = []
         self.history_logs['total_contracts'] = []
+        self.history_logs['syndicateA_contracts'] = []
+        self.history_logs['syndicateB_contracts'] = []
+        self.history_logs['syndicateC_contracts'] = []
+        self.history_logs['syndicateD_contracts'] = []
+        self.history_logs['syndicateE_contracts'] = []
+        self.history_logs['syndicateF_contracts'] = []
+        self.history_logs['uncovered_risks'] = []
         self.history_logs['total_operational'] = []
         self.history_logs['market_premium'] = []
         self.history_logs['cumulative_bankruptcies'] = []
         self.history_logs['cumulative_market_exits'] = []
-        self.history_logs['cumulative_unrecovered_claims'] = []
+        self.history_logs['cumulative_uncovered_claims'] = []
         self.history_logs['cumulative_claims'] = []
         self.history_logs["number_riskmodels"] = []
         self.history_logs["risk_event_schedule_initial"] = []

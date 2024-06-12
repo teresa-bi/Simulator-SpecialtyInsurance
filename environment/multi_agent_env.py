@@ -91,6 +91,7 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
         self.total_excess_capital = 0.0
         self.total_profitslosses =  0.0
         self.total_contracts = 0.0
+        self.uncovered_risks = 0.0
         self.operational_syndicates = 0.0
         self.insurance_models_counter = np.zeros(self.risk_args["num_categories"])
         self.inaccuracy = []
@@ -169,7 +170,7 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
     def insurance_entry_index(self):
         return self.insurance_models_counter[0:self.risk_args["num_riskmodels"]].argmin()
     
-    def adjust_market_premium(self, capital):
+    def adjust_market_premium(self, capital, market_premium):
         """Adjust_market_premium Method.
                Accepts arguments
                    capital: Type float. The total capital (cash) available in the insurance market (insurance only).
@@ -177,13 +178,12 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
            This method adjusts the premium charged by insurance firms for the risks covered. The premium reduces linearly
            with the capital available in the insurance market and viceversa. The premium reduces until it reaches a minimum
            below which no insurer is willing to reduce further the price. """
-        self.market_premium = self.fair_market_premium * (self.syndicate_args["upper_premium_limit"] 
-                                                   - self.syndicate_args["premium_sensitivity"] 
+        underwriting_premium = market_premium * self.syndicate_args["upper_premium_limit"] - (self.syndicate_args["premium_sensitivity"] 
                                                    * capital / (self.syndicate_args["initial_capital"] 
                                                    * self.risk_model_configs[0]["damage_distribution"].mean() * self.broker_args["num_brokers"] * self.broker_args["lambda_risks_daily"]))
-        if self.market_premium < self.fair_market_premium * self.syndicate_args["lower_premium_limit"]:
-            self.market_premium = self.fair_market_premium * self.syndicate_args["lower_premium_limit"]
-        return self.market_premium 
+        if underwriting_premium < market_premium * self.syndicate_args["lower_premium_limit"]:
+            underwriting_premium = market_premium * self.syndicate_args["lower_premium_limit"]
+        return underwriting_premium
 
     def get_mean(self,x):
         return sum(x) / len(x)
@@ -241,7 +241,6 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
             if self.broker_risk_events[risk].risk_start_time == time:
                 new_risks.append(self.broker_risk_events[risk])
         action_dict = [{} for x in range(len(new_risks))]
-        premium_list = [[] for x in range(len(new_risks))]
         min_premium = [0 for x in range(len(new_risks))]
         for i in range(len(self.mm.market.syndicates)):
             expected_profits, acceptable_by_category, cash_left_by_categ, var_per_risk_per_categ, self.excess_capital  = self.mm.market.syndicates[i].riskmodel.evaluate(self.mm.market.syndicates[i].current_hold_contracts, self.mm.market.syndicates[i].current_capital)
@@ -249,9 +248,22 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
             for num in range(len(new_risks)):
                 if accept[num]:
                     market_premium = self.mm.market.syndicates[i].offer_premium(new_risks[num])
+                    sum_capital = sum([self.mm.market.syndicates[k].current_capital for k in range(len(self.mm.market.syndicates))]) 
+                    market_premium = self.adjust_market_premium(capital=sum_capital, market_premium=market_premium)
                     action_dict[num].update({self.mm.market.syndicates[i].syndicate_id: market_premium})
+                    if min_premium[num] == 0 or market_premium < min_premium[num]:
+                        min_premium[num] = market_premium
                 else:
                     action_dict[num].update({self.mm.market.syndicates[i].syndicate_id: 0})
+        k = 0
+        for j in range(len(min_premium)):
+            if min_premium[j] != 0:
+                self.market_premium += min_premium[j]
+                k += 1
+        if k != 0:
+            self.market_premium /= k
+        else:
+            self.market_premium = 0
         return action_dict
         
     def step(self, action_dict, new_syndicate):
@@ -398,6 +410,7 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
         self.total_excess_capital = sum([self.mm.market.syndicates[i].excess_capital for i in range(len(self.mm.market.syndicates))])
         self.total_profitslosses =  sum([self.mm.market.syndicates[i].profits_losses for i in range(len(self.mm.market.syndicates))])
         self.total_contracts = sum([len(self.mm.market.brokers[i].underwritten_contracts) for i in range(len(self.mm.market.brokers))])
+        self.uncovered_risks = sum([len(self.mm.market.brokers[i].not_underwritten_risks) for i in range(len(self.mm.market.brokers))])
         self.operational_syndicates = sum([self.mm.market.syndicates[i].status for i in range(len(self.mm.market.syndicates))])
         #operational_catbonds = sum([catbond.operational for catbond in self.catbonds])
         
@@ -421,14 +434,27 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
         # Prepare dict
         current_log = {}
         current_log['total_cash'] = self.total_cash
+        current_log['syndicateA_cash'] = self.mm.market.syndicates[0].current_capital
+        current_log['syndicateB_cash'] = self.mm.market.syndicates[1].current_capital
+        current_log['syndicateC_cash'] = self.mm.market.syndicates[2].current_capital
+        current_log['syndicateD_cash'] = self.mm.market.syndicates[3].current_capital
+        current_log['syndicateE_cash'] = self.mm.market.syndicates[4].current_capital
+        current_log['syndicateF_cash'] = self.mm.market.syndicates[5].current_capital
         current_log['total_excess_capital'] = self.total_excess_capital
         current_log['total_profits_losses'] = self.total_profitslosses
         current_log['total_contracts'] = self.total_contracts
+        current_log['syndicateA_contracts'] = len(self.mm.market.syndicates[0].current_hold_contracts)
+        current_log['syndicateB_contracts'] = len(self.mm.market.syndicates[1].current_hold_contracts)
+        current_log['syndicateC_contracts'] = len(self.mm.market.syndicates[2].current_hold_contracts)
+        current_log['syndicateD_contracts'] = len(self.mm.market.syndicates[3].current_hold_contracts)
+        current_log['syndicateE_contracts'] = len(self.mm.market.syndicates[4].current_hold_contracts)
+        current_log['syndicateF_contracts'] = len(self.mm.market.syndicates[5].current_hold_contracts)
+        current_log['uncovered_risks'] = self.uncovered_risks
         current_log['total_operational'] = self.operational_syndicates
         current_log['market_premium'] = self.market_premium  # Oxford Picing has a fair premium and adjust TODO:  
         current_log['cumulative_bankruptcies'] = self.cumulative_bankruptcies
         current_log['cumulative_market_exits'] = self.cumulative_market_exits
-        current_log['cumulative_unrecovered_claims'] = self.cumulative_unrecovered_claims
+        current_log['cumulative_uncovered_claims'] = self.cumulative_unrecovered_claims
         current_log['cumulative_claims'] = self.cumulative_claims    #Log the cumulative claims received so far. 
         
         # Add agent-level data to dict

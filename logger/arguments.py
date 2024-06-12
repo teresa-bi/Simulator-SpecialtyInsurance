@@ -6,7 +6,7 @@ def get_arguments():
 
     sim_args = {"max_time": 600, # Simualtion time step daily, 80 years 80*12
         "num_run_per_setting": 400, # Number of replication runs per simulation settings
-        "mean_contract_runtime": 60, # Time scale five yeears
+        "mean_contract_runtime": 36, # Time scale five yeears
         "contract_runtime_halfspread": 2,
         "default_contract_payment_period": 3,
         "simulation_reinsurance_type": 'non-proportional',
@@ -19,18 +19,17 @@ def get_arguments():
         "topology_broker_syndicate": 10 #####TODO Consider how to set the network topology
         }
 
-    broker_args = {"num_brokers": 100, # Number of brokers in simulation, 5 times of num syndicates
+    broker_args = {"num_brokers": 30, # Number of brokers in simulation, 5 times of num syndicates
         "lambda_risks_daily": 3,  # 0.06Lambda value for the Poisson distribution used by the broker process to generate new risks
         "decuctible": 0.2 # Percentage of risk value 
         }
 
-    syndicate_args = {"num_syndicates": 20, # Number of syndicates in simulation
+    syndicate_args = {"num_syndicates": 6, # Number of syndicates in simulation
         "initial_capital": 80000, # Initial capital of each syndicate
-        "lead_line_size": 0.8, # Default lead quote line size
-        "follow_line_size": 0.2, # Default follow quote line size
+        "lead_line_size": 0.5, # Default lead quote line size
+        "follow_line_size": 0.25, # Default follow quote line size
         "ambiguity_level": 0.5, # From 0 to 1
         "cost_of_capital": 0.1, # Cost of capital 
-        "ambiguity_level": 0.5, # From 0 to 1
         "actuarial_pricing_internal_weight": 0.5,  # Whether acturial pricing based on syndicate history or industry histor
         "loss_experiency_weight": 0.2, # Whether actuarial pricing weighs the past losses more than recent losses 
         "volatility_weight": 0, # How much actuarial pricing considers the standard deviation of losses
@@ -92,7 +91,7 @@ def get_arguments():
         "num_categories": 4, # Number of peril regions for the catastrophe
         "num_riskmodels": 4, # Number of risk models
         "min_cat_prob_distortion": 0.1, # Assume the difference between the closet loss probability model to the actual distribution 
-        "max_cat_prob_distortion": 0.5, # Assume the difference between the farest loss probability model to the actual distribution 
+        "max_cat_prob_distortion": 1, # Assume the difference between the farest loss probability model to the actual distribution 
         "risk_limit": 10000000, # The maximum value of the risk
         "riskmodel_inaccuracy": 2,
         "riskmodel_margin_of_safety": 2,

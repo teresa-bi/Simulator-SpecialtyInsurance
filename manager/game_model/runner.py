@@ -131,13 +131,13 @@ class GameRunner:
             
             # Add new syndicates with market entry probability every year
             new_syndicate = None
-            if total_steps % 12 == 0:
-                num_syndicates = len(self.syndicates)
-                prob = self.syndicate_args["market_entry_probability"]
-                np.random.seed(self.seed+total_steps)
-                if np.random.random() < prob:
-                    new_syndicate = Syndicate(str(num_syndicates), self.syndicate_args, self.num_risk_models, self.sim_args, self.risk_model_configs)
-                    num_syndicates += 1
+            #if total_steps % 12 == 0:
+                #num_syndicates = len(self.syndicates)
+                #prob = self.syndicate_args["market_entry_probability"]
+                #np.random.seed(self.seed+total_steps)
+                #if np.random.random() < prob:
+                   # new_syndicate = Syndicate(str(num_syndicates), self.syndicate_args, self.num_risk_models, self.sim_args, self.risk_model_configs)
+                    #num_syndicates += 1
 
             obs_dict, reward_dict, terminated_dict, flag_dict, info_dict = env.step(action_dict, new_syndicate)
 

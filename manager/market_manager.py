@@ -77,7 +77,9 @@ class MarketManager:
                 "risk_factor": starting_broker_risk[num].risk_factor,
                 "risk_category": starting_broker_risk[num].risk_category,
                 "risk_value": starting_broker_risk[num].risk_value}
-            if len(self.actions_to_apply[num]) > 0:
+            if len(self.actions_to_apply[num]) == 0:
+                self.market.brokers[int(broker_id)].not_underwritten_risk(risks)
+            elif len(self.actions_to_apply[num]) > 0:
                 lead_syndicate_id = self.actions_to_apply[num][0].syndicate
                 lead_syndicate_premium = self.actions_to_apply[num][0].premium * self.lead_line_size * risks["risk_value"] / self.sim_args["mean_contract_runtime"]
                 premium = lead_syndicate_premium
@@ -128,9 +130,9 @@ class MarketManager:
                     self.market.syndicates[i].current_capital += amount
                     for j in range(len(self.market.syndicates[i].current_capital_category)):
                         self.market.syndicates[i].current_capital_category[j] += amount / len(self.market.syndicates[i].current_capital_category)
-            for i in range(len(self.market.syndicates)):
-                self.market.syndicates[i].market_permanency()
-
+                for i in range(len(self.market.syndicates)):
+                    self.market.syndicates[i].market_permanency()
+                    
     def run_attritional_loss(self, starting_attritional_loss):
         """
         Update market with attritional loss event
@@ -142,6 +144,7 @@ class MarketManager:
         """
         for i in range(len(self.market.syndicates)):
             self.market.syndicates[i].current_capital -= starting_attritional_loss.risk_value * 0.0001
+            self.market.syndicates[i].current_capital -= (self.market.syndicates[i].initial_capital-self.market.syndicates[i].current_capital) * self.market.syndicates[i].cost_of_capital
             self.market.syndicates[i].profits_losses -= starting_attritional_loss.risk_value * 0.0001
 
     def run_broker_premium(self, starting_broker_premium):
@@ -200,7 +203,7 @@ class MarketManager:
                     self.market.syndicates[int(lead_syndicate_id)].current_capital_category[risk_category] -= lead_claim_value
                     self.market.syndicates[int(lead_syndicate_id)].profits_losses -= lead_claim_value
                     self.market.brokers[broker_id].receive_claim(lead_syndicate_id, risk_category, lead_claim_value, self.market.syndicates[int(lead_syndicate_id)].current_capital)
-                    self.market.syndicates[int(lead_syndicate_id)].bankrupt() 
+                    #self.market.syndicates[int(lead_syndicate_id)].bankrupt() 
                     self.market.syndicates[int(lead_syndicate_id)].excess_capital = 0
                 for follow_num in range(len(follow_syndicates_id)): 
                     if follow_syndicates_id[follow_num] != None: 
@@ -216,7 +219,7 @@ class MarketManager:
                             self.market.syndicates[int(follow_syndicates_id[follow_num])].current_capital_category[risk_category] -= follow_claim_values[follow_num]
                             self.market.syndicates[int(follow_syndicates_id[follow_num])].profits_losses -= follow_claim_values[follow_num]
                             self.market.brokers[broker_id].receive_claim(follow_syndicates_id[follow_num], risk_category, follow_claim_values[follow_num], self.market.syndicates[int(follow_syndicates_id[follow_num])].current_capital)
-                            self.market.syndicates[int(follow_syndicates_id[follow_num])].bankrupt()
+                            #self.market.syndicates[int(follow_syndicates_id[follow_num])].bankrupt()
                             self.market.syndicates[int(follow_syndicates_id[follow_num])].excess_capital = 0
 
     def run_catastrophe(self, starting_catastrophe):
@@ -251,7 +254,7 @@ class MarketManager:
                     self.market.syndicates[int(lead_syndicate_id)].current_capital_category[starting_catastrophe.catastrophe_category] -= lead_claim_value
                     self.market.syndicates[int(lead_syndicate_id)].profits_losses -= lead_claim_value
                     self.market.brokers[broker_id].receive_claim(lead_syndicate_id, catastrophe_category, lead_claim_value, self.market.syndicates[int(lead_syndicate_id)].current_capital)
-                    self.market.syndicates[int(lead_syndicate_id)].bankrupt() 
+                    #self.market.syndicates[int(lead_syndicate_id)].bankrupt() 
                     self.market.syndicates[int(lead_syndicate_id)].excess_capital = 0
                 for follow_num in range(len(follow_syndicates_id)): 
                     if follow_syndicates_id[follow_num] != None: 
@@ -268,7 +271,7 @@ class MarketManager:
                             self.market.syndicates[int(follow_syndicates_id[follow_num])].current_capital_category[starting_catastrophe.catastrophe_category] -= follow_claim_values[follow_num]
                             self.market.syndicates[int(follow_syndicates_id[follow_num])].profits_losses -= follow_claim_values[follow_num]
                             self.market.brokers[broker_id].receive_claim(follow_syndicates_id[follow_num], catastrophe_category, follow_claim_values[follow_num], self.market.syndicates[int(follow_syndicates_id[follow_num])].current_capital)
-                            self.market.syndicates[int(follow_syndicates_id[follow_num])].bankrupt()
+                            #self.market.syndicates[int(follow_syndicates_id[follow_num])].bankrupt()
                             self.market.syndicates[int(follow_syndicates_id[follow_num])].excess_capital = 0
 
     def evolve(self, step_time):
@@ -442,10 +445,21 @@ class MarketManager:
                     min_premium[num] = actions[num][sy].premium
                     lead_syndicate_id[num] = sy
                     break
-            for sy_new in range(len(self.market.syndicates)):
-                if (actions[num][sy_new].premium != 0) and (actions[num][sy_new].premium < min_premium[num]):
-                    min_premium[num] = actions[num][sy_new].premium
-                    lead_syndicate_id[num] = sy_new
+            #for sy_new in range(len(self.market.syndicates)):
+                #if (actions[num][sy_new].premium != 0) and (actions[num][sy_new].premium < min_premium[num]):
+                    #min_premium[num] = actions[num][sy_new].premium
+                    #lead_syndicate_id[num] = sy_new
+            # Randomly choose the syndicate because in this setting, all the premium are same
+            np.random.seed(1234)
+            sy_new = np.random.randint(6)
+            if actions[num][sy_new].premium != 0:
+                min_premium[num] = actions[num][sy_new].premium
+                lead_syndicate_id[num] = sy_new
+            else:
+                for sy_new in range(len(self.market.syndicates)):
+                    if (actions[num][sy_new].premium != 0) and (actions[num][sy_new].premium < min_premium[num]):
+                        min_premium[num] = actions[num][sy_new].premium
+                        lead_syndicate_id[num] = sy_new
             syndicate_list[num].append(lead_syndicate_id[num])
             accept_actions[num].append(actions[num][lead_syndicate_id[num]])
             sum_line_size[num] += self.lead_line_size

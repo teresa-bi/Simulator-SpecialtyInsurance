@@ -8,7 +8,7 @@ class RiskModel:
     The risk model adopted by syndicates or reinsurance firms to cope with catestrophes
     """
     def __init__(self, damage_distribution, expire_immediately, catastrophe_separation_distribution, norm_premium, category_number, init_average_exposure, 
-                 init_average_risk_factor, init_profit_estimate, margin_of_safety, var_tail_prob, inaccuracy):
+                 init_average_risk_factor, init_profit_estimate, margin_of_safety, var_tail_prob, inaccuracy, ambiguity, min_cat_prob_distortion, max_cat_prob_distortion):
         self.expire_immediately = expire_immediately
         self.catastrophe_separation_distribution = catastrophe_separation_distribution
         self.norm_premium = norm_premium
@@ -21,6 +21,9 @@ class RiskModel:
         self.damage_distribution = [damage_distribution for _ in range(self.category_number)]
         self.damage_distribution_stack = [[] for _ in range(self.category_number)] 
         self.inaccuracy = inaccuracy
+        self.ambiguity = ambiguity
+        self.min_cat_prob_distortion = min_cat_prob_distortion
+        self.max_cat_prob_distortion = max_cat_prob_distortion
 
     def getPPF(self, categ_id, tailSize):
         """
@@ -114,18 +117,20 @@ class RiskModel:
 
             # record liquidity requirement and apply margin of safety for liquidity requirement
             necessary_liquidity += var_per_risk * self.margin_of_safety * len(categ_risks)
+
+            var_per_risk_ambiguity = self.ambiguity * (1+self.max_cat_prob_distortion) * var_per_risk + (1-self.ambiguity) * (1+self.min_cat_prob_distortion) * var_per_risk
             
             try:
-                acceptable = int(math.floor(cash[categ_id] / var_per_risk))
+                acceptable = int(math.floor(cash[categ_id] / var_per_risk_ambiguity))
                 remaining = acceptable - len(categ_risks)
-                cash_left = cash[categ_id] - len(categ_risks) * var_per_risk
+                cash_left = cash[categ_id] - len(categ_risks) * var_per_risk_ambiguity
             except:
                 print(sys.exc_info())
                 pdb.set_trace()
             acceptable_by_category.append(acceptable)
             remaining_acceptable_by_category.append(remaining)
             cash_left_by_category[categ_id] = cash_left
-            var_per_risk_per_categ[categ_id] = var_per_risk
+            var_per_risk_per_categ[categ_id] = var_per_risk_ambiguity
 
         # TODO: expected profits should only be returned once the expire_immediately == False case is fixed; the else-clause conditional statement should then be raised to unconditional
         if expected_profits < 0:

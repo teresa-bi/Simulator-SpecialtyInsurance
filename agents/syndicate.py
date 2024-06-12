@@ -95,7 +95,10 @@ class Syndicate:
                                 init_profit_estimate = self.riskmodel_config["norm_profit_markup"],
                                 margin_of_safety = margin_of_safety_correction,
                                 var_tail_prob = self.riskmodel_config["var_tail_prob"],
-                                inaccuracy = self.riskmodel_config["inaccuracy_by_categ"])
+                                inaccuracy = self.riskmodel_config["inaccuracy_by_categ"],
+                                ambiguity = self.ambiguity_level,
+                                min_cat_prob_distortion = self.min_cat_prob_distortion,
+                                max_cat_prob_distortion = self.max_cat_prob_distortion)
 
         self.category_reinsurance = [None for i in range(self.num_risk_categories)]
 
@@ -268,7 +271,7 @@ class Syndicate:
     
     def reserve_capital(self, risk):
         var = self.riskmodel.get_var(risk)
-        self.ambiguity_level * self.max_cat_prob_distortion * var + (1-self.ambiguity_level) * self.min_cat_prob_distortion * var
+        var = self.ambiguity_level * (1+self.max_cat_prob_distortion) * var + (1-self.ambiguity_level) * (1+self.min_cat_prob_distortion) * var
         return var
 
     def offer_premium(self, risk):
@@ -276,9 +279,10 @@ class Syndicate:
         Offer premium based on the syndicate's loss probability model, current capital, ambiguity level
         """
         expected_damage_frequency = self.mean_contract_runtime / self.riskmodel_config["catastrophe_separation_distribution"].mean() 
-        expected_damage_loss = expected_damage_frequency * risk.risk_value
+        expected_damage_loss = expected_damage_frequency * self.riskmodel_config["risk_factor_mean"] * self.riskmodel_config["damage_distribution"].mean()
         #self.norm_premium = expected_damage_frequency * self.riskmodel_config["damage_distribution"].mean() * self.riskmodel_config["risk_factor_mean"] * (1 + self.riskmodel_config["norm_profit_markup"])
-        norm_premium = expected_damage_loss + self.cost_of_capital * self.reserve_capital(risk) * (1 + self.riskmodel_config["norm_profit_markup"])
+        norm_premium = expected_damage_loss + self.cost_of_capital * self.reserve_capital(risk) / risk.risk_value  * (1 + self.riskmodel_config["norm_profit_markup"])
+
         return norm_premium[0]
 
     def reset_pl(self):
