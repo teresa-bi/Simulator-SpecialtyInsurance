@@ -175,16 +175,16 @@ class RiskGenerator:
                                             })
                     risk_num += 1"""
         
-        risks_schedule = [[] for x in range(self.broker_args["num_brokers"])]
-        risks_categories = [[] for x in range(self.broker_args["num_brokers"])]
-        risks_factors = [[] for x in range(self.broker_args["num_brokers"])]
-        risks_values = [[] for x in range(self.broker_args["num_brokers"])]
+        risks_categories = [[[] for x in range(self.sim_time_span)] for j in range(self.broker_args["num_brokers"])]
+        risks_factors = [[[] for x in range(self.sim_time_span)] for j in range(self.broker_args["num_brokers"])]
+        risks_values = [[[] for x in range(self.sim_time_span)] for j in range(self.broker_args["num_brokers"])]
         for i in range(self.broker_args["num_brokers"]):
-            risks_schedule[i] = [] # Record the time for broker risks start time
-            np.random.seed(self.seed + i)
-            risks_categories[i] = np.random.randint(0, self.num_categories, size = self.sim_time_span)
-            risks_factors[i] = self.risk_factor_distribution.rvs(size = self.sim_time_span)
-            risks_values[i] = self.risk_value_distribution.rvs(size = self.sim_time_span)
+            for j in range(self.sim_time_span):
+                for k in range(int(self.broker_args["lambda_risks_daily"])):
+                    np.random.seed(self.seed + i + j + k)
+                    risks_categories[i][j].append(np.random.randint(0, self.num_categories, size = 1))
+                    risks_factors[i][j].append(self.risk_factor_distribution.rvs(size = 1))
+                    risks_values[i][j].append(self.risk_value_distribution.rvs(size = 1))
         risk_num = 0
         for i in range(self.broker_args["num_brokers"]):
             for j in range(self.sim_time_span):
@@ -192,9 +192,9 @@ class RiskGenerator:
                     self.broker_risks.append({"risk_id": risk_num,
                                             "broker_id": i,
                                             "risk_start_time": j,
-                                            "risk_factor": risks_factors[i][j],
-                                            "risk_category": risks_categories[i][j],
-                                            "risk_value": risks_values[i][j]
+                                            "risk_factor": risks_factors[i][j][k][0],
+                                            "risk_category": risks_categories[i][j][k][0],
+                                            "risk_value": risks_values[i][j][k][0]
                                             })
                     risk_num += 1
 
