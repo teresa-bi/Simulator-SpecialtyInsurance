@@ -128,6 +128,7 @@ class RiskGenerator:
         if np.isnan(risk_value_mean):
             risk_value_mean = self.risk_value_distribution.rvs()
         self.inaccuracy = self.get_all_riskmodel_combinations(self.num_categories, self.inaccuracy_riskmodels)
+        random.seed(self.seed)
         self.inaccuracy = random.sample(self.inaccuracy, self.num_riskmodels)
 
         risk_model_configs = [{"damage_distribution": self.damage_distribution,

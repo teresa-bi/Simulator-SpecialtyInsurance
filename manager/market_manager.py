@@ -238,8 +238,8 @@ class MarketManager:
         for broker_id in range(len(self.market.brokers)):
             affected_contract = []
             for num in range(len(self.market.brokers[broker_id].underwritten_contracts)):
-                #if int(self.market.brokers[broker_id].underwritten_contracts[num]["risk_category"]) == int(starting_catastrophe.catastrophe_category):
-                if self.market.brokers[broker_id].underwritten_contracts[num]["risk_end_time"] >= starting_catastrophe.risk_start_time:
+                if ((starting_catastrophe.catastrophe_category - self.market.brokers[broker_id].underwritten_contracts[num]["risk_category"] <= 1) and (starting_catastrophe.catastrophe_category < 3)) or ((starting_catastrophe.catastrophe_category - self.market.brokers[broker_id].underwritten_contracts[num]["risk_category"] == 0) and (starting_catastrophe.catastrophe_category == 3)):
+                #if starting_catastrophe.catastrophe_category - self.market.brokers[broker_id].underwritten_contracts[num]["risk_category"] <= 1:
                     affected_contract.append(self.market.brokers[broker_id].underwritten_contracts[num])
             for num in range(len(affected_contract)):
                 claim, lead_syndicate_id, follow_syndicates_id, catastrophe_category, lead_claim_value, follow_claim_values = self.market.brokers[broker_id].end_contract_ask_claim(affected_contract[num])

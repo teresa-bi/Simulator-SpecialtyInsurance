@@ -20,7 +20,7 @@ def get_arguments():
         }
 
     broker_args = {"num_brokers": 30, # Number of brokers in simulation, 5 times of num syndicates
-        "lambda_risks_daily": 3,  # 0.06Lambda value for the Poisson distribution used by the broker process to generate new risks
+        "lambda_risks_daily": 4,  # 0.06Lambda value for the Poisson distribution used by the broker process to generate new risks
         "decuctible": 0.2 # Percentage of risk value 
         }
 
@@ -28,7 +28,7 @@ def get_arguments():
         "initial_capital": 80000, # Initial capital of each syndicate
         "lead_line_size": 0.5, # Default lead quote line size
         "follow_line_size": 0.25, # Default follow quote line size
-        "ambiguity_level": 0.5, # From 0 to 1
+        "ambiguity_level": 0, # From 0 to 1
         "cost_of_capital": 0.1, # Cost of capital 
         "actuarial_pricing_internal_weight": 0.5,  # Whether acturial pricing based on syndicate history or industry histor
         "loss_experiency_weight": 0.2, # Whether actuarial pricing weighs the past losses more than recent losses 
@@ -39,7 +39,7 @@ def get_arguments():
         "premium_reserve_ratio": 0.5, # Premium to capital reserve ratio
         "minimum_capital_reserve_ratio": 1, # Reserved capital to working capital ratio
         "maximum_scaling_factor": 1, # Minimum scaling factor applied to premium
-        "market_entry_probability": 0.3, # Default probability of entering the market
+        "market_entry_probability": 0.1, # Default probability of entering the market
         "interest_rate": 0.001, # Interest rate for the capital monthly
         "exit_capital_threshold": 0.6, # Capital employment threshold for insurance firm exit
         "cash_permanency_limit": 100, # This parameter enforces the limit under which the firms leave the market because they cannot underwrite anything
@@ -114,7 +114,7 @@ def get_arguments():
         "money_supply": 2000000000
         }
     
-    seed = 234234
+    seed = 123123
 
     return sim_args, manager_args, broker_args, syndicate_args, reinsurancefirm_args,  shareholder_args, risk_args, seed
 

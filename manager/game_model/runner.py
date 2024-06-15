@@ -12,7 +12,6 @@ from ray.rllib.policy.policy import PolicySpec
 import numpy as np
 import gymnasium as gym
 from ray import air, tune
-from ray.rllib.examples.policy.random_policy import RandomPolicy
 
 class GameRunner:
     """
@@ -75,7 +74,6 @@ class GameRunner:
                                                      high=np.array([3000000,3000000,3000000,3000000]), dtype = np.float32),
                     action_space=gym.spaces.Box(0.5, 0.9, dtype = np.float32)
                 ),
-                "random": PolicySpec(policy_class=RandomPolicy),
                 }, 
                         "policy_mapping_fn": self.policy_mapping_fn,
                         "policies_to_train":["main0"],
@@ -131,13 +129,13 @@ class GameRunner:
             
             # Add new syndicates with market entry probability every year
             new_syndicate = None
-            #if total_steps % 12 == 0:
-                #num_syndicates = len(self.syndicates)
-                #prob = self.syndicate_args["market_entry_probability"]
-                #np.random.seed(self.seed+total_steps)
-                #if np.random.random() < prob:
-                   # new_syndicate = Syndicate(str(num_syndicates), self.syndicate_args, self.num_risk_models, self.sim_args, self.risk_model_configs)
-                    #num_syndicates += 1
+            if total_steps % 12 == 0:
+                num_syndicates = len(self.syndicates)
+                prob = self.syndicate_args["market_entry_probability"]
+                np.random.seed(self.seed+total_steps)
+                if np.random.random() < prob:
+                    new_syndicate = Syndicate(str(num_syndicates), self.syndicate_args, self.num_risk_models, self.sim_args, self.risk_model_configs)
+                    num_syndicates += 1
 
             obs_dict, reward_dict, terminated_dict, flag_dict, info_dict = env.step(action_dict, new_syndicate)
 
