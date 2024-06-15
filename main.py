@@ -34,6 +34,7 @@ if __name__ == '__main__':
     # Get the simulation parameters
     sim_args, manager_args, broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args, seed = get_arguments()
     # Get random seeds for the simulation 
+    seed = 101101
     np_seed = seeds(num_replication, seed)
 
     # Run the replication
@@ -45,6 +46,9 @@ if __name__ == '__main__':
         # Create scenario
         with_reinsurance = False
         num_risk_models = risk_args["num_riskmodels"]
+        syndicate_args["lead_line_size"] = 1
+        syndicate_args["follow_line_size"] = 0
+        syndicate_args["ambiguity_level"] = 0
         catastrophes, broker_risks, fair_market_premium, risk_model_configs = RiskGenerator(num_risk_models, sim_args, broker_args, risk_args, seed).generate_risks()
         brokers, syndicates, reinsurancefirms, shareholders = MarketGenerator(with_reinsurance, num_risk_models, sim_args, broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_model_configs).generate_agents()
         log = logger.Logger(risk_args["num_riskmodels"], brokers, syndicates)
@@ -59,5 +63,5 @@ if __name__ == '__main__':
 
         # Restore the log
         log.restore_logger_object(list(logs))
-        log.save_log()
+        log.save_log(syndicate_args["lead_line_size"], syndicate_args["ambiguity_level"])
 
