@@ -281,7 +281,7 @@ class Syndicate:
         expected_damage_frequency = self.mean_contract_runtime / self.riskmodel_config["catastrophe_separation_distribution"].mean() 
         expected_damage_loss = expected_damage_frequency * self.riskmodel_config["risk_factor_mean"] * self.riskmodel_config["damage_distribution"].mean()
         #self.norm_premium = expected_damage_frequency * self.riskmodel_config["damage_distribution"].mean() * self.riskmodel_config["risk_factor_mean"] * (1 + self.riskmodel_config["norm_profit_markup"])
-        norm_premium = expected_damage_loss + self.cost_of_capital * self.reserve_capital(risk) / risk.risk_value  * (1 + self.riskmodel_config["norm_profit_markup"])
+        norm_premium = (expected_damage_loss + self.cost_of_capital * self.reserve_capital(risk) / risk.risk_value) * (1 + self.riskmodel_config["norm_profit_markup"])
 
         return norm_premium[0]
 
