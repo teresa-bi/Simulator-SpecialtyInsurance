@@ -164,7 +164,7 @@ class Logger():
         # Restore history log
         self.history_logs = log
     
-    def save_log(self, leadsize, ambiguity):
+    def save_log(self, lead_line_size, ambiguity_level, seed):
         """
         Save log to disk of local machine
 
@@ -173,7 +173,7 @@ class Logger():
         background_run: bool
             An ensemble run (True) or not (False)
         """
-        to_log = self.single_log_prepare(leadsize, ambiguity)
+        to_log = self.single_log_prepare(lead_line_size, ambiguity_level, seed)
 
         for filename, data, operation_character in to_log:
             with open(filename, operation_character) as wfile:
@@ -189,12 +189,12 @@ class Logger():
         to_log.append(("data/" + fpf + "_history_logs.dat", self.history_logs, "a"))
         return to_log
 
-    def single_log_prepare(self, leadsize, ambiguity):
+    def single_log_prepare(self, lead_line_size, ambiguity_level, seed):
         """
         Prepare writing tasks for single run saving
         """
         to_log = []
-        to_log.append(("history_logs_" + str(leadsize) + "_" + str(ambiguity) + ".dat", self.history_logs, "w"))
+        to_log.append(("history_logs_" + str(lead_line_size) + "_" + str(ambiguity_level) + "_" + str(seed) + ".dat", self.history_logs, "w"))
         return to_log
 
     def add_insurance_agent(self):
