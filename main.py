@@ -30,7 +30,7 @@ if __name__ == '__main__':
         os.makedirs("data")
 
     # Set the number of simulation replication
-    num_replication = 1
+    num_replication = 9
     # Get the simulation parameters
     sim_args, manager_args, broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args, seed = get_arguments()
     # Get random seeds for the simulation 
@@ -46,9 +46,33 @@ if __name__ == '__main__':
         # Create scenario
         with_reinsurance = False
         num_risk_models = risk_args["num_riskmodels"]
-        syndicate_args["lead_line_size"] = 1
-        syndicate_args["follow_line_size"] = 0
-        syndicate_args["ambiguity_level"] = 0
+        if i <= 2:
+            syndicate_args["lead_line_size"] = 1
+            syndicate_args["follow_line_size"] = 0
+            if i == 0:
+                syndicate_args["ambiguity_level"] = 0
+            elif i == 1:
+                syndicate_args["ambiguity_level"] = 0.5
+            else:
+                syndicate_args["ambiguity_level"] = 1
+        elif 2 < i <= 5:
+            syndicate_args["lead_line_size"] = 0.8
+            syndicate_args["follow_line_size"] = 0.2
+            if i == 3:
+                syndicate_args["ambiguity_level"] = 0
+            elif i == 4:
+                syndicate_args["ambiguity_level"] = 0.5
+            else:
+                syndicate_args["ambiguity_level"] = 1
+        else:
+            syndicate_args["lead_line_size"] = 0.5
+            syndicate_args["follow_line_size"] = 0.25
+            if i == 6:
+                syndicate_args["ambiguity_level"] = 0
+            elif i == 7:
+                syndicate_args["ambiguity_level"] = 0.5
+            else:
+                syndicate_args["ambiguity_level"] = 1
         catastrophes, broker_risks, fair_market_premium, risk_model_configs = RiskGenerator(num_risk_models, sim_args, broker_args, risk_args, seed).generate_risks()
         brokers, syndicates, reinsurancefirms, shareholders = MarketGenerator(with_reinsurance, num_risk_models, sim_args, broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_model_configs).generate_agents()
         log = logger.Logger(risk_args["num_riskmodels"], brokers, syndicates)

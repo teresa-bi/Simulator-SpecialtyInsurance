@@ -4,7 +4,7 @@ Contains all the simulation parameters
 
 def get_arguments():
 
-    sim_args = {"max_time": 10, # Simualtion time step daily, 80 years 80*12
+    sim_args = {"max_time": 600, # Simualtion time step daily, 80 years 80*12
         "num_run_per_setting": 400, # Number of replication runs per simulation settings
         "mean_contract_runtime": 36, # Time scale five yeears
         "contract_runtime_halfspread": 2,
@@ -39,7 +39,7 @@ def get_arguments():
         "premium_reserve_ratio": 0.5, # Premium to capital reserve ratio
         "minimum_capital_reserve_ratio": 1, # Reserved capital to working capital ratio
         "maximum_scaling_factor": 1, # Minimum scaling factor applied to premium
-        "market_entry_probability": 0.1, # Default probability of entering the market
+        "market_entry_probability": 0.05, # Default probability of entering the market
         "interest_rate": 0.001, # Interest rate for the capital monthly
         "exit_capital_threshold": 0.6, # Capital employment threshold for insurance firm exit
         "cash_permanency_limit": 100, # This parameter enforces the limit under which the firms leave the market because they cannot underwrite anything
@@ -114,7 +114,7 @@ def get_arguments():
         "money_supply": 2000000000
         }
     
-    seed = 123123
+    seed = 234000
 
     return sim_args, manager_args, broker_args, syndicate_args, reinsurancefirm_args,  shareholder_args, risk_args, seed
 
