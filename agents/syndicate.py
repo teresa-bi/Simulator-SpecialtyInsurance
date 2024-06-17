@@ -264,7 +264,7 @@ class Syndicate:
         self.market_premium = norm_premium * (self.upper_premium_limit
                                                    - self.premium_sensitivity
                                                    * self.current_capital / (self.initial_capital
-                                                   * self.riskmodel_config["damage_distribution"].mean() * self.num_brokers * self.lambda_risks_daily / self.num_syndicates))
+                                                   * self.riskmodel_config["damage_distribution"].mean() * 30 * 4 / 6))
         if self.market_premium < norm_premium * self.lower_premium_limit:
             self.market_premium = norm_premium * self.lower_premium_limit
         return self.market_premium 
@@ -282,6 +282,7 @@ class Syndicate:
         expected_damage_loss = expected_damage_frequency * self.riskmodel_config["risk_factor_mean"] * self.riskmodel_config["damage_distribution"].mean()
         #self.norm_premium = expected_damage_frequency * self.riskmodel_config["damage_distribution"].mean() * self.riskmodel_config["risk_factor_mean"] * (1 + self.riskmodel_config["norm_profit_markup"])
         norm_premium = (expected_damage_loss + self.cost_of_capital * self.reserve_capital(risk) / risk.risk_value) * (1 + self.riskmodel_config["norm_profit_markup"])
+        norm_premium = self.adjust_market_premium(norm_premium)
 
         return norm_premium[0]
 
