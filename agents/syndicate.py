@@ -173,9 +173,6 @@ class Syndicate:
                                     "risk_end_time": risks.get("risk_end_time"),
                                     "initial_VaR": risks.get("risk_VaR"),
                                     "pay": None})
-        for i in range(len(self.current_capital_category)):
-            if i == int(risks.get("risk_category")):
-                self.current_capital_category[i] -= premium
 
     def rereceived_risk(self, risk_id, broker_id, risk_start_time):
         pass
@@ -264,7 +261,7 @@ class Syndicate:
         self.market_premium = norm_premium * (self.upper_premium_limit
                                                    - self.premium_sensitivity
                                                    * self.current_capital / (self.initial_capital
-                                                   * self.riskmodel_config["damage_distribution"].mean() * 30 * 4 / 6))
+                                                   * self.riskmodel_config["damage_distribution"].mean() * 30 * 2 / 6))
         if self.market_premium < norm_premium * self.lower_premium_limit:
             self.market_premium = norm_premium * self.lower_premium_limit
         return self.market_premium 

@@ -126,7 +126,7 @@ class GameRunner:
             action_dict = env.get_actions(total_steps)  
             total_steps += 1
             print(total_steps)
-            
+
             # Add new syndicates with market entry probability every year
             new_syndicate = None
             if total_steps % 12 == 0:
