@@ -9,7 +9,7 @@ import numpy as np
 
 from environment.market_generator import MarketGenerator
 from environment.risk_generator import RiskGenerator
-from manager.ai_model.runner import AIRunner
+#from manager.ai_model.runner import AIRunner
 from manager.game_model.runner import GameRunner
 
 if __name__ == '__main__':

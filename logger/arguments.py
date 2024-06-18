@@ -20,7 +20,7 @@ def get_arguments():
         }
 
     broker_args = {"num_brokers": 30, # Number of brokers in simulation, 5 times of num syndicates
-        "lambda_risks_daily": 2,  # 0.06Lambda value for the Poisson distribution used by the broker process to generate new risks
+        "lambda_risks_daily": 3,  # 0.06Lambda value for the Poisson distribution used by the broker process to generate new risks
         "decuctible": 0.2 # Percentage of risk value 
         }
 
@@ -114,7 +114,7 @@ def get_arguments():
         "money_supply": 2000000000
         }
     
-    seed = 234001
+    seed = 123123
 
     return sim_args, manager_args, broker_args, syndicate_args, reinsurancefirm_args,  shareholder_args, risk_args, seed
 

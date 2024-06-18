@@ -126,10 +126,11 @@ class MarketManager:
             # Update Syndicates status and capital from interest
             if time % 12 == 0:
                 for i in range(len(self.market.syndicates)):
-                    amount = self.market.syndicates[i].current_capital * self.syndicate_args["interest_rate"]
-                    self.market.syndicates[i].current_capital += amount
-                    for j in range(len(self.market.syndicates[i].current_capital_category)):
-                        self.market.syndicates[i].current_capital_category[j] += amount / len(self.market.syndicates[i].current_capital_category)
+                    if self.market.syndicates[i].status == True:
+                        amount = self.market.syndicates[i].current_capital * self.syndicate_args["interest_rate"]
+                        self.market.syndicates[i].current_capital += amount
+                        for j in range(len(self.market.syndicates[i].current_capital_category)):
+                            self.market.syndicates[i].current_capital_category[j] += amount / len(self.market.syndicates[i].current_capital_category)
                 for i in range(len(self.market.syndicates)):
                     self.market.syndicates[i].market_permanency()
                     
@@ -143,9 +144,10 @@ class MarketManager:
             The current attritional loss event
         """
         for i in range(len(self.market.syndicates)):
-            self.market.syndicates[i].current_capital -= starting_attritional_loss.risk_value * 0.0001
-            self.market.syndicates[i].current_capital -= (self.market.syndicates[i].initial_capital-self.market.syndicates[i].current_capital) * self.market.syndicates[i].cost_of_capital
-            self.market.syndicates[i].profits_losses -= starting_attritional_loss.risk_value * 0.0001
+            if self.market.syndicates[i].status == True:
+                self.market.syndicates[i].current_capital -= starting_attritional_loss.risk_value * 0.0001
+                self.market.syndicates[i].current_capital -= (self.market.syndicates[i].initial_capital-self.market.syndicates[i].current_capital) * self.market.syndicates[i].cost_of_capital
+                self.market.syndicates[i].profits_losses -= starting_attritional_loss.risk_value * 0.0001
 
     def run_broker_premium(self, starting_broker_premium):
         """
@@ -163,12 +165,13 @@ class MarketManager:
                     affected_contract.append(self.market.brokers[broker_id].underwritten_contracts[num])
             for num in range(len(affected_contract)):
                 premium, lead_syndicate_premium, follow_syndicates_premium, lead_syndicate_id, follow_syndicates_id, risk_category = self.market.brokers[broker_id].pay_premium(affected_contract[num])
-                self.market.syndicates[int(lead_syndicate_id)].receive_premium(lead_syndicate_premium, risk_category)
-                self.market.syndicates[int(lead_syndicate_id)].current_capital += lead_syndicate_premium
-                self.market.syndicates[int(lead_syndicate_id)].current_capital_category[risk_category] += lead_syndicate_premium
-                self.market.syndicates[int(lead_syndicate_id)].profits_losses += lead_syndicate_premium
+                if self.market.syndicates[int(lead_syndicate_id)].status == True:
+                    self.market.syndicates[int(lead_syndicate_id)].receive_premium(lead_syndicate_premium, risk_category)
+                    self.market.syndicates[int(lead_syndicate_id)].current_capital += lead_syndicate_premium
+                    self.market.syndicates[int(lead_syndicate_id)].current_capital_category[risk_category] += lead_syndicate_premium
+                    self.market.syndicates[int(lead_syndicate_id)].profits_losses += lead_syndicate_premium
                 for follow_id in range(len(follow_syndicates_id)):
-                    if follow_syndicates_id[follow_id] != None:
+                    if (follow_syndicates_id[follow_id] != None) and (self.market.syndicates[int(follow_syndicates_id[follow_id])].status == True):
                         self.market.syndicates[int(follow_syndicates_id[follow_id])].receive_premium(follow_syndicates_premium[follow_id], risk_category)
                         self.market.syndicates[int(follow_syndicates_id[follow_id])].current_capital += follow_syndicates_premium[follow_id]
                         self.market.syndicates[int(follow_syndicates_id[follow_id])].current_capital_category[risk_category] += follow_syndicates_premium[follow_id]
@@ -238,7 +241,7 @@ class MarketManager:
         for broker_id in range(len(self.market.brokers)):
             affected_contract = []
             for num in range(len(self.market.brokers[broker_id].underwritten_contracts)):
-                if ((starting_catastrophe.catastrophe_category - self.market.brokers[broker_id].underwritten_contracts[num]["risk_category"] <= 1) and (starting_catastrophe.catastrophe_category < 3)) or ((starting_catastrophe.catastrophe_category - self.market.brokers[broker_id].underwritten_contracts[num]["risk_category"] == 0) and (starting_catastrophe.catastrophe_category == 3)):
+                if (starting_catastrophe.catastrophe_category - self.market.brokers[broker_id].underwritten_contracts[num]["risk_category"] == 0):
                 #if starting_catastrophe.catastrophe_category - self.market.brokers[broker_id].underwritten_contracts[num]["risk_category"] <= 1:
                     affected_contract.append(self.market.brokers[broker_id].underwritten_contracts[num])
             for num in range(len(affected_contract)):
