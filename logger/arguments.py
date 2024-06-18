@@ -6,7 +6,7 @@ def get_arguments():
 
     sim_args = {"max_time": 600, # Simualtion time step daily, 80 years 80*12
         "num_run_per_setting": 400, # Number of replication runs per simulation settings
-        "mean_contract_runtime": 36, # Time scale five yeears
+        "mean_contract_runtime": 60, # Time scale five yeears
         "contract_runtime_halfspread": 2,
         "default_contract_payment_period": 3,
         "simulation_reinsurance_type": 'non-proportional',
@@ -114,7 +114,7 @@ def get_arguments():
         "money_supply": 2000000000
         }
     
-    seed = 123123
+    seed = 234001
 
     return sim_args, manager_args, broker_args, syndicate_args, reinsurancefirm_args,  shareholder_args, risk_args, seed
 

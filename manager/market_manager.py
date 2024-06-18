@@ -123,16 +123,18 @@ class MarketManager:
                 else:
                     num += 1
 
-            # Update Syndicates status and capital from interest
-            if time % 12 == 0:
-                for i in range(len(self.market.syndicates)):
-                    if self.market.syndicates[i].status == True:
-                        amount = self.market.syndicates[i].current_capital * self.syndicate_args["interest_rate"]
-                        self.market.syndicates[i].current_capital += amount
-                        for j in range(len(self.market.syndicates[i].current_capital_category)):
-                            self.market.syndicates[i].current_capital_category[j] += amount / len(self.market.syndicates[i].current_capital_category)
-                for i in range(len(self.market.syndicates)):
-                    self.market.syndicates[i].market_permanency()
+        # Update Syndicates status and capital from interest
+        if time % 12 == 0:
+            for i in range(len(self.market.syndicates)):
+                if self.market.syndicates[i].status == True:
+                    amount = self.market.syndicates[i].current_capital * self.syndicate_args["interest_rate"]
+                    self.market.syndicates[i].current_capital += amount
+                    for j in range(len(self.market.syndicates[i].current_capital_category)):
+                        self.market.syndicates[i].current_capital_category[j] += amount / len(self.market.syndicates[i].current_capital_category)
+                if self.market.syndicates[i].current_capital > self.market.syndicates[i].initial_capital:
+                    self.market.syndicates[i].current_capital = self.market.syndicates[i].current_capital - (self.market.syndicates[i].current_capital - self.market.syndicates[i].initial_capital) * self.market.syndicates[i].dividend_share_of_profits
+            for i in range(len(self.market.syndicates)):
+                self.market.syndicates[i].market_permanency()
                     
     def run_attritional_loss(self, starting_attritional_loss):
         """
