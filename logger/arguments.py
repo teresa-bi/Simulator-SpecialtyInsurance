@@ -6,7 +6,7 @@ def get_arguments():
 
     sim_args = {"max_time": 600, # Simualtion time step daily, 80 years 80*12
         "num_run_per_setting": 400, # Number of replication runs per simulation settings
-        "mean_contract_runtime": 60, # Time scale five yeears
+        "mean_contract_runtime": 36, # Time scale five yeears
         "contract_runtime_halfspread": 2,
         "default_contract_payment_period": 3,
         "simulation_reinsurance_type": 'non-proportional',

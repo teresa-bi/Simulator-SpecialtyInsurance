@@ -8,7 +8,7 @@ class RiskModel:
     The risk model adopted by syndicates or reinsurance firms to cope with catestrophes
     """
     def __init__(self, damage_distribution, expire_immediately, catastrophe_separation_distribution, norm_premium, category_number, init_average_exposure, 
-                 init_average_risk_factor, init_profit_estimate, margin_of_safety, var_tail_prob, inaccuracy, ambiguity, min_cat_prob_distortion, max_cat_prob_distortion):
+                 init_average_risk_factor, init_profit_estimate, margin_of_safety, var_tail_prob, inaccuracy, ambiguity, min_cat_prob_distortion, max_cat_prob_distortion, lead_line_size):
         self.expire_immediately = expire_immediately
         self.catastrophe_separation_distribution = catastrophe_separation_distribution
         self.norm_premium = norm_premium
@@ -24,6 +24,7 @@ class RiskModel:
         self.ambiguity = ambiguity
         self.min_cat_prob_distortion = min_cat_prob_distortion
         self.max_cat_prob_distortion = max_cat_prob_distortion
+        self.lead_line_size = lead_line_size
 
     def getPPF(self, categ_id, tailSize):
         """
@@ -118,7 +119,7 @@ class RiskModel:
             # record liquidity requirement and apply margin of safety for liquidity requirement
             necessary_liquidity += var_per_risk * self.margin_of_safety * len(categ_risks)
 
-            var_per_risk_ambiguity = self.ambiguity * (1+self.max_cat_prob_distortion) * var_per_risk + (1-self.ambiguity) * (1+self.min_cat_prob_distortion) * var_per_risk
+            var_per_risk_ambiguity = (self.ambiguity * (1+self.max_cat_prob_distortion) * var_per_risk + (1-self.ambiguity) * (1+self.min_cat_prob_distortion) * var_per_risk) * self.lead_line_size
             
             try:
                 acceptable = int(math.floor(cash[categ_id] / var_per_risk_ambiguity))
