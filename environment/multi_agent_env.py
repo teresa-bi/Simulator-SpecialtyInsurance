@@ -255,6 +255,11 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
                         min_premium[num] = market_premium
                 else:
                     action_dict[num].update({self.mm.market.syndicates[i].syndicate_id: 0})
+                    market_premium = self.mm.market.syndicates[i].offer_premium(new_risks[num])
+                    sum_capital = sum([self.mm.market.syndicates[k].current_capital for k in range(len(self.mm.market.syndicates))]) 
+                    market_premium = self.adjust_market_premium(capital=sum_capital, market_premium=market_premium)
+                    if min_premium[num] == 0 or market_premium < min_premium[num]:
+                        min_premium[num] = market_premium
         k = 0
         for j in range(len(min_premium)):
             if min_premium[j] != 0:

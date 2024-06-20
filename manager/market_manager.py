@@ -81,13 +81,13 @@ class MarketManager:
                 self.market.brokers[int(broker_id)].not_underwritten_risk(risks)
             elif len(self.actions_to_apply[num]) > 0:
                 lead_syndicate_id = self.actions_to_apply[num][0].syndicate
-                lead_syndicate_premium = self.actions_to_apply[num][0].premium * self.lead_line_size * risks["risk_value"] / 12
+                lead_syndicate_premium = self.actions_to_apply[num][0].premium * self.lead_line_size * risks["risk_value"] / self.sim_args["mean_contract_runtime"]
                 premium = lead_syndicate_premium
                 follow_syndicates_id = [None for i in range(len(self.market.syndicates))]
                 follow_syndicates_premium = [None for i in range(len(self.market.syndicates))]
                 for i in range(1,len(self.actions_to_apply[num])):
                     follow_syndicates_id[i-1] = self.actions_to_apply[num][i].syndicate
-                    follow_syndicates_premium[i-1] = self.actions_to_apply[num][i].premium * self.follow_line_sizes * risks["risk_value"] / 12
+                    follow_syndicates_premium[i-1] = self.actions_to_apply[num][i].premium * self.follow_line_sizes * risks["risk_value"] / self.sim_args["mean_contract_runtime"]
                     premium += follow_syndicates_premium[i-1]
                 self.market.brokers[int(broker_id)].add_contract(risks, lead_syndicate_id, self.lead_line_size, lead_syndicate_premium, follow_syndicates_id, self.follow_line_sizes, follow_syndicates_premium, premium)
                 self.market.syndicates[int(lead_syndicate_id)].add_leader(risks, self.lead_line_size, lead_syndicate_premium)
@@ -464,7 +464,7 @@ class MarketManager:
                         min_premium[num] = actions[num][sy].premium
                         lead_syndicate_id[num] = sy
                     elif (actions[num][sy].premium != 0) and (actions[num][sy].premium == min_premium[num]):
-                        np.random.seed(1234+num+sy)
+                        np.random.seed(1234+sy)
                         a = np.random.randint(1)
                         if a == 0:
                             min_premium[num] = actions[num][sy].premium
