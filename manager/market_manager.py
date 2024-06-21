@@ -96,8 +96,6 @@ class MarketManager:
                     if follow_syndicates_id[sy] != None:
                         self.market.syndicates[int(follow_syndicates_id[sy])].add_follower(risks, self.follow_line_sizes, follow_syndicates_premium[sy])
                         self.market.syndicates[int(follow_syndicates_id[sy])].add_contract(risks, broker_id, follow_syndicates_premium[sy])
-                    else:
-                        self.market.brokers[int(broker_id)].not_underwritten_risk(risks)
         # Update syndicates' status and contracts
         for broker_id in range(len(self.market.brokers)):
             num = 0
