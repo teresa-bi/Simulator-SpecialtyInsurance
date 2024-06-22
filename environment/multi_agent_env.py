@@ -246,29 +246,26 @@ class MultiAgentBasedModel(SpecialtyInsuranceMarketEnv):
             expected_profits, acceptable_by_category, cash_left_by_categ, var_per_risk_per_categ, self.excess_capital  = self.mm.market.syndicates[i].riskmodel.evaluate(self.mm.market.syndicates[i].current_hold_contracts, self.mm.market.syndicates[i].current_capital)
             accept = self.process_newrisks_insurer(new_risks, i, acceptable_by_category, var_per_risk_per_categ, cash_left_by_categ, time)
             for num in range(len(new_risks)):
+                market_premium = self.mm.market.syndicates[i].offer_premium(new_risks[num])
+                sum_capital = sum([self.mm.market.syndicates[k].current_capital for k in range(len(self.mm.market.syndicates))]) 
+                market_premium = self.adjust_market_premium(capital=sum_capital, market_premium=market_premium)
                 if accept[num]:
-                    market_premium = self.mm.market.syndicates[i].offer_premium(new_risks[num])
-                    sum_capital = sum([self.mm.market.syndicates[k].current_capital for k in range(len(self.mm.market.syndicates))]) 
-                    market_premium = self.adjust_market_premium(capital=sum_capital, market_premium=market_premium)
                     action_dict[num].update({self.mm.market.syndicates[i].syndicate_id: market_premium})
                     if min_premium[num] == 0 or market_premium < min_premium[num]:
                         min_premium[num] = market_premium
                 else:
                     action_dict[num].update({self.mm.market.syndicates[i].syndicate_id: 0})
-                    market_premium = self.mm.market.syndicates[i].offer_premium(new_risks[num])
-                    sum_capital = sum([self.mm.market.syndicates[k].current_capital for k in range(len(self.mm.market.syndicates))]) 
-                    market_premium = self.adjust_market_premium(capital=sum_capital, market_premium=market_premium)
-                    if min_premium[num] == 0 or market_premium < min_premium[num]:
+                    if min_premium[num] == 0:
                         min_premium[num] = market_premium
+        
+        premium_sum = 0
         k = 0
-        for j in range(len(min_premium)):
-            if min_premium[j] != 0:
-                self.market_premium += min_premium[j]
+        for i in range(len(min_premium)):
+            if min_premium[i] != 0:
+                premium_sum += min_premium[i]
                 k += 1
-        if k != 0:
-            self.market_premium /= k
-        else:
-            self.market_premium = 0
+        self.market_premium = premium_sum / k
+                
         return action_dict
         
     def step(self, action_dict, new_syndicate):

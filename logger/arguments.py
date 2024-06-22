@@ -29,7 +29,7 @@ def get_arguments():
         "lead_line_size": 0.5, # Default lead quote line size
         "follow_line_size": 0.25, # Default follow quote line size
         "ambiguity_level": 0, # From 0 to 1
-        "cost_of_capital": 0.1, # Cost of capital 
+        "cost_of_capital": 0.025, # Cost of capital 
         "actuarial_pricing_internal_weight": 0.5,  # Whether acturial pricing based on syndicate history or industry histor
         "loss_experiency_weight": 0.2, # Whether actuarial pricing weighs the past losses more than recent losses 
         "volatility_weight": 0, # How much actuarial pricing considers the standard deviation of losses

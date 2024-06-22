@@ -81,13 +81,13 @@ class MarketManager:
                 self.market.brokers[int(broker_id)].not_underwritten_risk(risks)
             elif len(self.actions_to_apply[num]) > 0:
                 lead_syndicate_id = self.actions_to_apply[num][0].syndicate
-                lead_syndicate_premium = self.actions_to_apply[num][0].premium * self.lead_line_size * risks["risk_value"] / self.sim_args["mean_contract_runtime"]
+                lead_syndicate_premium = self.actions_to_apply[num][0].premium * self.lead_line_size * risks["risk_value"] / 30
                 premium = lead_syndicate_premium
                 follow_syndicates_id = [None for i in range(len(self.market.syndicates))]
                 follow_syndicates_premium = [None for i in range(len(self.market.syndicates))]
                 for i in range(1,len(self.actions_to_apply[num])):
                     follow_syndicates_id[i-1] = self.actions_to_apply[num][i].syndicate
-                    follow_syndicates_premium[i-1] = self.actions_to_apply[num][i].premium * self.follow_line_sizes * risks["risk_value"] / self.sim_args["mean_contract_runtime"]
+                    follow_syndicates_premium[i-1] = self.actions_to_apply[num][i].premium * self.follow_line_sizes * risks["risk_value"] / 30
                     premium += follow_syndicates_premium[i-1]
                 self.market.brokers[int(broker_id)].add_contract(risks, lead_syndicate_id, self.lead_line_size, lead_syndicate_premium, follow_syndicates_id, self.follow_line_sizes, follow_syndicates_premium, premium)
                 self.market.syndicates[int(lead_syndicate_id)].add_leader(risks, self.lead_line_size, lead_syndicate_premium)
@@ -122,17 +122,18 @@ class MarketManager:
                     num += 1
 
         # Update Syndicates status and capital from interest
+        for i in range(len(self.market.syndicates)):
+            if self.market.syndicates[i].status == True:
+                amount = self.market.syndicates[i].current_capital * self.syndicate_args["interest_rate"]
+                self.market.syndicates[i].current_capital += amount
+                for j in range(len(self.market.syndicates[i].current_capital_category)):
+                    self.market.syndicates[i].current_capital_category[j] += amount / len(self.market.syndicates[i].current_capital_category)
         if time % 12 == 0:
             for i in range(len(self.market.syndicates)):
                 if self.market.syndicates[i].status == True:
-                    amount = self.market.syndicates[i].current_capital * self.syndicate_args["interest_rate"]
-                    self.market.syndicates[i].current_capital += amount
-                    for j in range(len(self.market.syndicates[i].current_capital_category)):
-                        self.market.syndicates[i].current_capital_category[j] += amount / len(self.market.syndicates[i].current_capital_category)
-                if self.market.syndicates[i].current_capital > self.market.syndicates[i].initial_capital:
-                    self.market.syndicates[i].current_capital = self.market.syndicates[i].current_capital - (self.market.syndicates[i].current_capital - self.market.syndicates[i].initial_capital) * self.market.syndicates[i].dividend_share_of_profits
-            for i in range(len(self.market.syndicates)):
-                self.market.syndicates[i].market_permanency()
+                    if self.market.syndicates[i].current_capital > self.market.syndicates[i].initial_capital:
+                        self.market.syndicates[i].current_capital = self.market.syndicates[i].current_capital - (self.market.syndicates[i].current_capital - self.market.syndicates[i].initial_capital) * self.market.syndicates[i].dividend_share_of_profits
+                    self.market.syndicates[i].market_permanency()
                     
     def run_attritional_loss(self, starting_attritional_loss):
         """
