@@ -5,7 +5,7 @@ class AddAttritionalLossEvent(Event):
     """
     Generate daily attritional loss
     """
-    def __init__(self, risk_id, risk_start_time, risk_factor, risk_category, risk_value):
+    def __init__(self, risk_id, risk_start_time, risk_value):
         """
         Construct a new attritional loss event
 
@@ -25,8 +25,6 @@ class AddAttritionalLossEvent(Event):
 
         self.risk_id = risk_id
         self.risk_start_time = risk_start_time
-        self.risk_factor = risk_factor
-        self.risk_category = risk_category
         self.risk_value = risk_value
 
     def run(self, market, step_time):
@@ -68,8 +66,6 @@ class AddAttritionalLossEvent(Event):
             self.__class__.__name__: {
                 "attritional_loss_id": self.risk_id,
                 "attritional_loss_start_time": self.risk_start_time,
-                "attritional_loss_factor": self.risk_factor,
-                "attritional_loss_category": self.risk_category,
                 "attritional_loss_value": self.risk_value
             }
         }

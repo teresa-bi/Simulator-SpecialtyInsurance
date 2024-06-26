@@ -14,7 +14,7 @@ class MarketManager:
     Manage and evolve the market.
     """
 
-    def __init__(self, maxstep, sim_args, manager_args, syndicate_args, brokers, syndicates, reinsurancefirms, shareholders, catastrophes, fair_market_premium, risk_model_configs, with_reinsurance, num_risk_models, 
+    def __init__(self, maxstep, sim_args, manager_args, syndicate_args, brokers, syndicates, reinsurancefirms, shareholders, catastrophes, attritional_losses, fair_market_premium, risk_model_configs, with_reinsurance, num_risk_models, 
                  catastrophe_events, attritional_loss_events, broker_risk_events, broker_premium_events, broker_claim_events, event_handler, logger = None, time = 0):
         self.maxstep = maxstep
         self.sim_args = sim_args
@@ -27,6 +27,7 @@ class MarketManager:
         self.reinsurancefirms = reinsurancefirms
         self.shareholders = shareholders
         self.catastrophes = catastrophes
+        self.attritional_losses = attritional_losses
         self.fair_market_premium = fair_market_premium
         self.risk_model_configs = risk_model_configs
         self.with_reinsurance = with_reinsurance
@@ -38,7 +39,7 @@ class MarketManager:
         self.broker_claim_events = broker_claim_events
         self.event_handler = event_handler
 
-        self.market = NoReinsurance_RiskOne(time, self.maxstep, self.manager_args, self.brokers, self.syndicates, self.shareholders, self.catastrophes, self.risk_model_configs, 
+        self.market = NoReinsurance_RiskOne(time, self.maxstep, self.manager_args, self.brokers, self.syndicates, self.shareholders, self.catastrophes, self.attritional_losses, self.risk_model_configs, 
                                             self.catastrophe_events, self.attritional_loss_events, self.broker_risk_events, self.broker_premium_events, self.broker_claim_events)
 
         self.min_step_time = 1  # Day Event
@@ -81,13 +82,13 @@ class MarketManager:
                 self.market.brokers[int(broker_id)].not_underwritten_risk(risks)
             elif len(self.actions_to_apply[num]) > 0:
                 lead_syndicate_id = self.actions_to_apply[num][0].syndicate
-                lead_syndicate_premium = self.actions_to_apply[num][0].premium * self.lead_line_size * risks["risk_value"] / 30
+                lead_syndicate_premium = self.actions_to_apply[num][0].premium * self.lead_line_size * risks["risk_value"] / 36
                 premium = lead_syndicate_premium
                 follow_syndicates_id = [None for i in range(len(self.market.syndicates))]
                 follow_syndicates_premium = [None for i in range(len(self.market.syndicates))]
                 for i in range(1,len(self.actions_to_apply[num])):
                     follow_syndicates_id[i-1] = self.actions_to_apply[num][i].syndicate
-                    follow_syndicates_premium[i-1] = self.actions_to_apply[num][i].premium * self.follow_line_sizes * risks["risk_value"] / 30
+                    follow_syndicates_premium[i-1] = self.actions_to_apply[num][i].premium * self.follow_line_sizes * risks["risk_value"] / 36
                     premium += follow_syndicates_premium[i-1]
                 self.market.brokers[int(broker_id)].add_contract(risks, lead_syndicate_id, self.lead_line_size, lead_syndicate_premium, follow_syndicates_id, self.follow_line_sizes, follow_syndicates_premium, premium)
                 self.market.syndicates[int(lead_syndicate_id)].add_leader(risks, self.lead_line_size, lead_syndicate_premium)
@@ -146,9 +147,9 @@ class MarketManager:
         """
         for i in range(len(self.market.syndicates)):
             if self.market.syndicates[i].status == True:
-                self.market.syndicates[i].current_capital -= starting_attritional_loss.risk_value * 0.0001
+                self.market.syndicates[i].current_capital -= starting_attritional_loss.risk_value
                 self.market.syndicates[i].current_capital -= (self.market.syndicates[i].initial_capital-self.market.syndicates[i].current_capital) * self.market.syndicates[i].cost_of_capital
-                self.market.syndicates[i].profits_losses -= starting_attritional_loss.risk_value * 0.0001
+                self.market.syndicates[i].profits_losses -= starting_attritional_loss.risk_value
 
     def run_broker_premium(self, starting_broker_premium):
         """

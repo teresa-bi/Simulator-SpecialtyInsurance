@@ -44,9 +44,6 @@ class RiskGenerator:
         self.norm_profit_markup = risk_args["norm_profit_markup"]
         self.value_at_risk_tail_probability = risk_args["value_at_risk_tail_probability"]
         self.risk_limit = risk_args["risk_limit"]
-        self.lambda_attritional_loss = risk_args["lambda_attritional_loss"]
-        self.cov_attritional_loss = risk_args["cov_attritional_loss"]
-        self.mu_attritional_loss = risk_args["mu_attritional_loss"]
         self.lambda_catastrophe = risk_args["lambda_catastrophe"]
         self.pareto_shape = risk_args["pareto_shape"]
         self.minimum_catastrophe_damage = risk_args["minimum_catastrophe_damage"]
@@ -54,10 +51,14 @@ class RiskGenerator:
         self.var_em_safety_factor = risk_args["var_em_safety_factor"]
         self.risk_factor_lower_bound = risk_args["risk_factor_lower_bound"]
         self.risk_factor_upper_bound = risk_args["risk_factor_upper_bound"]
+        self.attritional_loss_mean = risk_args["attritional_loss_mean"]
+        self.attritional_loss_cov = risk_args["attritional_loss_cov"]
+        self.attritional_time_mean_separation = risk_args["attritional_time_mean_separation"]
         # Init list of risks
         self.catastrophes = []
         self.catastrophe_time = []
         self.catastrophe_damage = [] 
+        self.attritional = []
         self.broker_risks = []
         self.seed  = seed
 
@@ -105,10 +106,26 @@ class RiskGenerator:
                     self.catastrophe_time[i] = 1
                     self.catastrophe_damage[i] = self.catastrophes[k]["catastrophe_value"]
 
+        # Generate Attritional Loss risk
+        self.attritional_loss_distribution = scipy.stats.gamma(1, self.attritional_loss_mean, self.attritional_loss_mean*self.attritional_loss_cov^2)
+        self.attritional_separation_distribution = scipy.stats.expon(0, self.attritional_time_mean_separation)
+        i = 0
+        while (total < self.sim_time_span):
+            separation_time = self.attritional_separation_distribution.rvs()
+            total += int(math.ceil(separation_time))
+            if total < self.sim_time_span:
+                risk_start_time = total
+                damage_value = self.attritional_loss_distribution.rvs()
+                self.attritional.append({"attritional_loss_id": i,
+                    "attritional_loss_start_time": risk_start_time,
+                    "attritional_loss_value": damage_value[0],
+                    })
+            i += 1
+
         # Compute remaining parameters
         self.risk_factor_spread = self.risk_factor_upper_bound - self.risk_factor_lower_bound
         self.risk_factor_distribution = scipy.stats.uniform(loc=self.risk_factor_lower_bound, scale=self.risk_factor_spread)
-        self.risk_value_distribution = scipy.stats.uniform(loc=1000, scale=0)
+        self.risk_value_distribution = scipy.stats.uniform(loc=50000, scale=0)
 
         risk_factor_mean = self.risk_factor_distribution.mean()
         if np.isnan(risk_factor_mean):
@@ -145,36 +162,6 @@ class RiskGenerator:
                                 "min_cat_prob_distortion": self.min_cat_prob_distortion,
                                 "max_cat_prob_distortion": self.max_cat_prob_distortion,
                                 } for i in range(self.num_riskmodels)]
-
-        """# Generate risks brought by brokers by poisson distribution
-        risks_schedule = [[] for x in range(self.broker_args["num_brokers"])]
-        risks_categories = [[] for x in range(self.broker_args["num_brokers"])]
-        risks_factors = [[] for x in range(self.broker_args["num_brokers"])]
-        risks_values = [[] for x in range(self.broker_args["num_brokers"])]
-        for i in range(self.broker_args["num_brokers"]):
-            risks_schedule[i] = [] # Record the time for broker risks start time
-            np.random.seed(self.seed + i)
-            risks_categories[i] = np.random.randint(0, self.num_categories, size = self.sim_time_span)
-            risks_factors[i] = self.risk_factor_distribution.rvs(size = self.sim_time_span)
-            risks_values[i] = self.risk_value_distribution.rvs(size = self.sim_time_span)
-            # For each day generate risks according to poisson distribution
-            np.random.seed(self.seed + i)
-            s = np.random.poisson(self.broker_args["lambda_risks_daily"], self.sim_time_span)
-            for k in range(len(s)):
-                risks_schedule[i].append(s[k])
-            print(len(risks_schedule[i]))
-        risk_num = 0
-        for i in range(self.broker_args["num_brokers"]):
-            for j in range(self.sim_time_span):
-                if risks_schedule[i][j] > 0:
-                    self.broker_risks.append({"risk_id": risk_num,
-                                            "broker_id": i,
-                                            "risk_start_time": j,
-                                            "risk_factor": risks_factors[i][j],
-                                            "risk_category": risks_categories[i][j],
-                                            "risk_value": risks_values[i][j]
-                                            })
-                    risk_num += 1"""
         
         risks_categories = [[[] for x in range(self.sim_time_span)] for j in range(self.broker_args["num_brokers"])]
         risks_factors = [[[] for x in range(self.sim_time_span)] for j in range(self.broker_args["num_brokers"])]
@@ -199,7 +186,7 @@ class RiskGenerator:
                                             })
                     risk_num += 1
 
-        return self.catastrophes, self.broker_risks, self.market_premium, risk_model_configs
+        return self.catastrophes, self.attritional, self.broker_risks, self.market_premium, risk_model_configs
 
     def data(self):
         """

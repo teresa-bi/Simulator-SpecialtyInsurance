@@ -67,7 +67,7 @@ class EventGenerator():
 
         return catastrophe_events
 
-    def generate_attritional_loss_events(self, sim_args, broker_risks):
+    def generate_attritional_loss_events(self, attritional_losses):
         """
         Generate a set of AttritionalLossEvent for an insurance market.
 
@@ -77,11 +77,10 @@ class EventGenerator():
             A list of AddAttritionalLossEvent
         """
         attritional_loss_events = []
-        risk = broker_risks[0]
-        for time in range(sim_args.get("max_time")):
-            if time % 12 == 0:
-                add_attritional_loss_event = AddAttritionalLossEvent(time, time, risk.get("risk_factor"), risk.get("risk_category"), risk.get("risk_value"))
-                attritional_loss_events.append(add_attritional_loss_event)
+        for i in range(len(attritional_losses)):
+            add_attritional_loss_event = AddAttritionalLossEvent(attritional_losses[i].get("attritional_loss_id"), attritional_losses[i].get("attritional_loss_start_time"),
+                                                attritional_losses[i].get("attritional_losses_value"))
+            attritional_loss_events.append(add_attritional_loss_event)
 
         return attritional_loss_events
 

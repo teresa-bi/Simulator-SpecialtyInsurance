@@ -14,7 +14,7 @@ class AIRunner:
     """
     AI model training and testing steps
     """
-    def __init__(self, sim_args, manager_args, brokers, syndicates, reinsurancefirms, shareholders, catastrophes, broker_risks, 
+    def __init__(self, sim_args, manager_args, brokers, syndicates, reinsurancefirms, shareholders, catastrophes, attritional_losses, broker_risks, 
                  fair_market_premium, risk_model_configs, with_reinsurance, num_risk_models, log):
         self.sim_args = sim_args
         self.manager_args = manager_args
@@ -23,6 +23,7 @@ class AIRunner:
         self.reinsurancefirms = reinsurancefirms
         self.shareholders = shareholders
         self.catastrophes = catastrophes
+        self.attritional_losses = attritional_losses
         self.broker_risks = broker_risks
         self.fair_market_premium = fair_market_premium
         self.risk_model_configs = risk_model_configs

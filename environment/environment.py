@@ -40,7 +40,7 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
     """
 
     def __init__(self, sim_args, manager_args, broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args, brokers, syndicates, reinsurancefirms, shareholders, 
-                 catastrophes, broker_risks, fair_market_premium, risk_model_configs, with_reinsurance, num_risk_models, logger, dt = 1):
+                 catastrophes, attritional_losses, broker_risks, fair_market_premium, risk_model_configs, with_reinsurance, num_risk_models, logger, dt = 1):
 
         self.sim_args = sim_args
         self.maxstep = self.sim_args["max_time"]
@@ -59,7 +59,9 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
         self.shareholders = shareholders
         self.initial_shareholders = shareholders
         self.catastrophes = catastrophes
+        self.attritional_losses = attritional_losses
         self.initial_catastrophes = catastrophes
+        self.initial_attritional_losses = attritional_losses
         self.broker_risks = broker_risks
         self.fair_market_premium = fair_market_premium
         self.risk_model_configs = risk_model_configs
@@ -110,6 +112,7 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
         self.reinsurancefirms = self.initial_reinsurancefirms
         self.shareholders = self.initial_shareholders
         self.catastrophes = self.initial_catastrophes
+        self.attritional_losses = self.initial_attritional_losses
         # Initiate time step
         self.timestep = -1
         self.step_track = 0
@@ -117,7 +120,7 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
         # Catastrophe event 
         self.catastrophe_events = EventGenerator(self.risk_model_configs).generate_catastrophe_events(self.catastrophes)
         # Attritioal loss event daily
-        self.attritional_loss_events = EventGenerator(self.risk_model_configs).generate_attritional_loss_events(self.sim_args, self.broker_risks)
+        self.attritional_loss_events = EventGenerator(self.risk_model_configs).generate_attritional_loss_events(self.attritional_losses)
         # Broker risk event daily: TODO: broker generate risk according to poisson distribution
         self.broker_risk_events = EventGenerator(self.risk_model_configs).generate_risk_events(self.sim_args, self.broker_risks)
         # Broker pay premium according to underwritten contracts
@@ -127,7 +130,7 @@ class SpecialtyInsuranceMarketEnv(MultiAgentEnv):
         # Initiate event handler
         self.event_handler = EventHandler(self.maxstep, self.catastrophe_events, self.attritional_loss_events, self.broker_risk_events, self.broker_premium_events, self.broker_claim_events)
         # Initiate market manager
-        self.mm = MarketManager(self.maxstep, self.sim_args, self.manager_args, self.syndicate_args, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.catastrophes, self.fair_market_premium, self.risk_model_configs, self.with_reinsurance, self.num_risk_models, 
+        self.mm = MarketManager(self.maxstep, self.sim_args, self.manager_args, self.syndicate_args, self.brokers, self.syndicates, self.reinsurancefirms, self.shareholders, self.catastrophes, self.attritional_losses, self.fair_market_premium, self.risk_model_configs, self.with_reinsurance, self.num_risk_models, 
                                self.catastrophe_events, self.attritional_loss_events, self.broker_risk_events, self.broker_premium_events, self.broker_claim_events, self.event_handler)
         #self.mm.evolve(self.dt)
         

@@ -18,7 +18,7 @@ class GameRunner:
     Game model 
     """
     def __init__(self, sim_args, manager_args, broker_args, syndicate_args, reinsurancefirm_args, shareholder_args, risk_args, 
-                 seed, brokers, syndicates, reinsurancefirms, shareholders, catastrophes, broker_risks, fair_market_premium, 
+                 seed, brokers, syndicates, reinsurancefirms, shareholders, catastrophes, attritional_losses, broker_risks, fair_market_premium, 
                  risk_model_configs, with_reinsurance, num_risk_models, logger):
         self.sim_args = sim_args
         self.manager_args = manager_args
@@ -33,6 +33,7 @@ class GameRunner:
         self.reinsurancefirms = reinsurancefirms
         self.shareholders = shareholders
         self.catastrophes = catastrophes
+        self.attritional_losses = attritional_losses
         self.broker_risks = broker_risks
         self.fair_market_premium = fair_market_premium
         self.risk_model_configs = risk_model_configs
@@ -88,11 +89,6 @@ class GameRunner:
         self.trainer = PPO(config=config)
 
     def run(self):
-        # Folder for recording
-        top_dir = "insurance_scenario_" + self.scenario + "_model_" + str(self.num_risk_models)
-
-        # Register environment
-        register_env("SpecialtyInsuranceMarket-validation", self.env_creator)
 
         # Insurance arguments
         insurance_args = {"sim_args": self.sim_args,
@@ -107,13 +103,14 @@ class GameRunner:
                 "reinsurancefirms": self.reinsurancefirms,
                 "shareholders": self.shareholders,
                 "catastrophes": self.catastrophes,
+                "attritional_losses": self.attritional_losses,
                 "broker_risks": self.broker_risks,
                 "fair_market_premium": self.fair_market_premium,
                 "risk_model_configs": self.risk_model_configs,
                 "with_reinsurance": self.with_reinsurance,
                 "num_risk_models": self.num_risk_models,
                 "logger": self.logger}
-        self.ppo_trainer_creator(insurance_args)
+        
         env = MultiAgentBasedModel(**insurance_args)
     
         total_steps = 0
