@@ -20,16 +20,16 @@ def get_arguments():
         }
 
     broker_args = {"num_brokers": 30, # Number of brokers in simulation, 5 times of num syndicates
-        "lambda_risks_daily": 3,  # 0.06Lambda value for the Poisson distribution used by the broker process to generate new risks
+        "lambda_risks_daily": 2,  # 0.06Lambda value for the Poisson distribution used by the broker process to generate new risks
         "decuctible": 0.2 # Percentage of risk value 
         }
 
     syndicate_args = {"num_syndicates": 6, # Number of syndicates in simulation
-        "initial_capital": 80000, # Initial capital of each syndicate
+        "initial_capital": 4000000, # Initial capital of each syndicate
         "lead_line_size": 0.5, # Default lead quote line size
-        "follow_line_size": 0.25, # Default follow quote line size
+        "follow_line_size": 0.1, # Default follow quote line size
         "ambiguity_level": 0, # From 0 to 1
-        "cost_of_capital": 0.025, # Cost of capital 
+        "cost_of_capital": 0.1, # Cost of capital 
         "actuarial_pricing_internal_weight": 0.5,  # Whether acturial pricing based on syndicate history or industry histor
         "loss_experiency_weight": 0.2, # Whether actuarial pricing weighs the past losses more than recent losses 
         "volatility_weight": 0, # How much actuarial pricing considers the standard deviation of losses
@@ -100,9 +100,7 @@ def get_arguments():
         "norm_profit_markup": 0.15,
         "dividend_share_of_profits": 0.4,
         "catastrophe_time_mean_separation": 100/3.,
-        "lambda_attritional_loss": 0.1, # Lambda value for the Poisson distribution for the number of attritional claims generated per year
-        "cov_attritional_loss": 1, # Coefficient of variation for the gamma distribution which generates the severity of attritional claim event
-        "mu_attritional_loss": 3000000, # Mean of the gamma distribution which generates the severity of attritional claim events
+        "attritional_time_mean_separation": 0.01,
         "lambda_catastrophe": 0.05, # Lambda value for the Poisson distribution for the number of catastrophe claims generated per year
         "pareto_shape": 5, # Shape parameter of the Pareto distribution which generates the severity of catastrophe claim events
         "minimum_catastrophe_damage": 0.25, # Minimum value for an event to be considered a catastrophe, fraction of the risk limit
@@ -111,10 +109,12 @@ def get_arguments():
         "risk_factor_lower_bound": 0.4,
         "risk_factor_upper_bound": 0.6,
         "expire_immediately": False,
-        "money_supply": 2000000000
+        "money_supply": 2000000000,
+        "attritional_loss_mean": 60000,
+        "attritional_loss_cov": 1,
         }
     
-    seed = 234001
+    seed = 123123
 
     return sim_args, manager_args, broker_args, syndicate_args, reinsurancefirm_args,  shareholder_args, risk_args, seed
 
